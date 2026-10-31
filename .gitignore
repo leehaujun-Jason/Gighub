@@ -19,6 +19,15 @@
 /cache/
 /logs/
 /backups/
+# Runtime storage and accidental copies of private uploads
+/storage/
+/uploads/
+/public/uploads/
+/private_uploads/
+# Generated database dumps; keep database/schema.sql versioned
+/database/dumps/
+/database/backups/
+*.sql.gz
 *.log
 *.tmp
 *.temp

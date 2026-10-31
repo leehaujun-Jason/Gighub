@@ -1,0 +1,9 @@
+# Project-only protection; no XAMPP configuration changes.
+Options -Indexes
+Require all denied
+
+# Permit only the existing root placeholder; public/ has its own allowance.
+# Directory requests need permission before Apache resolves DirectoryIndex.
+<If "%{REQUEST_URI} == '/GigHub/' || %{REQUEST_URI} == '/GigHub/index.php'">
+    Require all granted
+</If>

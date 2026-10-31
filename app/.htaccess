@@ -1,0 +1,4 @@
+# Also deny future index.php files beneath this private directory.
+<FilesMatch ".*">
+    Require all denied
+</FilesMatch>
