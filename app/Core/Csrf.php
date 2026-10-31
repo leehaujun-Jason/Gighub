@@ -4,23 +4,33 @@ namespace GigHub\Core;
 
 final class Csrf
 {
-    public static function token(): string
+    public static function token(string $purpose = 'registration'): string
     {
-        if (!isset($_SESSION['registration_csrf'])) {
-            $_SESSION['registration_csrf'] = bin2hex(random_bytes(32));
+        $key = self::key($purpose);
+        if (!isset($_SESSION[$key])) {
+            $_SESSION[$key] = bin2hex(random_bytes(32));
         }
-        return $_SESSION['registration_csrf'];
+        return $_SESSION[$key];
     }
 
-    public static function valid(mixed $token): bool
+    public static function valid(mixed $token, string $purpose = 'registration'): bool
     {
+        $key = self::key($purpose);
         return is_string($token) && strlen($token) === 64
-            && isset($_SESSION['registration_csrf'])
-            && hash_equals($_SESSION['registration_csrf'], $token);
+            && isset($_SESSION[$key])
+            && hash_equals($_SESSION[$key], $token);
     }
 
-    public static function rotate(): void
+    public static function rotate(string $purpose = 'registration'): void
     {
-        $_SESSION['registration_csrf'] = bin2hex(random_bytes(32));
+        $_SESSION[self::key($purpose)] = bin2hex(random_bytes(32));
+    }
+
+    private static function key(string $purpose): string
+    {
+        if (!in_array($purpose, ['registration','verification'], true)) {
+            throw new \InvalidArgumentException('Unknown form purpose.');
+        }
+        return $purpose . '_csrf';
     }
 }

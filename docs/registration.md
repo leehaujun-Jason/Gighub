@@ -1,5 +1,7 @@
 # Registration phase (Prompts 10A, 10A-R and password refinements)
 
+Phase 10B-A integration update: after a successful owned registration commit, the controller attempts token issuance and in-memory verification capture. Its existing atomic user/profile transaction, password policy and no-login/no-wallet behaviour are preserved. Failed issuance/capture leaves the committed pending account recoverable through resend. Savepoint-only registration never invokes delivery. The pending page now reports the development capture outcome honestly; no external email is sent. Earlier 10A statements about absent token creation are historical. See email-verification.md for the current lifecycle, privacy rules, tests, exact files and remaining SMTP blockers.
+
 ## Final Registration 10A review and deferred acceptance
 
 The user accepts Registration 10A as the foundation for the next module, subject to the remaining manual checks and non-blocking refinement backlog below. This does not assert production readiness or implement another module. Approved business rules and the 12–128 Unicode-code-point password policy are unchanged. Earlier "no commit" statements are historical phase records; this final task expressly authorizes one reviewed local Registration commit and no push.

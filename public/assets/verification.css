@@ -1,0 +1,17 @@
+/* Verification shares the registration palette and form controls. */
+.verification-layout { max-width: 700px; margin: 24px auto 64px; padding: 0 24px; }
+.verification-card h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.15; }
+.verification-card { overflow-wrap: anywhere; }
+.verification-mark { width: 48px; height: 48px; color: #174f40; background: #eaf1df; border-radius: 50%; padding: 12px; }
+.verification-card details { border-top: 1px solid #dbe4db; padding-top: 20px; }
+.verification-card summary { min-height: 44px; padding: 10px 0; }
+.verification-card .preview-notice { max-width: none; margin-top: 30px; }
+.verification-card .field-error { color: #972b25; }
+.verification-card .recovery { margin-top: 26px; }
+.verification-card input { min-width: 0; }
+@media (max-width: 480px) {
+    .verification-layout { padding: 0 16px; margin-top: 12px; }
+    .verification-card { padding: 24px 20px; }
+    .site-header { padding: 24px 20px; }
+}
+@media (forced-colors: active) { .verification-mark { border: 1px solid CanvasText; } }

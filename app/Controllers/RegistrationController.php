@@ -8,10 +8,11 @@ use GigHub\Core\RegistrationThrottle;
 use GigHub\Services\RegistrationValidator;
 use GigHub\Services\RegistrationValidationException;
 use RuntimeException;
+use Throwable;
 
 final class RegistrationController
 {
-    public function __construct(private readonly Closure $serviceFactory) {}
+    public function __construct(private readonly Closure $serviceFactory, private readonly ?Closure $verificationFactory = null) {}
 
     public function show(): array { return $this->form(); }
 
@@ -36,11 +37,19 @@ final class RegistrationController
                 + ['retry_after' => $attempt['retry_after']];
         }
         try {
-            ($this->serviceFactory)()->register($validation['data']);
+            $committed = ($this->serviceFactory)()->register($validation['data']);
         } catch (RegistrationValidationException $error) {
             return $this->form($old, $error->errors, 422);
         } catch (RuntimeException $error) {
             return $this->form($old, ['form' => 'Registration is temporarily unavailable. Please try again.'], 503);
+        }
+        if ($this->verificationFactory !== null) {
+            $deliveryStatus = 'unavailable';
+            if ($committed) {
+                try { $deliveryStatus = ($this->verificationFactory)()->request($validation['data']['email']); }
+                catch (Throwable $error) { /* Account is committed and remains recoverable. Never print driver/mail details. */ }
+            }
+            $_SESSION['registration_delivery_status'] = in_array($deliveryStatus, ['captured','accepted','uncertain','failed','not_sent'], true) ? $deliveryStatus : 'unavailable';
         }
         Csrf::rotate();
         $_SESSION['registration_notice'] = true;
@@ -53,6 +62,8 @@ final class RegistrationController
             return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/register'];
         }
         unset($_SESSION['registration_notice']);
+        $deliveryStatus = $_SESSION['registration_delivery_status'] ?? 'not_configured';
+        unset($_SESSION['registration_delivery_status']);
         ob_start(); require dirname(__DIR__) . '/Views/registration-pending.php'; $body = ob_get_clean();
         return ['status' => 200, 'type' => 'text/html; charset=UTF-8', 'body' => $body];
     }

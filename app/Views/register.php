@@ -8,7 +8,7 @@
 <body>
 <header class="site-header"><a class="brand" href="?route=/">GigHub<span>Find your next possibility.</span></a><a href="?route=/">Back to home</a></header>
 <main class="registration-layout">
-<aside class="intro"><p class="eyebrow">WORK, TOGETHER.</p><h1>Your next chapter starts here</h1><p>Find the right people. Bring your skills. Build something that matters.</p><div class="preview-notice"><strong>Development preview</strong><p>Accounts remain pending verification. Email verification comes in the next phase.</p></div></aside>
+<aside class="intro"><p class="eyebrow">WORK, TOGETHER.</p><h1>Your next chapter starts here</h1><p>Find the right people. Bring your skills. Build something that matters.</p><div class="preview-notice"><strong>Development preview</strong><p>New accounts need email verification. This phase captures verification messages in memory; no external email is sent.</p></div></aside>
 <section class="card" aria-labelledby="form-title"><p class="eyebrow">JOIN GIGHUB</p><h2 id="form-title">Create your account</h2><p class="muted">Choose how you want to take part. Your account role stays fixed.</p>
 <?php if ($errors !== []): ?>
 <div class="error-summary" id="error-summary" tabindex="-1" role="alert"><strong>Please check the highlighted fields.</strong>

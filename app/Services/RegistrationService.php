@@ -12,7 +12,8 @@ final class RegistrationService
 {
     public function __construct(private readonly PDO $pdo, private readonly UserRepository $users) {}
 
-    public function register(array $input): void
+    /** True only after this call commits its own user/profile transaction. */
+    public function register(array $input): bool
     {
         $validated = RegistrationValidator::validate($input);
         if ($validated['errors'] !== []) { throw new RegistrationValidationException($validated['errors']); }
@@ -28,6 +29,7 @@ final class RegistrationService
             $this->users->insertProfile($id, $data);
             if ($ownsTransaction) { $this->pdo->commit(); }
             else { $this->pdo->exec('RELEASE SAVEPOINT gighub_registration'); }
+            return $ownsTransaction;
         } catch (Throwable $error) {
             if ($ownsTransaction && $this->pdo->inTransaction()) { $this->pdo->rollBack(); }
             elseif (!$ownsTransaction && $this->pdo->inTransaction()) {

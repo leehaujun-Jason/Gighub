@@ -5,6 +5,7 @@ declare(strict_types=1);
 // local.php is already ignored by Git. This example contains no credentials.
 return [
     'app' => ['environment' => 'local'],
+    'verification' => ['base_url' => 'http://localhost/GigHub/public/'],
     'database' => [
         'enabled' => false,
         'host' => '<approved-host>',
