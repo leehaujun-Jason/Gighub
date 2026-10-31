@@ -9,7 +9,12 @@ final class Router
 
     public function get(string $path, callable $handler): void
     {
-        $this->routes[$path] = $handler;
+        $this->routes[$path]['GET'] = $handler;
+    }
+
+    public function post(string $path, callable $handler): void
+    {
+        $this->routes[$path]['POST'] = $handler;
     }
 
     public function dispatch(string $method, mixed $path): array
@@ -17,13 +22,13 @@ final class Router
         if (!is_string($path) || strlen($path) > 100) {
             return self::text(400, 'Invalid request.');
         }
-        if ($method !== 'GET') {
-            return self::text(405, 'Method not allowed.');
-        }
         if (!isset($this->routes[$path])) {
             return self::text(404, 'Page not found.');
         }
-        return ($this->routes[$path])();
+        if (!isset($this->routes[$path][$method])) {
+            return self::text(405, 'Method not allowed.') + ['allow' => implode(', ', array_keys($this->routes[$path]))];
+        }
+        return ($this->routes[$path][$method])();
     }
 
     private static function text(int $status, string $body): array

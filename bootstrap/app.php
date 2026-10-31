@@ -4,20 +4,36 @@ declare(strict_types=1);
 use GigHub\Core\Config;
 use GigHub\Core\Router;
 use GigHub\Core\SecureSession;
+use GigHub\Core\Database;
+use GigHub\Controllers\RegistrationController;
+use GigHub\Repositories\UserRepository;
+use GigHub\Services\RegistrationService;
 use GigHub\Controllers\HealthController;
 use GigHub\Controllers\HomeController;
 
 $root = dirname(__DIR__);
-foreach (['Config', 'Database', 'SecureSession', 'Router'] as $class) {
+foreach (['Config', 'Database', 'SecureSession', 'Router', 'Csrf', 'RegistrationThrottle'] as $class) {
     require_once $root . '/app/Core/' . $class . '.php';
 }
 require_once $root . '/app/Controllers/HomeController.php';
 require_once $root . '/app/Controllers/HealthController.php';
+require_once $root . '/app/Controllers/RegistrationController.php';
+require_once $root . '/app/Repositories/UserRepository.php';
+foreach (['RegistrationValidator', 'RegistrationValidationException', 'RegistrationService'] as $class) {
+    require_once $root . '/app/Services/' . $class . '.php';
+}
 
 date_default_timezone_set('UTC');
 $config = Config::load($root . '/config');
 SecureSession::start($config['session']);
 $router = new Router();
+$registration = new RegistrationController(static function () use ($config): RegistrationService {
+    $pdo = (new Database($config['database']))->connection();
+    return new RegistrationService($pdo, new UserRepository($pdo));
+});
+$router->get('/register', static fn () => $registration->show());
+$router->post('/register', static fn () => $registration->submit($_POST));
+$router->get('/register/pending', static fn () => $registration->pending());
 $router->get('/', static fn () => (new HomeController())->show());
 $router->get('/health', static fn () => (new HealthController())->show(
     $config['app']['environment'],

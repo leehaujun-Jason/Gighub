@@ -33,7 +33,13 @@ $response = $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_GET['route'
 http_response_code($response['status']);
 header('Content-Type: ' . $response['type']);
 if ($response['status'] === 405) {
-    header('Allow: GET');
+    header('Allow: ' . ($response['allow'] ?? 'GET'));
+}
+if (isset($response['location'])) {
+    header('Location: ' . $response['location']);
+}
+if (isset($response['retry_after'])) {
+    header('Retry-After: ' . (int) $response['retry_after']);
 }
 echo $response['body'];
 ob_end_flush();
