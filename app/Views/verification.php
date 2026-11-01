@@ -22,7 +22,7 @@ $title = $titles[$mode];
 <form method="post" action="?route=/verify-email/resend"><input type="hidden" name="csrf_token" value="<?= $escape($token) ?>"><label for="email">Email Address <span>(required)</span></label><input id="email" type="email" name="email" autocomplete="email" maxlength="254" required value="<?= $escape($oldEmail) ?>"<?= isset($errors['email']) ? ' aria-invalid="true" aria-describedby="email-error"' : '' ?>><?php if (isset($errors['email'])): ?><p class="field-error" id="email-error"><?= $escape($errors['email']) ?></p><?php endif; ?><button type="submit">Request verification link <span aria-hidden="true">→</span></button></form>
 <p><a href="?route=/verify-email">Already have a verification key?</a></p>
 <?php elseif ($mode === 'verified'): ?>
-<p>Your account is now active. You are not logged in. Sign-in will be available in a future module.</p><p><a href="?route=/">Return to home →</a></p>
+<p>Your account is now active. Verification has not signed you in.</p><p><a href="?route=/">Return to home →</a></p>
 <?php elseif ($mode === 'unavailable'): ?>
 <p>Your verification attempt could not be completed right now. Your key may still be valid. Please try again later by reopening your original verification message or pasting its key below.</p><p class="recovery"><a href="?route=/verify-email">Retry verification or paste your key →</a></p>
 <?php elseif ($mode === 'invalid'): ?>
@@ -30,5 +30,6 @@ $title = $titles[$mode];
 <?php else: ?>
 <p>If the email belongs to an eligible pending account and request limits allow it, a verification request has been prepared. Use the latest verification message when available.</p><p><a href="?route=/verify-email">Continue to verification</a></p><p><a href="?route=/verify-email/resend">Request another link later</a></p>
 <?php endif; ?>
-<aside class="preview-notice"><strong>Development preview — no external email is sent.</strong><p>Verification messages use an in-memory development capture only. This page does not confirm that a message was delivered. A request made here does not expose a verification key.</p></aside>
+<p>Already verified your email? <a href="?route=/login">Sign in</a></p>
+<aside class="preview-notice"><strong>Delivery notice</strong><p>This page does not confirm inbox delivery. If a message is available, use its latest link. A request made here does not expose a verification key.</p></aside>
 </section></main></body></html>

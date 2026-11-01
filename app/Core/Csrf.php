@@ -28,7 +28,7 @@ final class Csrf
 
     private static function key(string $purpose): string
     {
-        if (!in_array($purpose, ['registration','verification'], true)) {
+        if (!in_array($purpose, ['registration','verification','login','logout'], true)) {
             throw new \InvalidArgumentException('Unknown form purpose.');
         }
         return $purpose . '_csrf';

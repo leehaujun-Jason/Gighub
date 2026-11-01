@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
-if (($argv[1] ?? '') !== '--run-synthetic') {
-    fwrite(STDERR, "Explicit opt-in required: php tests/registration-database.php --run-synthetic\n"); exit(2);
+if (count($argv) !== 2 || ($argv[1] ?? '') !== '--run-isolated') {
+    fwrite(STDERR, "Explicit opt-in required: php tests/registration-database.php --run-isolated\n"); exit(2);
 }
 ini_set('display_errors', '0'); ini_set('log_errors', '0');
 $root = dirname(__DIR__); $pdo = null; $checks = 0; $failed = false; $prefix = '';
@@ -10,15 +10,15 @@ $check = static function (bool $value, string $label) use (&$checks): void {
     if (!$value) { throw new RuntimeException($label); } $checks++;
 };
 try {
-    foreach (['Core/Config', 'Core/Database', 'Core/Csrf', 'Core/RegistrationThrottle', 'Repositories/UserRepository',
+    require_once __DIR__ . '/integration-bootstrap.php';
+    foreach (['Core/Csrf', 'Core/RegistrationThrottle', 'Repositories/UserRepository',
         'Services/RegistrationValidator', 'Services/RegistrationValidationException',
         'Services/RegistrationService', 'Controllers/RegistrationController'] as $class) {
         require_once $root . '/app/' . $class . '.php';
     }
-    ob_start(); try { $config = GigHub\Core\Config::load($root . '/config'); } finally { ob_end_clean(); }
-    $pdo = (new GigHub\Core\Database($config['database']))->connection();
-    $check($pdo->query('SELECT DATABASE()')->fetchColumn() === 'gighub_dev', 'Unexpected database');
-    $check($pdo->query('SELECT CURRENT_USER()')->fetchColumn() === 'gighub_app@127.0.0.1', 'Unexpected account');
+    $pdo = GigHub\Tests\IntegrationDatabase::connection($argv);
+    $check($pdo->query('SELECT DATABASE()')->fetchColumn() === 'gighub_schema_test', 'Unexpected database');
+    $check($pdo->query('SELECT CURRENT_USER()')->fetchColumn() === 'gighub_test@127.0.0.1', 'Unexpected account');
     $check(!$pdo->inTransaction(), 'Existing transaction is unsafe');
     $expected = explode(' ', 'users freelancer_profiles client_profiles email_verification_tokens skills user_skills jobs job_skills bids milestones work_submissions uploaded_files wallets wallet_entries escrows chat_messages notifications disputes cancellation_requests reviews');
     sort($expected);

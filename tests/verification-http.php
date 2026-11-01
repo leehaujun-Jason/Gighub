@@ -52,7 +52,7 @@ try {
     $check($response['status'] === 303 && $service->seen === [$syntheticKey], 'script-free key body reaches service after explicit POST');
     $check($_SESSION['verification_result_notice'] === 'verified' && !str_contains(serialize($_SESSION), $syntheticKey), 'session stores outcome without verification key');
     $html = $successController->result()['body'];
-    $check(str_contains($html, 'Your email is verified.') && !str_contains($html, '?route=/login') && !isset($_SESSION['user_id']), 'success result creates no login session or link');
+    $check(str_contains($html, 'Your email is verified.') && str_contains($html, '?route=/login') && !isset($_SESSION['user_id']) && !isset($_SESSION['auth']), 'success result offers login without authenticating');
     $genericHtml = null;
     foreach (['captured', 'accepted', 'uncertain', 'failed', 'not_sent'] as $delivery) {
         $service->delivery = $delivery;
@@ -64,7 +64,8 @@ try {
     }
     foreach (['captured', 'uncertain', 'failed', 'unavailable', 'not_configured'] as $deliveryStatus) {
         ob_start(); require $root . '/app/Views/registration-pending.php'; $html = ob_get_clean();
-        $check(str_contains($html, 'No verification email has been sent.') && str_contains($html, '?route=/verify-email/resend'), 'pending delivery variants retain truthful development notice and recovery');
+        $expectedNotice = in_array($deliveryStatus, ['captured', 'not_configured'], true) ? 'No verification email has been sent.' : 'Verification delivery status';
+        $check(str_contains($html, $expectedNotice) && str_contains($html, '?route=/verify-email/resend'), 'pending delivery variants retain truthful notice and recovery');
         if ($deliveryStatus === 'failed') { $check(str_contains($html, 'The verification attempt could not be completed.') && !str_contains($html, 'could not prepare'), 'failed transport does not claim token issuance failed'); }
     }
     $_SESSION = [];

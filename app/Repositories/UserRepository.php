@@ -15,6 +15,18 @@ class UserRepository
         return $query->fetchColumn() !== false;
     }
 
+    public function findForAuthentication(string $email): array|false
+    {
+        $query=$this->pdo->prepare('SELECT id,password_hash,display_name,role,status,email_verified_at FROM users WHERE email=? LIMIT 1');
+        $query->execute([$email]);return $query->fetch();
+    }
+
+    public function findAuthIdentity(int $id): array|false
+    {
+        $query=$this->pdo->prepare('SELECT id,display_name,role,status,email_verified_at FROM users WHERE id=? LIMIT 1');
+        $query->execute([$id]);return $query->fetch();
+    }
+
     public function insertUser(array $data, string $hash): int
     {
         $query = $this->pdo->prepare(

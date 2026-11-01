@@ -13,24 +13,8 @@ $pdo = null;
 
 try {
     $root = dirname(__DIR__);
-    if (!is_file($root . '/config/local.php')) {
-        throw new RuntimeException('Private configuration is required.');
-    }
-    require $root . '/app/Core/Config.php';
-    require $root . '/app/Core/Database.php';
-
-    // Discard any accidental output from private PHP configuration.
-    ob_start();
-    try {
-        $config = GigHub\Core\Config::load($root . '/config');
-    } finally {
-        ob_end_clean();
-    }
-    if (($config['database']['name'] ?? null) !== 'gighub_schema_test') {
-        throw new RuntimeException('Only the isolated test database is permitted.');
-    }
-    $database = GigHub\Core\Database::forSchemaValidation($config['database']);
-    $pdo = $database->connection();
+    require_once __DIR__ . '/integration-bootstrap.php';
+    $pdo = GigHub\Tests\IntegrationDatabase::connection($argv);
     if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'gighub_schema_test') {
         throw new RuntimeException('Unexpected database; inspection stopped.');
     }

@@ -1,0 +1,12 @@
+{
+    "name": "gighub/fyp",
+    "description": "GigHub PHP final year project",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "ext-openssl": "*",
+        "ext-mbstring": "*",
+        "phpmailer/phpmailer": "~7.1.1"
+    }
+}

@@ -1,4 +1,108 @@
-# Email verification — Phase 10B-A
+# Email verification — Phases 10B-A and 10B-B1
+
+## Current recovery and isolated-test acceptance — 2026-11-01
+
+This section supersedes the operational status in the historical acceptance records below. Those test counts and observations are retained as history, not presented as newly rerun evidence.
+
+- Active development uses the recovered clean MariaDB instance at `127.0.0.1:3309 / gighub_dev`. The original damaged installation and recovery copies are not application/test targets.
+- Effective private `mail.enabled` and `mail.diagnostics` were verified as boolean false during the current preflight. Private configuration and SMTP credentials were not modified. The prior enabled-flag discrepancy is resolved.
+- Integration tests no longer use development credentials. `tests/integration-bootstrap.php` requires explicit CLI `--run-isolated`, loads only `C:/MariaDB_Recovery/GigHub_Clean_Test/private/gighub-test.local.php`, and validates the exact host, integer port 3309, database `gighub_schema_test`, account `gighub_test`, server version and clean data directory. Missing/invalid settings fail closed. No `Config::load()` fallback exists; database/mail environment overrides are removed.
+- Main, fixture, cleanup and Verification contention connections use this bootstrap. Repositories/services receive the isolated PDO; fixture suites create no subprocess database connections. The dedicated account is denied access to `gighub_dev` and has only test-schema SELECT and the table-level INSERT/UPDATE needed by existing fixtures. Credentials remain outside Git and the web root.
+- Phase 3K-2 recorded 431 offline checks, 52 Registration and 81 Verification isolated database checks, plus read-only PDO validation passing. Fixture rows were rolled back; all 20 development row counts/content digests remained unchanged. Test-only auto-increment counters may advance. These are prior-phase results, not today's regression totals.
+- Login 10C adds a sign-in link to the verified result page; verification still never authenticates a user, creates a wallet or issues credit. The corresponding rendering assertion now expects that link while still asserting no authentication state.
+
+Current isolated commands: `php tests/registration-database.php --run-isolated`, `php tests/verification-database.php --run-isolated`, and `php tests/pdo-connectivity.php --run-isolated`. Never use development configuration for fixture tests. Historical commands/targets below do not authorize current execution against development.
+
+Known limitations remain: session-only anonymous throttling is bypassable; complete concurrent verify/verify, resend/resend and verify/suspend schedules are unproven; SMTP acceptance is not inbox delivery; localhost links are local-computer-only. Invalid enabled SMTP configuration currently also prevents confirmation because the shared factory constructs the transport. Correcting that availability coupling is deferred. Generic result-page Delivery notice/resend copy remains a non-blocking UX follow-up. The completed isolated HTTP/browser harness never loads active development configuration; its subsequent acceptance is recorded in the Reconciled local acceptance section of `docs/authentication.md`.
+
+The earlier combined 10B/10C implementation regression recorded 512 offline checks and 181 isolated database checks passing, plus read-only isolated PDO verification. All 20 development row counts/content digests remained unchanged; active private configuration and schema hashes matched. HTTP/browser suites were deliberately not run in that implementation phase; the Reconciled local acceptance section of `docs/authentication.md` records the subsequent 93-check HTTP acceptance and supersedes that historical skip. Detailed breakdown and limitations: `docs/authentication.md`. This is not a new real-email delivery test.
+
+Future commit readiness: reviewed 10B SMTP classes, Composer manifest/lockfile, disabled configuration defaults/example, pending/result copy, SMTP tests and shared isolated-test support contain no identified Critical/Major blocker for a local-development baseline. No credentials, private configuration, vendor, logs, exports or unrelated recovery files belong in that commit. `bootstrap/app.php`, `app/Views/verification.php`, `tests/verification-http.php` and this document now also contain 10C integration changes: use explicit hunk review for separate commits, or separately approve a combined scope. Nothing is staged or committed.
+
+## Historical final acceptance review — 2026-10-31
+
+The user reports that a controlled Gmail verification message arrived in Inbox, explicit confirmation succeeded, the page stated active/not logged in, and link reuse was rejected. Read-only database acceptance independently confirmed the specified Client is active with a populated verification timestamp, one consumed token, no usable outstanding tokens, and no wallet or wallet-entry rows. No address, key or hash is recorded here. Inbox arrival and browser session behavior are user-observed evidence, not independently replayed during this review.
+
+Fresh regression: 479 checks passed (119 combined SMTP/diagnostics, 104 verification unit, 69 registration unit, 23 foundation, 61 verification controller/HTTP, 19 registration HTTP, 32 verification JavaScript, 52 registration JavaScript). Database integration suites were skipped: both explicitly target gighub_dev and insert rollback fixtures; they are not a separate isolated database setup and can advance auto-increment counters. Current instructions prohibit modifying gighub_dev. The reserved schema-test connectivity script was also not run. Full database regression therefore remains a commit-readiness gap pending an approved test strategy. Composer strict validation/audit and whitespace checks passed.
+
+Configuration discrepancy: the effective private mail.enabled and mail.diagnostics flags were both still enabled during this review, contrary to the reported shutdown. No private setting was changed. Restore both to false locally and recheck before sign-off.
+
+Non-blocking UX follow-ups: the generic Delivery notice is unnecessarily shown on successful and invalid-link pages; the invalid-link page offers resend even when the account is already active. Anonymous invalid-link handling cannot safely infer or disclose account state. A future copy pass should explain that resend applies only to eligible pending accounts while preserving generic responses. No UI redesign was made.
+
+Existing limits remain: session-based anonymous throttling is bypassable by cookie reset; full concurrent resend/confirmation/suspension schedules remain unproven. No SMTP connection, send, account mutation, commit or push occurred during this acceptance review.
+
+## 10B-B2: safe failure diagnostics
+
+Two controlled attempts reportedly produced no inbox/spam message. Their historical root causes remain unknown: the original adapter discarded every exception and mapped all failures to uncertain. Password grouping spaces were corrected before the second attempt; that does not establish an authentication diagnosis.
+
+The adapter now installs `DiagnosticSmtp`, a thin PHPMailer SMTP subclass recording only stage, DATA-attempt/acceptance flags and a strictly validated three-digit 200–599 response code. It never parses or exports exception messages, SMTP error/detail strings, addresses, bodies, credentials or tokens. STARTTLS, authentication and recipient failures are attributed only at their corresponding API boundaries. DNS/TCP and implicit SMTPS certificate failures share connection classification; a generic connection failure cannot prove its underlying cause. Unexpected exceptions use unknown before DATA and delivery_uncertain after DATA begins. Untracked/injected SMTP implementations conservatively remain unknown/uncertain.
+
+Definite failures before DATA throw the existing generic transport exception, so EmailVerificationService returns failed. An explicit 4xx/5xx DATA rejection also throws (category unknown, numeric code retained because no delivery_rejected category is approved). DATA timeouts/disconnects without a proven negative reply, and failures after DATA acceptance, remain delivery_uncertain. Successful send still returns accepted, never proof of inbox delivery. No automatic retry or token revocation is introduced. Configuration/factory failures record configuration and throw the same generic exception. User-facing controllers, token rules, transactions and resend limits are unchanged.
+
+`SmtpDiagnostics::last()` exposes only an ephemeral in-process `{category, code}` record, reset per factory/send operation. Nothing is added to sessions or public responses. For a future **separately approved** live test, manually add `'diagnostics' => true` inside the private mail section while `app.environment` is exactly local. This explicitly enables one fixed-format PHP error-log line per failure: `[GigHub SMTP] category=<allowlisted-label> code=<three-digit-code-or-none>`. Leave SMTPDebug at zero. Inspect only these fixed lines locally in the configured Apache PHP error log; do not share general log dumps. Remove/disable the flag afterward. Production ignores the flag. No configuration was changed or diagnostics enabled during implementation. No Gmail connection or live email was attempted. Previous sections describing all exceptions as uncertain are historical and superseded by this section.
+
+Offline `tests/smtp-diagnostics.php` extends the SMTP suite with configuration, connection, TLS, authentication, recipient, explicit rejection, timeout, unexpected exception, numeric-code sanitization and production/local logging-gate checks. Doubles replace socket operations; temporary diagnostic test output is removed on close. No database fixtures or live HTTP sends are needed.
+
+## Current phase: 10B-B1 SMTP integration (2026-10-31)
+
+PHPMailer **7.1.1** is installed using Composer **2.11.1**, on PHP **8.2.12**. Composer extracted its distribution archive using the available extraction tools; the missing PHP ZIP extension did not block installation. No php.ini, XAMPP setting, database permission or schema was changed. `composer.json` declares PHP ^8.2, OpenSSL, mbstring and PHPMailer ~7.1.1; `composer.lock` pins the installed version. `vendor/` remains ignored. Install the locked dependencies on another checkout with `composer install --no-interaction --no-scripts --no-plugins`. Do not copy PHPMailer manually. Its LGPL-2.1-only license is retained in the installed package; the application metadata does not relicense that dependency.
+
+Official references reviewed: [7.1.1 release](https://github.com/PHPMailer/PHPMailer/releases/tag/v7.1.1), [dependency requirements](https://github.com/PHPMailer/PHPMailer/blob/v7.1.1/composer.json), and [SMTP example](https://github.com/PHPMailer/PHPMailer/blob/v7.1.1/examples/smtp.phps). The example's verbose diagnostics and browser ErrorInfo output are deliberately not used.
+
+### Implementation and configuration contract
+
+- `bootstrap/app.php` loads Composer's autoloader when present, keeping the existing explicit application requires and lazy database/service construction. `MailTransportFactory` replaces the hardwired capture. The verification service, token repository, account rules and transaction boundaries are unchanged.
+- `mail.enabled` is a strict boolean, **false by default**. `DisabledMailTransport` cannot send. Existing tokens can still be confirmed while mail is disabled. A disabled-send attempt is handled as an existing recoverable transport failure: issuance may already have committed and consumed cooldown/hourly allowance; there is no automatic retry or token revocation.
+- When enabled, `mail.transport=smtp` selects `PhpMailerTransport`. Missing PHPMailer, OpenSSL, invalid or incomplete settings produce only `Mail transport unavailable.` without chained internal details. There is no PHP mail()/sendmail or capture fallback. Because confirmation and issuance share a service factory, invalid enabled SMTP settings also make confirmation temporarily unavailable; they do not consume a confirmation key. Disable mail or correct configuration to restore that service.
+- Explicit `mail.transport=memory` is allowed only with `app.environment=local` or `test`, and still uses request-lifetime `InMemoryMailTransport`. It is rejected in production. Automated core tests continue to inject their fake directly.
+- `mail.host`: one DNS hostname or IPv4 address, no scheme, embedded port, whitespace or semicolon-separated fallback list. IPv6 literals are not supported by this minimal configuration validator.
+- `mail.port`: integer 1–65535; provider's port must match its encryption mode. `mail.encryption`: exactly `starttls` (normally port 587) or `smtps` (normally 465). Authentication and explicit encryption are always required; no opportunistic plaintext fallback. Certificate/hostname verification stays enabled and self-signed certificates are rejected.
+- `mail.username`, `mail.password`: nonempty private strings, maximum 4096 bytes; NUL/CR/LF and angle-bracket placeholders are rejected. No real credentials are in source, tests or the configuration example.
+- `mail.from_email`: fixed, valid configured sender, maximum 254 bytes. `mail.from_name`: configured UTF-8 name, maximum 400 bytes without control characters. Neither identity is accepted from form input. Each message has exactly the recipient supplied by the existing verification service.
+- `mail.timeout`: integer 1–30 seconds, default 10. Both connection/socket timeout and SMTP command time limit are set. This is **not a total wall-clock deadline**: multiple commands/DNS resolution and PHPMailer's extended DATA handling can take longer.
+- `verification.base_url` retains the existing validation: absolute HTTPS, or HTTP for the exact supported loopback hosts, directory path, no userinfo/query/fragment/control characters. It is never derived from Host. The localhost default only works on this computer; approve a suitable trusted URL before external testing.
+
+`config/local.example.php` supplies placeholders with mail disabled. Put approved real settings only into ignored `config/local.php` later, without replacing its existing database configuration. The private file was not modified in this phase. Effective configuration was checked without printing credentials: mail remains disabled.
+
+### Sending and recovery
+
+The adapter builds a fresh PHPMailer instance for each attempt, uses UTF-8 HTML plus explicit plain text, a fixed configured sender, authenticated SMTP, no keepalive, SMTP debug level zero and a no-op diagnostic sink. No attachments, external image fetching, credentials or raw keys are logged. The existing fragment URL and manual key remain unchanged.
+
+The existing service commits token issuance **before** invoking the transport. An accepted result means only SMTP acceptance, not inbox delivery. A false send result or exception becomes `uncertain`, with no automatic retry, exception disclosure or token revocation. Configuration failures are generic and caught by existing recovery handling. Registration remains committed and pending. Resend outcomes remain generic across unknown, ineligible, limited and failed-delivery accounts. The pending page now handles `accepted` explicitly; it no longer falsely asserts that no mail was sent after uncertain/accepted results. General verification pages make no delivery claim.
+
+### Fresh verification evidence
+
+All ten suites passed: **569 checks**.
+
+| Suite | Checks |
+| --- | ---: |
+| SMTP (`php tests/smtp.php`) | 76 |
+| Verification unit | 104 |
+| Verification JavaScript | 32 |
+| Verification controller/HTTP | 61 |
+| Verification rollback database | 81 |
+| Registration unit | 69 |
+| Registration JavaScript | 52 |
+| Registration HTTP | 19 |
+| Registration rollback database | 52 |
+| Foundation | 23 |
+
+The SMTP suite tests invalid configuration, disabled/fake/real selection, production fake rejection, missing dependency in a separate process, exact recipient/fixed sender, real multipart MIME construction, debug suppression, exception sanitization and single-attempt failure handling. Test doubles replace PHPMailer's SMTP/socket boundary; its real SMTP orchestration is also exercised for STARTTLS-before-authentication and stopping after connection/TLS/authentication/DATA failure. **No test opens an SMTP socket or sends external email.** This does not prove actual TLS negotiation, authentication, provider acceptance or inbox delivery.
+
+The two database suites ran sequentially against guarded `gighub_dev` with synthetic outer-transaction fixtures and rollback. All 20 table counts/content hashes matched after verification cleanup. Existing records were preserved; auto-increment counters may advance. No test ran against `gighub_schema_test`; the historical CLI-only `tests/pdo-connectivity.php` targets that reserved database and was deliberately not run. Registration's injected failure case emits its existing generic persistence-failure diagnostic, without credentials. All 40 application/test/public-configuration PHP files passed syntax checks. Composer strict validation, platform checks and audit passed with no reported advisories. Git whitespace checks passed (only Windows LF-to-CRLF notices). The schema hash remains `29515ad151c5171642ac9a69eae44e27b635f27f55753bde511dde4d0d346286`.
+
+### Remaining gate: 10B-B2 controlled real-email test
+
+1. Obtain explicit approval for the SMTP provider, one controlled recipient, fixed verified sender and trusted base URL. Decide whether the recipient opens the link on this same XAMPP computer or needs a separately approved reachable HTTPS environment; do not expose XAMPP just for this task.
+2. Privately configure the provider's approved host, port, TLS mode, credentials and sender in local.php. Do not post credentials into chat, screenshots, source control or debug logs. Confirm certificate trust works; report trust failures instead of disabling validation or changing php.ini automatically.
+3. Explicitly enable SMTP for the approved test window. Perform one controlled registration or eligible resend, respecting the persisted cooldown/hourly cap. Check provider acceptance, inbox/spam delivery, sender identity, both HTML/plain text and fragment/manual-key behavior.
+4. Explicitly confirm using CSRF-protected POST, then check replay/expiry/replacement and no automatic login. Do not automatically retry an uncertain send. Restore disabled mail after the test unless continued use is separately approved.
+
+Real delivery, provider timeouts, mail-client link rewriting and successful inbox-to-activation behavior remain unverified. The earlier browser/manual and concurrency gates below still apply, as do session-only anonymous abuse-protection limitations. No commit or push was performed in 10B-B1.
+
+## Historical 10B-A baseline
+
+The sections below record the completed 10B-A implementation and its earlier approval gate. Statements about hardwired capture, no Composer or no SMTP describe that baseline; the current 10B-B1 section above supersedes them. They do not claim that real SMTP was tested.
 
 ## Final security review and 10B-B gate
 

@@ -2,8 +2,8 @@
 declare(strict_types=1);
 // Opt-in, rollback-only integration checks. No SMTP, DDL, DELETE or fixture commits.
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
-if (($argv[1] ?? '') !== '--run-synthetic') {
-    fwrite(STDERR, "Explicit opt-in required: php tests/verification-database.php --run-synthetic\n"); exit(2);
+if (count($argv) !== 2 || ($argv[1] ?? '') !== '--run-isolated') {
+    fwrite(STDERR, "Explicit opt-in required: php tests/verification-database.php --run-isolated\n"); exit(2);
 }
 ini_set('display_errors', '0'); ini_set('log_errors', '0');
 $root = dirname(__DIR__); $pdo = null; $contender = null; $checks = 0; $failed = false; $phase = 'preflight';
@@ -11,18 +11,18 @@ $check = static function (bool $condition, string $label) use (&$checks): void {
     if (!$condition) { throw new RuntimeException($label); } ++$checks;
 };
 try {
-    foreach (['Core/Config','Core/Database','Core/Csrf','Mail/MailTransport','Mail/VerificationMail',
+    require_once __DIR__ . '/integration-bootstrap.php';
+    foreach (['Core/Csrf','Mail/MailTransport','Mail/VerificationMail',
         'Mail/InMemoryMailTransport','Repositories/VerificationTokenRepository','Services/EmailVerificationService'] as $class) {
         require_once $root . '/app/' . $class . '.php';
     }
-    ob_start(); try { $config = GigHub\Core\Config::load($root . '/config'); } finally { ob_end_clean(); }
-    $pdo = (new GigHub\Core\Database($config['database']))->connection();
-    $contender = (new GigHub\Core\Database($config['database']))->connection(); unset($config);
-    $check($pdo->query('SELECT DATABASE()')->fetchColumn() === 'gighub_dev', 'Unexpected database');
-    $check($pdo->query('SELECT CURRENT_USER()')->fetchColumn() === 'gighub_app@127.0.0.1', 'Unexpected account');
+    $pdo = GigHub\Tests\IntegrationDatabase::connection($argv);
+    $contender = GigHub\Tests\IntegrationDatabase::connection($argv);
+    $check($pdo->query('SELECT DATABASE()')->fetchColumn() === 'gighub_schema_test', 'Unexpected database');
+    $check($pdo->query('SELECT CURRENT_USER()')->fetchColumn() === 'gighub_test@127.0.0.1', 'Unexpected account');
     $check(!$pdo->inTransaction(), 'Existing transaction is unsafe');
-    $check($contender->query('SELECT DATABASE()')->fetchColumn() === 'gighub_dev'
-        && $contender->query('SELECT CURRENT_USER()')->fetchColumn() === 'gighub_app@127.0.0.1'
+    $check($contender->query('SELECT DATABASE()')->fetchColumn() === 'gighub_schema_test'
+        && $contender->query('SELECT CURRENT_USER()')->fetchColumn() === 'gighub_test@127.0.0.1'
         && !$contender->inTransaction(), 'Unsafe contention connection');
     // Connection-local and bounded; never change global settings.
     $contender->exec('SET SESSION innodb_lock_wait_timeout=1');

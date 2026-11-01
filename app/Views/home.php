@@ -5,6 +5,7 @@
 <h1>GigHub Development Environment Ready</h1>
 <p>The application foundation is running.</p>
 <p><a href="?route=/register">Create a Client or Freelancer account</a></p>
+<p><a href="?route=/login">Sign in to your account</a></p>
 <p><a href="?route=/health">Local health check</a></p>
 </body>
 </html>
