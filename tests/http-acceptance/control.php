@@ -7,6 +7,7 @@ try{
     require __DIR__.'/database.php';
     $command=$argv[1]??'';$run=$argv[2]??'';$dir=GigHub\Tests\Http\runtime($run);
     $state=json_decode(file_get_contents($dir.'/run.json'),true,512,JSON_THROW_ON_ERROR);
+    if(array_key_exists('job_browsing_enabled',$state)&&$state['job_browsing_enabled']!==false)throw new RuntimeException('Browsing fixtures require browse-control.');
     require dirname(__DIR__).'/integration-bootstrap.php';
     $p=GigHub\Tests\IntegrationDatabase::connection(['http-control','--run-isolated']);
     $prefix='http'.$run.'-';$pattern=$prefix.'%@example.invalid';

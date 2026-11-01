@@ -1,5 +1,16 @@
 # Isolated Authentication HTTP acceptance harness
 
+Module 11B browsing: see `docs/job-browsing-phase2-tests.md`. The separate
+`job_browsing_enabled=true` mode uses browse-control.php and a narrow browsing/login/logout
+allowlist; it cannot enable Job Posting mutations. Completed local acceptance passed 69 SQL checks,
+66 HTTP checks, 28 browser scenarios and 8 responsive layout checks (1280, 768, 375 and 320px).
+Live startup-failure and normal fixture cleanup passed; temporary privileges were fully revoked,
+grants restored, all 20 test tables returned to empty and development integrity remained unchanged.
+200% browser zoom, JavaScript-disabled browser behavior, screen-reader speech and other browser
+engines remain explicitly unverified. Historical preparation results are preserved in the module
+documents. Future fixture execution still requires separate authorization and a fresh safety
+preflight. Existing Authentication and 11A modes retain their own lifecycle.
+
 This is test-only infrastructure. It never loads bootstrap/app.php, config/local.php,
 production database credentials or Composer/SMTP. Production files and the CLI guard
 are unchanged. Do not serve this directory with Apache.

@@ -10,6 +10,14 @@ def minimal_env(run):
     return {'SystemRoot': r'C:\Windows', 'WINDIR': r'C:\Windows', 'PATH': r'C:\Windows\System32',
             'TEMP': str(PRIVATE / run), 'TMP': str(PRIVATE / run), 'GIGHUB_HTTP_RUN': run}
 
+def preflight_control(state):
+    browsing = state.get('job_browsing_enabled', False)
+    if not isinstance(browsing, bool): raise ValueError('Invalid browsing mode')
+    if browsing:
+        if state.get('job_posting_enabled', False) is not False: raise ValueError('Conflicting test modes')
+        return 'browse-control.php'
+    return 'job-control.php' if state.get('job_posting_enabled') is True else 'control.php'
+
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--run', required=True); args = parser.parse_args()
     import re
@@ -17,11 +25,36 @@ def main():
     directory = PRIVATE / args.run
     state = json.loads((directory / 'run.json').read_text(encoding='utf-8-sig'))
     if state['port'] != 8765 or state['run'] != args.run: raise SystemExit('Invalid runtime')
+    if preflight_control(state) == 'browse-control.php':
+        import sys
+        sys.dont_write_bytecode = True
+        from browse_lifecycle import BrowseLifecycle
+        lifecycle = BrowseLifecycle(directory, args.run, [])
+        try:
+            lifecycle.begin()
+            serve(args, state, directory, lifecycle)
+        finally:
+            lifecycle.finish()
+    else:
+        serve(args, state, directory)
+
+def serve(args, state, directory, lifecycle=None):
     # No listening socket exists until authenticated identity/denial checks pass.
-    result = subprocess.run([PHP, '-d', 'log_errors=0', str(pathlib.Path(__file__).with_name('job-control.php' if state.get('job_posting_enabled') is True else 'control.php')), 'preflight', args.run],
-                            env=minimal_env(args.run), capture_output=True)
+    control = preflight_control(state)
+    command = [PHP, '-d', 'log_errors=0', str(pathlib.Path(__file__).with_name(control)), 'preflight', args.run]
+    children = lifecycle.children if lifecycle is not None else []
+    if lifecycle is not None:
+        preflight = subprocess.Popen(command, env=minimal_env(args.run), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        children.append(preflight)
+        try:
+            output, error = preflight.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            raise SystemExit('Startup preflight timeout; no forced termination or cleanup authorization')
+        result = subprocess.CompletedProcess(command, preflight.returncode, output, error)
+    else:
+        result = subprocess.run(command, env=minimal_env(args.run), capture_output=True)
     if result.returncode or result.stdout.strip() != b'PASS': raise SystemExit('Isolated startup preflight failed')
-    stop_key = (directory / 'stop.key').read_text().strip(); children = []
+    stop_key = (directory / 'stop.key').read_text().strip()
     class Handler(http.server.BaseHTTPRequestHandler):
         # Bound idle/speculative browser connections; no connection may monopolize this host.
         timeout = 5
@@ -70,6 +103,7 @@ def main():
     with http.server.HTTPServer(('127.0.0.1',8765), Handler) as server:
         server.stopping = False
         (directory / 'server-ready.json').write_text(json.dumps({'pid':os.getpid(), 'bind':'127.0.0.1:8765', 'database':'gighub_schema_test'}))
+        if lifecycle is not None: lifecycle.mark_ready()
         while not server.stopping: server.handle_request()
     unfinished = [p.pid for p in children if p.poll() is None]
     (directory / 'server-stopped.json').write_text(json.dumps({'graceful':not unfinished,'unfinished_children':unfinished}))

@@ -8,6 +8,7 @@ try {
  if(count($argv)!==3||!in_array($action,['preflight','seed','inspect','cleanup'],true))throw new RuntimeException();
  require __DIR__.'/database.php';require dirname(__DIR__,2).'/app/Repositories/JobRepository.php';require __DIR__.'/job-fixtures.php';require dirname(__DIR__).'/integration-bootstrap.php';
  $dir=GigHub\Tests\Http\runtime($run);$state=json_decode(file_get_contents($dir.'/run.json'),true,512,JSON_THROW_ON_ERROR);
+ if(array_key_exists('job_browsing_enabled',$state)&&$state['job_browsing_enabled']!==false)throw new RuntimeException('Browsing fixtures require browse-control.');
  GigHub\Tests\Http\JobFixtures::validateState($state,$run);$prefix=GigHub\Tests\Http\JobFixtures::prefix($run);
  $p=GigHub\Tests\IntegrationDatabase::connection(['job-control','--run-isolated']);$stage=$action;
  if($action==='preflight') {

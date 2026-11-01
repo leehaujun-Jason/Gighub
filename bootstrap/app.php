@@ -62,6 +62,15 @@ $jobFactory=static function() use ($config): \GigHub\Services\JobPostingService 
     return new \GigHub\Services\JobPostingService($pdo,new \GigHub\Repositories\JobRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo));
 };
 $clientJobs=new \GigHub\Controllers\ClientJobController(new AuthGuard($authenticationFactory,$authSession),$jobFactory);
+foreach (['Repositories/PublicJobRepository','Services/JobBrowseValidator','Controllers/PublicJobController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$publicJobs=new \GigHub\Controllers\PublicJobController(static function() use ($config): array {
+    $pdo=(new Database($config['database']))->connection();
+    return [new \GigHub\Repositories\PublicJobRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo)];
+});
+$router->get('/jobs',static fn()=>$publicJobs->index($_GET));
+$router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));
 $router->get('/client/jobs',static fn()=>$clientJobs->index($_GET));
 $router->get('/client/jobs/create',static fn()=>$clientJobs->create());
 $router->post('/client/jobs/create',static fn()=>$clientJobs->store($_POST));

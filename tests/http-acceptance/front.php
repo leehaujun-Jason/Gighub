@@ -8,7 +8,20 @@ require __DIR__.'/database.php';
 $run=getenv('GIGHUB_HTTP_RUN')?:'';$dir=GigHub\Tests\Http\runtime($run);$state=json_decode(file_get_contents($dir.'/run.json'),true,512,JSON_THROW_ON_ERROR);
 if(PHP_SAPI!=='cgi-fcgi'||($_SERVER['REMOTE_ADDR']??'')!=='127.0.0.1'||($_SERVER['HTTP_HOST']??'')!=='127.0.0.1:8765'
     ||($state['run']??null)!==$run||($state['port']??null)!==8765){throw new RuntimeException();}
-if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET'&&($state['mutations_enabled']??null)!==true){http_response_code(403);echo 'Test mutations are not enabled.';exit;}
+if(array_key_exists('job_browsing_enabled',$state)&&!is_bool($state['job_browsing_enabled']))throw new RuntimeException();
+$browseMode=($state['job_browsing_enabled']??false)===true;
+if($browseMode) {
+    require __DIR__.'/browse-policy.php';
+    GigHub\Tests\Http\BrowsePolicy::validateState($state,$run);
+    if(!GigHub\Tests\Http\BrowsePolicy::allows($_SERVER['REQUEST_METHOD']??'GET',$_GET['route']??'/login',$state)) {
+        http_response_code(403);echo 'Only isolated browsing and approved authentication are enabled.';exit;
+    }
+    if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'&&($_GET['route']??'')==='/login'
+        &&!GigHub\Tests\Http\BrowsePolicy::allowsLogin($_POST['email']??null,$run)) {
+        http_response_code(403);echo 'Only approved browsing fixtures may sign in.';exit;
+    }
+}
+if(!$browseMode&&($_SERVER['REQUEST_METHOD']??'GET')!=='GET'&&($state['mutations_enabled']??null)!==true){http_response_code(403);echo 'Test mutations are not enabled.';exit;}
 if(($_SERVER['REQUEST_METHOD']??'')==='POST'&&($_GET['route']??'')==='/register'){
     $email=is_string($_POST['email']??null)?strtolower(trim($_POST['email'])):'';
     if(filter_var($email,FILTER_VALIDATE_EMAIL)&&(!str_starts_with($email,'http'.$run.'-')||!str_ends_with($email,'@example.invalid'))){http_response_code(403);echo 'Only run-marked synthetic registration is allowed.';exit;}
@@ -35,6 +48,14 @@ $auth=new GigHub\Controllers\AuthenticationController($authFactory,$session);
 $home=new GigHub\Controllers\AccountHomeController(new GigHub\Core\AuthGuard($authFactory,$session));
 $registration=new GigHub\Controllers\RegistrationController(static fn()=>new GigHub\Services\RegistrationService($pdo,new GigHub\Repositories\UserRepository($pdo)),$verificationFactory);
 $verification=new GigHub\Controllers\EmailVerificationController($verificationFactory);$router=new GigHub\Core\Router();
+if($browseMode) {
+    foreach(['Repositories/JobRepository','Repositories/SkillRepository','Repositories/PublicJobRepository','Services/JobBrowseValidator','Controllers/PublicJobController'] as $class)require_once $root.'/app/'.$class.'.php';
+    require_once __DIR__.'/job-fixtures.php';require_once __DIR__.'/browse-fixtures.php';
+    GigHub\Tests\Http\BrowseFixtures::assertInventory($pdo,$dir,$run);
+    $publicJobs=new GigHub\Controllers\PublicJobController(static fn()=>[new GigHub\Repositories\PublicJobRepository($pdo),new GigHub\Repositories\SkillRepository($pdo)],$dateClock);
+    $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
+    $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));
+}
 $router->get('/login',static fn()=>$auth->show());$router->post('/login',static fn()=>$auth->login($_POST));$router->post('/logout',static fn()=>$auth->logout($_POST));
 foreach(['client','freelancer','admin'] as $role){$router->get('/'.$role,static fn()=>$home->show($role));}
 $router->get('/register',static fn()=>$registration->show());$router->post('/register',static fn()=>$registration->submit($_POST));$router->get('/register/pending',static fn()=>$registration->pending());
