@@ -54,6 +54,21 @@ $authenticationFactory=static function() use ($config): AuthenticationService {
 $authSession=new AuthSession();
 $authentication=new AuthenticationController($authenticationFactory,$authSession);
 $accountHome=new AccountHomeController(new AuthGuard($authenticationFactory,$authSession));
+foreach (['Repositories/JobRepository','Repositories/SkillRepository','Services/JobPostingValidator','Services/JobPostingException','Services/JobPostingService','Controllers/ClientJobController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$jobFactory=static function() use ($config): \GigHub\Services\JobPostingService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\JobPostingService($pdo,new \GigHub\Repositories\JobRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo));
+};
+$clientJobs=new \GigHub\Controllers\ClientJobController(new AuthGuard($authenticationFactory,$authSession),$jobFactory);
+$router->get('/client/jobs',static fn()=>$clientJobs->index($_GET));
+$router->get('/client/jobs/create',static fn()=>$clientJobs->create());
+$router->post('/client/jobs/create',static fn()=>$clientJobs->store($_POST));
+$router->get('/client/jobs/show',static fn()=>$clientJobs->show($_GET));
+$router->get('/client/jobs/edit',static fn()=>$clientJobs->edit($_GET));
+$router->post('/client/jobs/update',static fn()=>$clientJobs->update($_POST));
+$router->post('/client/jobs/publish',static fn()=>$clientJobs->publish($_POST));
 $router->get('/login',static fn()=>$authentication->show());
 $router->post('/login',static fn()=>$authentication->login($_POST));
 $router->post('/logout',static fn()=>$authentication->logout($_POST));

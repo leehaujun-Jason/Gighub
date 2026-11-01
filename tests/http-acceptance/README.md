@@ -86,3 +86,17 @@ Actual browser zoom, disabled-JavaScript browser behavior, password-manager auto
 screen-reader operation and other browser engines must be reported separately if
 the available browser backend cannot exercise them. HTTP fallback checks do not
 replace a JavaScript-disabled browser test.
+
+## Job Posting mode — completed local acceptance
+
+Later authorized Module 11A acceptance passed 26 real MariaDB integration checks, 50 HTTP functional checks and 3 startup safety checks. All test fixtures were cleaned up, temporary privileges restored and development integrity preserved. The offline total after UI corrections was 762 passing checks. Browser acceptance passed for exercised flows at 1280, 768, 375 and 320px; the final read-only development smoke test passed at 1280 and 320px after the approved 20-Skill local seed. Fresh environments still require a separate controlled Skills seed.
+
+Outstanding, not passed: 200% browser zoom, JavaScript-disabled browser behavior, screen-reader speech output and other browser engines. See docs/job-posting-phase2-tests.md for reconciled outcomes and remaining limits. Future mutating runs require separate approval and fresh safety preflight.
+
+### Historical Phase 2A preparation (not executed during that phase)
+
+Use only a NEW restricted run directory with explicit job_posting_enabled=true. The server selects job-control.php preflight; front.php adds actual Job Posting controllers/services with the same guarded test PDO and a tracked test repository. No active configuration is loaded. Job mode rejects Registration/Verification mutations. Normal Authentication mode is unchanged.
+
+Do not execute job-posting-database.php or job_http_checks.py without separate approval. Job-specific seed/inspection/cleanup lives in job-control.php, with exact-ID inventory in job-fixtures.php. Old control.php refuses its own seed/cleanup/issue in job mode. Existing privileges.php remains limited to the original Authentication grants; it MUST NOT be used to provision job permissions.
+
+The full preparation, required privileges, fresh-runtime requirement, cleanup ordering and Phase 2B prerequisites are in docs/job-posting-phase2-tests.md. No fixture/grant/HTTP execution occurred while preparing this mode. Synthetic catalogue rows have no relationship to a future development catalogue seed.

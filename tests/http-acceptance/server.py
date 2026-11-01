@@ -18,7 +18,7 @@ def main():
     state = json.loads((directory / 'run.json').read_text(encoding='utf-8-sig'))
     if state['port'] != 8765 or state['run'] != args.run: raise SystemExit('Invalid runtime')
     # No listening socket exists until authenticated identity/denial checks pass.
-    result = subprocess.run([PHP, '-d', 'log_errors=0', str(pathlib.Path(__file__).with_name('control.php')), 'preflight', args.run],
+    result = subprocess.run([PHP, '-d', 'log_errors=0', str(pathlib.Path(__file__).with_name('job-control.php' if state.get('job_posting_enabled') is True else 'control.php')), 'preflight', args.run],
                             env=minimal_env(args.run), capture_output=True)
     if result.returncode or result.stdout.strip() != b'PASS': raise SystemExit('Isolated startup preflight failed')
     stop_key = (directory / 'stop.key').read_text().strip(); children = []

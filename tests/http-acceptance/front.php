@@ -13,6 +13,10 @@ if(($_SERVER['REQUEST_METHOD']??'')==='POST'&&($_GET['route']??'')==='/register'
     $email=is_string($_POST['email']??null)?strtolower(trim($_POST['email'])):'';
     if(filter_var($email,FILTER_VALIDATE_EMAIL)&&(!str_starts_with($email,'http'.$run.'-')||!str_ends_with($email,'@example.invalid'))){http_response_code(403);echo 'Only run-marked synthetic registration is allowed.';exit;}
 }
+$jobMode=($state['job_posting_enabled']??false)===true;
+if($jobMode&&($_SERVER['REQUEST_METHOD']??'GET')!=='GET'&&!in_array($_GET['route']??'',['/login','/logout','/client/jobs/create','/client/jobs/update','/client/jobs/publish'],true)) {
+    http_response_code(403);echo 'Only the isolated Job Posting workflow is enabled.';exit;
+}
 $root=dirname(__DIR__,2);
 foreach(['Core/Router','Core/SecureSession','Core/Csrf','Core/RegistrationThrottle','Core/VerificationThrottle','Core/LoginThrottle','Core/AuthSession','Core/AuthGuard',
     'Repositories/UserRepository','Repositories/VerificationTokenRepository','Services/RegistrationValidator','Services/RegistrationValidationException','Services/RegistrationService',
@@ -36,6 +40,21 @@ foreach(['client','freelancer','admin'] as $role){$router->get('/'.$role,static 
 $router->get('/register',static fn()=>$registration->show());$router->post('/register',static fn()=>$registration->submit($_POST));$router->get('/register/pending',static fn()=>$registration->pending());
 $router->get('/verify-email',static fn()=>$verification->show());$router->post('/verify-email',static fn()=>$verification->confirm($_POST));
 $router->get('/verify-email/resend',static fn()=>$verification->resendForm());$router->post('/verify-email/resend',static fn()=>$verification->resend($_POST));$router->get('/verify-email/result',static fn()=>$verification->result());
+if($jobMode) {
+    foreach(['Repositories/JobRepository','Repositories/SkillRepository','Services/JobPostingException','Services/JobPostingValidator','Services/JobPostingService','Controllers/ClientJobController'] as $class)require_once $root.'/app/'.$class.'.php';
+    require_once __DIR__.'/job-fixtures.php';
+    GigHub\Tests\Http\JobFixtures::validateState($state,$run);
+    GigHub\Tests\Http\JobFixtures::assertInventory($pdo,$dir,$run);
+    $jobFactory=static fn()=>new GigHub\Services\JobPostingService($pdo,new GigHub\Tests\Http\TrackedJobRepository($pdo,$dir,$run),new GigHub\Repositories\SkillRepository($pdo),$dateClock);
+    $jobs=new GigHub\Controllers\ClientJobController(new GigHub\Core\AuthGuard($authFactory,$session),$jobFactory);
+    $router->get('/client/jobs',static fn()=>$jobs->index($_GET));
+    $router->get('/client/jobs/create',static fn()=>$jobs->create());
+    $router->post('/client/jobs/create',static fn()=>$jobs->store($_POST));
+    $router->get('/client/jobs/show',static fn()=>$jobs->show($_GET));
+    $router->get('/client/jobs/edit',static fn()=>$jobs->edit($_GET));
+    $router->post('/client/jobs/update',static fn()=>$jobs->update($_POST));
+    $router->post('/client/jobs/publish',static fn()=>$jobs->publish($_POST));
+}
 $response=$router->dispatch($_SERVER['REQUEST_METHOD']??'GET',$_GET['route']??'/login');
 http_response_code($response['status']);header('Content-Type: '.$response['type']);header('Cache-Control: no-store');header('Referrer-Policy: no-referrer');header('X-Content-Type-Options: nosniff');
 header("Content-Security-Policy: default-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");

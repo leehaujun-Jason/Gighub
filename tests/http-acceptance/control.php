@@ -22,6 +22,9 @@ try{
         if(!$denied||(int)$other->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND ENGINE='InnoDB'")->fetchColumn()!==20)throw new RuntimeException();
         echo 'PASS';exit;
     }
+    if(($state['job_posting_enabled']??false)===true&&in_array($command,['seed','cleanup','issue'],true)) {
+        throw new RuntimeException('Use the separate reviewed job fixture lifecycle.');
+    }
     if($command==='cleanup'){
         $state['mutations_enabled']=false;file_put_contents($dir.'/run.json',json_encode($state));
         $q=$p->prepare('SELECT id FROM users WHERE email LIKE ?');$q->execute([$pattern]);$ids=$q->fetchAll(PDO::FETCH_COLUMN);
