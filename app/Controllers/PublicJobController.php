@@ -3,12 +3,14 @@ declare(strict_types=1);
 namespace GigHub\Controllers;
 use Closure;
 use GigHub\Services\JobBrowseValidator;
+use GigHub\Core\PublicIdentity;
+use GigHub\Core\Csrf;
 use Throwable;
 
 final class PublicJobController
 {
     /** Factory lazily supplies [PublicJobRepository, SkillRepository], without SMTP. */
-    public function __construct(private readonly Closure $repositoryFactory,private readonly ?Closure $clock=null) {}
+    public function __construct(private readonly Closure $repositoryFactory,private readonly ?Closure $clock=null,private readonly ?PublicIdentity $identity=null) {}
     public function index(array $input=[]): array
     {
         $result=JobBrowseValidator::validate($input);$filters=$result['data'];$errors=$result['errors'];
@@ -32,6 +34,9 @@ final class PublicJobController
     private function render(string $view,array $data,int $status=200): array
     {
         extract($data,EXTR_SKIP);$escape=static fn(string $v):string=>htmlspecialchars($v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
+        $navigationUser=$this->identity?->current();
+        $logoutToken=$navigationUser===null?null:Csrf::token('logout');
+        $assetVersion=static fn(string $name): string=>substr(hash_file('sha256',dirname(__DIR__,2).'/public/assets/'.$name),0,12);
         $today=($this->clock!==null?($this->clock)():new \DateTimeImmutable())->setTimezone(new \DateTimeZone('Asia/Kuala_Lumpur'))->format('Y-m-d');
         $pageUrl=static function(int $page)use($data):string {
             $f=$data['filters'];$f['page']=$page;

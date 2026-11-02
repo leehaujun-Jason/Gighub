@@ -1,0 +1,29 @@
+/* GigHub approved tokens; opt-in scope keeps unmigrated pages unchanged. */
+.gh-shell {
+    --gh-green: #174f40;
+    --gh-green-hover: #103d31;
+    --gh-green-pressed: #0b3027;
+    --gh-header-background: #eaf1e8;
+    --gh-background: #f5f7f3;
+    --gh-surface: #ffffff;
+    --gh-footer-background: #142c25;
+    --gh-text: #172b28;
+    --gh-muted: #52685e;
+    --gh-border: #77877b;
+    --gh-error: #a33028;
+    --gh-warning-text: #693c08;
+    --gh-warning-background: #fff4df;
+    --gh-warning-border: #a57a38;
+    --gh-font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gh-font-size: 1rem;
+    --gh-space-0: .25rem;
+    --gh-space-1: .5rem;
+    --gh-space-small: .75rem;
+    --gh-space-2: 1rem;
+    --gh-space-3: 1.5rem;
+    --gh-space-4: 2rem;
+    --gh-space-5: 3rem;
+    --gh-space-6: 4rem;
+    --gh-control-radius: .5rem;
+    --gh-card-radius: .75rem;
+}

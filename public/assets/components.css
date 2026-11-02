@@ -1,0 +1,45 @@
+/* Components are scoped to migrated GigHub shells only. */
+.gh-shell a { color: var(--gh-green); text-decoration: underline; text-underline-offset: .2em; }
+.gh-shell a:hover { color: var(--gh-green-hover); }
+.gh-shell a:active { color: var(--gh-green-pressed); }
+.gh-shell :focus-visible { outline: 3px solid var(--gh-green); outline-offset: 3px; }
+.gh-shell .gh-button, .gh-shell .gh-nav-link, .gh-shell .gh-skill-chip, .gh-shell .gh-footer-link { text-decoration: none; }
+.gh-shell .gh-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: var(--gh-space-1) var(--gh-space-2); font: inherit; font-weight: 650; border: 1px solid var(--gh-green); border-radius: var(--gh-control-radius); background: var(--gh-green); color: var(--gh-surface); cursor: pointer; }
+.gh-shell .gh-button:hover { background: var(--gh-green-hover); color: var(--gh-surface); }
+.gh-shell .gh-button:active { background: var(--gh-green-pressed); color: var(--gh-surface); }
+.gh-shell .gh-button-secondary { color: var(--gh-green); background: var(--gh-surface); }
+.gh-shell .gh-button-secondary:hover { background: var(--gh-header-background); color: var(--gh-green-hover); }
+.gh-shell .gh-button-secondary:active { background: var(--gh-green-pressed); color: var(--gh-surface); }
+.gh-shell .gh-nav-link { display: inline-flex; align-items: center; min-height: 44px; padding: var(--gh-space-1); border-radius: var(--gh-control-radius); font-weight: 600; }
+.gh-shell .gh-nav-link:hover { background: var(--gh-surface); }
+.gh-shell .gh-nav-link:active, .gh-shell .gh-nav-link[aria-current="page"] { background: var(--gh-green); color: var(--gh-surface); }
+.gh-shell .gh-skill-chip { display: inline-flex; align-items: center; min-height: 44px; padding: var(--gh-space-1) var(--gh-space-2); border: 1px solid var(--gh-border); border-radius: var(--gh-control-radius); background: var(--gh-surface); overflow-wrap: anywhere; font-weight: 600; }
+.gh-shell .gh-skill-chip:hover { background: var(--gh-header-background); border-color: var(--gh-green); }
+.gh-shell .gh-skill-chip:active, .gh-shell .gh-skill-chip[aria-current="true"] { background: var(--gh-green); border-color: var(--gh-green); color: var(--gh-surface); }
+.gh-shell .gh-job-card { min-width: 0; padding: var(--gh-space-3); background: var(--gh-surface); border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); overflow-wrap: anywhere; }
+.gh-shell .gh-job-card:focus-within { border-color: var(--gh-green); }
+.gh-shell .gh-job-card:hover { border-color: var(--gh-green-hover); }
+.gh-shell .gh-job-card:has(.gh-job-title:active) { border-color: var(--gh-green-pressed); }
+.gh-shell .gh-job-title { text-decoration: none; font-weight: 700; }
+.gh-shell .gh-job-title:hover, .gh-shell .gh-job-title:focus-visible { text-decoration: underline; }
+.gh-shell .gh-job-title:active { color: var(--gh-green-pressed); }
+.gh-shell .gh-footer-link { display: inline-flex; align-items: center; min-height: 44px; padding: var(--gh-space-1); color: var(--gh-background); border-radius: var(--gh-control-radius); }
+.gh-shell .gh-footer-link:hover { background: var(--gh-green); color: var(--gh-surface); text-decoration: underline; }
+.gh-shell .gh-footer-link:active { background: var(--gh-green-pressed); color: var(--gh-surface); }
+.gh-shell .gh-footer :focus-visible { outline-color: var(--gh-background); }
+.gh-shell .gh-control { width: 100%; min-width: 0; min-height: 44px; padding: var(--gh-space-small); border: 1px solid var(--gh-border); border-radius: var(--gh-control-radius); font: inherit; color: var(--gh-text); background: var(--gh-surface); }
+.gh-shell .gh-control:hover:not(:disabled):not([readonly]) { border-color: var(--gh-green); }
+.gh-shell .gh-control:active:not(:disabled) { border-color: var(--gh-green-pressed); }
+.gh-shell .gh-control[aria-invalid="true"] { border: 2px solid var(--gh-error); }
+.gh-shell .gh-control[readonly] { background: var(--gh-background); }
+.gh-shell .gh-field-error { color: var(--gh-error); }
+/* Disabled links must have no href; aria-disabled alone does not prevent navigation. */
+.gh-shell .gh-button:disabled, .gh-shell .gh-control:disabled, .gh-shell [aria-disabled="true"] { background: var(--gh-header-background); color: var(--gh-muted); border-color: var(--gh-border); cursor: not-allowed; text-decoration: none; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+    .gh-shell *, .gh-shell *::before, .gh-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media (forced-colors: active) {
+    .gh-shell :focus-visible { outline-color: Highlight; }
+    .gh-shell .gh-button, .gh-shell .gh-skill-chip, .gh-shell .gh-control { border-color: ButtonText; }
+    .gh-shell .gh-nav-link[aria-current="page"] { outline: 1px solid Highlight; }
+}

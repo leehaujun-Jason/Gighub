@@ -9,10 +9,12 @@ use GigHub\Services\JobPostingValidator;
 use Throwable;
 final class ClientJobController
 {
+    private ?array $navigationUser = null;
     public function __construct(private readonly AuthGuard $guard,private readonly Closure $serviceFactory) {}
     public function index(array $query=[]): array
     {
         $access=$this->guard->check('client');if(!isset($access['user']))return $access;
+        $this->navigationUser=$access['user'];
         $raw=$query['page']??'1';
         if(!is_string($raw)||!preg_match('/\A[1-9][0-9]{0,4}\z/D',$raw))return self::text(400,'Invalid page.');
         try {
@@ -24,6 +26,7 @@ final class ClientJobController
     public function create(): array
     {
         $access=$this->guard->check('client');if(!isset($access['user']))return $access;
+        $this->navigationUser=$access['user'];
         try{return $this->form(($this->serviceFactory)(),null,[],[]);}catch(Throwable){return self::unavailable();}
     }
     public function show(array $query): array { return $this->read($query,false); }
@@ -31,6 +34,7 @@ final class ClientJobController
     private function read(array $query,bool $editing): array
     {
         $access=$this->guard->check('client');if(!isset($access['user']))return $access;
+        $this->navigationUser=$access['user'];
         $id=self::id($query['id']??null);if($id===null)return self::text(400,'Invalid job ID.');
         try {
             $service=($this->serviceFactory)();$job=$service->owned($id,$access['user']['id']);
@@ -49,6 +53,7 @@ final class ClientJobController
     private function write(array $input,bool $existing,bool $publish): array
     {
         $access=$this->guard->check('client');if(!isset($access['user']))return $access;
+        $this->navigationUser=$access['user'];
         $id=$existing?self::id($input['id']??null):null;
         if($existing&&$id===null)return self::text(400,'Invalid job ID.');
         try {
@@ -79,7 +84,7 @@ final class ClientJobController
     }
     private function render(string $view,array $data,int $status=200): array
     {
-        extract($data,EXTR_SKIP);$token=Csrf::token('job_posting');
+        extract($data,EXTR_SKIP);$navigationUser=$this->navigationUser;$token=Csrf::token('job_posting');
         $escape=static fn(string $value):string=>htmlspecialchars($value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
         ob_start();try{require dirname(__DIR__).'/Views/client/jobs/'.$view.'.php';$body=ob_get_contents();}finally{ob_end_clean();}
         return ['status'=>$status,'type'=>'text/html; charset=UTF-8','body'=>$body];

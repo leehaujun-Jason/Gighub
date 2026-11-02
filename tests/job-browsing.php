@@ -75,7 +75,7 @@ $row['skills']=[['id'=>2,'name'=>'PHP <unsafe>']];$repo->rows=array_fill(0,21,$r
 $response=$controller->index(['q'=>'<unsafe>','skills'=>['2'],'min_budget'=>'1','sort'=>'budget_high']);$html=$response['body'];
 $check($response['status']===200&&!str_contains($html,'<script>bad</script>')&&str_contains($html,'&lt;script&gt;bad&lt;/script&gt;'),'escaped title');
 $check(str_contains($html,'&lt;unsafe&gt;')&&!str_contains($html,'PHP <unsafe>'),'escaped query/skills');
-$check(substr_count($html,'class="card jobs-card"')===20,'twenty cards');
+$check(substr_count($html,'class="card jobs-card gh-job-card"')===20,'twenty cards');
 $check(str_contains($html,'Delivery deadline has passed'),'overdue visible');
 $check(str_contains($html,'page=2')&&str_contains($html,'budget_high')&&str_contains($html,'skills%5B0%5D=2')&&str_contains($html,'min_budget=1.00'),'preserved next filters');
 $check(!str_contains($html,'<script ')&&str_contains($html,'method="get"'),'no JavaScript dependency');

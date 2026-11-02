@@ -3,9 +3,9 @@ $titles = ['confirm' => 'Confirm your email', 'resend' => 'Request a new verific
 $title = $titles[$mode];
 ?>
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title><?= $errors !== [] ? 'Verification needs attention' : $escape($title) ?> · GigHub</title><link rel="stylesheet" href="assets/registration.css?v=4"><link rel="stylesheet" href="assets/verification.css"><script src="assets/verification.js" defer></script></head>
-<body><header class="site-header"><a class="brand" href="?route=/">GigHub<span>Find your next possibility.</span></a><a href="?route=/">Back to home</a></header>
-<main class="verification-layout"><section class="card verification-card" aria-labelledby="verification-title">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title><?= $errors !== [] ? 'Verification needs attention' : $escape($title) ?> · GigHub</title><link rel="stylesheet" href="assets/registration.css?v=4"><link rel="stylesheet" href="assets/verification.css"><script src="assets/verification.js" defer></script><?php require __DIR__ . '/partials/page-shell.php'; ?></head>
+<body class="gh-shell gh-integrated"><?php require __DIR__ . '/partials/header.php'; ?>
+<main id="main-content" tabindex="-1" class="verification-layout"><section class="card verification-card" aria-labelledby="verification-title">
 <svg class="verification-mark" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m3 6 9 7 9-7"/></svg>
 <p class="eyebrow">EMAIL VERIFICATION</p><h1 id="verification-title"><?= $escape($title) ?></h1>
 <?php if ($errors !== []): ?><div class="error-summary" id="error-summary" tabindex="-1" role="alert"><strong>Please check your verification request.</strong><?php foreach ($errors as $field => $message): ?><p><?php if ($field === 'email'): ?><a href="#email"><?= $escape($message) ?></a><?php else: ?><?= $escape($message) ?><?php endif; ?></p><?php endforeach; ?></div><?php endif; ?>
@@ -32,4 +32,4 @@ $title = $titles[$mode];
 <?php endif; ?>
 <p>Already verified your email? <a href="?route=/login">Sign in</a></p>
 <aside class="preview-notice"><strong>Delivery notice</strong><p>This page does not confirm inbox delivery. If a message is available, use its latest link. A request made here does not expose a verification key.</p></aside>
-</section></main></body></html>
+</section></main><?php require __DIR__ . '/partials/footer.php'; ?></body></html>

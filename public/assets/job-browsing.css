@@ -1,1 +1,12 @@
 .browse-filters{margin-bottom:2rem}.browse-filters select{width:100%;box-sizing:border-box;border:1px solid #73808e;border-radius:.5rem;padding:.8rem;font:inherit;color:#182b35;background:#fff;margin-bottom:1.25rem}.browse-filters .job-two-columns{margin-top:1rem}.browse-filters fieldset{margin-top:1.5rem}.browse-warning{color:#693c08;background:#fff4df;border:1px solid #a57a38;border-radius:.5rem;padding:.75rem}.browse-empty{padding:1.5rem 0}.browse-filters .skill-option input{width:1.15rem;height:1.15rem}.browse-filters select[aria-invalid=true]{border:2px solid #a52b38}
+
+/* Public browsing presentation inside the shared shell. */
+.gh-shell .jobs-layout { width: 100%; max-width: 75rem; flex: 1; }
+.gh-shell .jobs-heading { padding: 1.5rem; background: var(--gh-header-background); border-radius: var(--gh-card-radius); }
+.gh-shell .browse-filters, .gh-shell .job-list .jobs-card { border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); box-shadow: 0 6px 20px #142c2510; }
+.gh-shell .browse-empty { padding: 2rem; background: var(--gh-surface); border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); }
+.gh-shell .job-pagination a { display: inline-flex; align-items: center; min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--gh-green); border-radius: var(--gh-control-radius); text-decoration: none; }
+.gh-shell .job-pagination a:hover { background: var(--gh-header-background); }
+.gh-shell .job-pagination a:active { background: var(--gh-green-pressed); color: white; }
+.gh-shell .jobs-layout [id], .gh-shell .jobs-layout { scroll-margin-top: 12rem; }
+.gh-shell .gh-button { width: auto; margin: 0; }

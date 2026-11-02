@@ -4,10 +4,10 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= $errors !== [] ? 'Registration needs attention' : 'Create an account' ?> · GigHub</title><link rel="stylesheet" href="assets/registration.css?v=4">
 <script src="assets/registration.js?v=4" defer></script>
-</head>
-<body>
-<header class="site-header"><a class="brand" href="?route=/">GigHub<span>Find your next possibility.</span></a><a href="?route=/">Back to home</a></header>
-<main class="registration-layout">
+<?php require __DIR__ . '/partials/page-shell.php'; ?></head>
+<body class="gh-shell gh-integrated">
+<?php require __DIR__ . '/partials/header.php'; ?>
+<main id="main-content" tabindex="-1" class="registration-layout">
 <aside class="intro"><p class="eyebrow">WORK, TOGETHER.</p><h1>Your next chapter starts here</h1><p>Find the right people. Bring your skills. Build something that matters.</p><div class="preview-notice"><strong>Development preview</strong><p>New accounts need email verification. When email delivery is disabled, no verification email is sent.</p></div></aside>
 <section class="card" aria-labelledby="form-title"><p class="eyebrow">JOIN GIGHUB</p><h2 id="form-title">Create your account</h2><p class="muted">Choose how you want to take part. Your account role stays fixed.</p>
 <?php if ($errors !== []): ?>
@@ -45,5 +45,5 @@ $invalid = static fn (string $field): string => isset($errors[$field]) ? ' aria-
 <button id="role-update" class="secondary-button" type="submit" name="intent" value="update_role" formnovalidate>Update optional fields</button>
 <p class="hint">Your account stays pending until email verification is complete. When email delivery is disabled, you can request a link once delivery is available.</p>
 </form><p>Already have an account? <a href="?route=/login">Sign in</a></p></section></main>
-<footer>GigHub · Final Year Project development preview</footer>
-</body></html>
+
+<?php require __DIR__ . '/partials/footer.php'; ?></body></html>

@@ -1,5 +1,14 @@
 # Public Job Browsing — Module 11B Phase 1
 
+## Module 11C UI checkpoint — 2026-11-02
+
+The Homepage and shared design system now extend to Authentication, public Jobs and
+Client Job Posting views. Focused offline checks and selected public-page desktop/mobile
+visual reviews were completed; this does not repeat or supersede historical 11B acceptance.
+Protected Client-page visual checks, authenticated avatar/logout browser checks, and
+populated Public Jobs browser acceptance remain pending. Full isolated acceptance is
+deferred so core FYP website development can continue. These gaps are not recorded as PASS.
+
 ## Current acceptance status — 2026-11-01
 
 Completed local Module 11B acceptance: 69 real SQL checks, 66 isolated HTTP checks, 28 browser

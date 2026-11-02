@@ -1,0 +1,22 @@
+/* UI-3: opt-in page integration; existing form semantics and IDs are preserved. */
+.gh-integrated > main { flex: 1; width: 100%; scroll-margin-top: 12rem; }
+.gh-integrated .registration-layout { max-width: 75rem; gap: 3rem; padding-block: 3rem; }
+.gh-integrated .login-layout { max-width: 36rem; padding-block: 3rem; }
+.gh-integrated .verification-layout { max-width: 46rem; padding-block: 2rem; }
+.gh-integrated .jobs-layout { max-width: 65rem; padding-block: 2rem 4rem; }
+.gh-integrated .card { border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); background: var(--gh-surface); box-shadow: 0 8px 28px #142c2510; }
+.gh-integrated .jobs-heading { padding: 1.5rem; background: var(--gh-header-background); border-radius: var(--gh-card-radius); }
+.gh-integrated input:not([type=checkbox]):not([type=radio]):not([type=hidden]), .gh-integrated select, .gh-integrated textarea { border-color: var(--gh-border); border-radius: var(--gh-control-radius); font-size: 1rem; }
+.gh-integrated input:hover, .gh-integrated select:hover, .gh-integrated textarea:hover { border-color: var(--gh-green); }
+.gh-integrated [aria-invalid="true"] { border-color: var(--gh-error) !important; }
+.gh-integrated .error-summary { border: 1px solid var(--gh-error); border-radius: var(--gh-control-radius); padding: 1rem; }
+.gh-integrated .job-success { border-radius: var(--gh-control-radius); }
+.gh-integrated .job-link-button { text-decoration: none; border-radius: var(--gh-control-radius); }
+.gh-integrated .job-link-button:hover { background: var(--gh-header-background); }
+.gh-integrated .job-pagination a { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--gh-green); border-radius: var(--gh-control-radius); text-decoration: none; }
+.gh-integrated .gh-logout .gh-button { margin: 0; width: auto; }
+.gh-integrated .gh-footer { text-align: left; font-size: 1rem; }
+.gh-integrated .gh-footer p { color: var(--gh-background); }
+.gh-integrated .intro { padding-top: 1rem; }
+@media (max-width: 850px) { .gh-integrated .registration-layout { grid-template-columns: minmax(0,1fr); gap: 1.5rem; } }
+@media (max-width: 600px) { .gh-integrated .registration-layout, .gh-integrated .login-layout, .gh-integrated .verification-layout { padding: 1.25rem .75rem; margin: 0 auto; } .gh-integrated .intro h1 { font-size: 2rem; } .gh-integrated .card { padding: 1.25rem; } }
