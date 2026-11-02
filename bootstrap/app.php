@@ -71,6 +71,18 @@ $publicRepositoryFactory=static function() use ($config): array {
     return [new \GigHub\Repositories\PublicJobRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo)];
 };
 $publicIdentity = new PublicIdentity($authSession, static fn(int $id): ?array => $authenticationFactory()->identity($id));
+foreach (['Repositories/FreelancerProfileRepository','Services/FreelancerProfileValidator','Services/FreelancerProfileException','Services/FreelancerProfileService','Controllers/FreelancerProfileController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$profileFactory=static function() use ($config): \GigHub\Services\FreelancerProfileService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\FreelancerProfileService($pdo,new \GigHub\Repositories\FreelancerProfileRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo));
+};
+$profiles=new \GigHub\Controllers\FreelancerProfileController(new AuthGuard($authenticationFactory,$authSession),$profileFactory,$publicIdentity);
+$router->get('/freelancer/profile',static fn()=>$profiles->own());
+$router->get('/freelancer/profile/edit',static fn()=>$profiles->own(true));
+$router->post('/freelancer/profile/edit',static fn()=>$profiles->update($_POST));
+$router->get('/freelancers/show',static fn()=>$profiles->show($_GET));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));

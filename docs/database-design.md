@@ -45,6 +45,7 @@ Keys, indexes, references and row checks:
 | `bio` | `TEXT NULL` |
 | `portfolio_description` | `TEXT NULL` |
 | `portfolio_url` | `VARCHAR(2048) NULL DEFAULT NULL` |
+| `headline` | `VARCHAR(150) NULL DEFAULT NULL` |
 
 Keys, indexes, references and row checks:
 

@@ -35,6 +35,7 @@ if ($navigationUser === null) {
             <details class="gh-account-menu">
                 <summary aria-label="Account menu"><span class="gh-avatar" aria-hidden="true"><?= $escape($initial) ?></span></summary>
                 <div class="gh-account-panel"><p><?= $escape($navigationUser['display_name']) ?></p>
+                    <?php if ($navigationUser['role']==='freelancer'): ?><a class="gh-nav-link" href="?route=/freelancer/profile">My Profile</a><?php endif; ?>
                     <form method="post" action="?route=/logout" class="gh-logout"><input type="hidden" name="csrf_token" value="<?= $escape($logoutToken) ?>"><button type="submit" class="gh-button gh-button-secondary">Sign out</button></form>
                 </div>
             </details>

@@ -13,6 +13,7 @@ $check(!str_contains($html,'?route=/verify-email')&&!str_contains($html,'Resend 
 $check(str_contains($html,'New to GigHub?')&&str_contains($html,'href="?route=/register">Create an account</a>'),'login registration navigation');
 $register=new GigHub\Controllers\RegistrationController($never);$html=$register->show()['body'];
 $check(str_contains($html,'Already have an account?')&&str_contains($html,'href="?route=/login">Sign in</a>'),'registration sign-in navigation');
+$check(str_contains($html,'href="?route=/verify-email/resend">Resend verification email</a>'),'registration exposes existing resend flow');
 $verification=new GigHub\Controllers\EmailVerificationController($never);
 foreach(['confirm','resend','verified','invalid','resent','unavailable'] as $mode){
     if($mode==='confirm')$response=$verification->show();elseif($mode==='resend')$response=$verification->resendForm();else{$_SESSION['verification_result_notice']=$mode;$response=$verification->result();}

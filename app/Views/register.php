@@ -44,6 +44,6 @@ $invalid = static fn (string $field): string => isset($errors[$field]) ? ' aria-
 <button id="create-account" type="submit">Create my account <span aria-hidden="true">→</span></button>
 <button id="role-update" class="secondary-button" type="submit" name="intent" value="update_role" formnovalidate>Update optional fields</button>
 <p class="hint">Your account stays pending until email verification is complete. When email delivery is disabled, you can request a link once delivery is available.</p>
-</form><p>Already have an account? <a href="?route=/login">Sign in</a></p></section></main>
+</form><p>Already have an account? <a href="?route=/login">Sign in</a></p><p>Already registered but not verified? <a href="?route=/verify-email/resend">Resend verification email</a></p></section></main>
 
 <?php require __DIR__ . '/partials/footer.php'; ?></body></html>

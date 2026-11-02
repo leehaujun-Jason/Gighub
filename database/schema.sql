@@ -28,6 +28,7 @@ CREATE TABLE freelancer_profiles (
     bio TEXT NULL,
     portfolio_description TEXT NULL,
     portfolio_url VARCHAR(2048) NULL DEFAULT NULL,
+    headline VARCHAR(150) NULL DEFAULT NULL,
     PRIMARY KEY (user_id),
     CONSTRAINT fk_freelancer_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
