@@ -126,7 +126,8 @@ $users->row['id']=8;$session->establish(8);check($controller->client(['id'=>'10'
 $sql=file_get_contents($root.'/app/Repositories/BidRepository.php');
 check(str_contains($sql,'WHERE j.id=? AND j.client_id=?'),'owner-scoped Client SQL');
 check(str_contains($sql,'WHERE id=? AND freelancer_id=? AND status='),'owner-scoped update SQL');
-check(!str_contains($sql,'DELETE FROM') && !str_contains($sql,'UPDATE jobs') && !str_contains($sql,'wallet'),'no bid deletion or award/payment mutation');
+$biddingSource=file_get_contents($root.'/app/Services/BidService.php');
+check(!str_contains($sql,'DELETE FROM') && !str_contains($biddingSource,'selectAward(') && !str_contains($biddingSource,'UPDATE jobs') && !str_contains($sql,'wallet'),'bidding path has no deletion or award/payment mutation');
 $users->row['role']='freelancer';$users->row['status']='pending_verification';$users->row['email_verified_at']=null;
 check($controller->index()['status']===303,'unverified Freelancer cannot access bidding');
 $renderPublic=static function(?array $navigationUser)use($root):string {

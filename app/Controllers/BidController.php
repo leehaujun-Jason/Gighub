@@ -65,6 +65,7 @@ final class BidController
         try {
             $data=($this->serviceFactory)()->clientListing((int)$access['user']['id'],$id,$page);
             $data['hasNext']=count($data['bids'])>20; $data['bids']=array_slice($data['bids'],0,20); $data['page']=$page;
+            $data['awardNotice']=($_SESSION['award_notice']??false)===true; unset($_SESSION['award_notice']);
             return $this->render('client',$data,$access['user']);
         } catch (BidException $e) { return self::failure($e); } catch (Throwable) { return self::unavailable(); }
     }

@@ -8,7 +8,7 @@ class BidRepository
     public function __construct(private readonly PDO $pdo) {}
     public function job(int $id,bool $lock=false): array|false
     {
-        $q=$this->pdo->prepare('SELECT id,client_id,title,status,awarded_bid_id,deadline FROM jobs WHERE id=?'.($lock?' FOR UPDATE':''));
+        $q=$this->pdo->prepare('SELECT id,client_id,title,status,awarded_bid_id,awarded_at,deadline FROM jobs WHERE id=?'.($lock?' FOR UPDATE':''));
         $q->execute([$id]); return $q->fetch(PDO::FETCH_ASSOC);
     }
     public function eligible(int $id,string $role,bool $lock=false): bool
@@ -54,7 +54,17 @@ class BidRepository
     }
     public function clientBids(int $jobId,int $clientId,int $page): array
     {
-        $q=$this->pdo->prepare('SELECT b.id,b.freelancer_id,b.amount,b.delivery_days,b.cover_letter,b.status,b.created_at,u.display_name FROM bids b JOIN jobs j ON j.id=b.job_id JOIN users u ON u.id=b.freelancer_id WHERE j.id=? AND j.client_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?');
+        $q=$this->pdo->prepare("SELECT b.id,b.freelancer_id,b.amount,b.delivery_days,b.cover_letter,b.status,b.created_at,u.display_name,(u.role='freelancer' AND u.status='active' AND u.email_verified_at IS NOT NULL) AS bidder_eligible FROM bids b JOIN jobs j ON j.id=b.job_id JOIN users u ON u.id=b.freelancer_id WHERE j.id=? AND j.client_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?");
         $q->bindValue(1,$jobId,PDO::PARAM_INT); $q->bindValue(2,$clientId,PDO::PARAM_INT); $q->bindValue(3,($page-1)*20,PDO::PARAM_INT); $q->execute(); return $q->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function bidOnJob(int $jobId,int $bidId,bool $lock=false): array|false
+    {
+        $q=$this->pdo->prepare('SELECT id,job_id,freelancer_id,status FROM bids WHERE job_id=? AND id=?'.($lock?' FOR UPDATE':''));
+        $q->execute([$jobId,$bidId]); return $q->fetch(PDO::FETCH_ASSOC);
+    }
+    public function selectAward(int $jobId,int $clientId,int $bidId): bool
+    {
+        $q=$this->pdo->prepare("UPDATE jobs SET status='awarded',awarded_bid_id=?,awarded_at=UTC_TIMESTAMP() WHERE id=? AND client_id=? AND status='open' AND awarded_bid_id IS NULL AND awarded_at IS NULL");
+        $q->execute([$bidId,$jobId,$clientId]); return $q->rowCount()===1;
     }
 }

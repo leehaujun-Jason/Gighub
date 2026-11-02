@@ -98,6 +98,14 @@ $router->get('/freelancer/bids/edit',static fn()=>$bids->form($_GET,true));
 $router->post('/freelancer/bids/update',static fn()=>$bids->save($_POST,true));
 $router->post('/freelancer/bids/withdraw',static fn()=>$bids->withdraw($_POST));
 $router->get('/client/jobs/bids',static fn()=>$bids->client($_GET));
+require_once $root.'/app/Services/AwardService.php';
+require_once $root.'/app/Controllers/AwardController.php';
+$awardFactory=static function() use ($config): \GigHub\Services\AwardService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\AwardService($pdo,new \GigHub\Repositories\BidRepository($pdo));
+};
+$awards=new \GigHub\Controllers\AwardController(new AuthGuard($authenticationFactory,$authSession),$awardFactory);
+$router->post('/client/jobs/award',static fn()=>$awards->award($_POST));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));
