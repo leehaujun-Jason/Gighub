@@ -83,6 +83,21 @@ $router->get('/freelancer/profile',static fn()=>$profiles->own());
 $router->get('/freelancer/profile/edit',static fn()=>$profiles->own(true));
 $router->post('/freelancer/profile/edit',static fn()=>$profiles->update($_POST));
 $router->get('/freelancers/show',static fn()=>$profiles->show($_GET));
+foreach (['Repositories/BidRepository','Services/BidValidator','Services/BidException','Services/BidService','Controllers/BidController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$bidFactory=static function() use ($config): \GigHub\Services\BidService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\BidService($pdo,new \GigHub\Repositories\BidRepository($pdo));
+};
+$bids=new \GigHub\Controllers\BidController(new AuthGuard($authenticationFactory,$authSession),$bidFactory);
+$router->get('/freelancer/bids',static fn()=>$bids->index($_GET));
+$router->get('/freelancer/bids/create',static fn()=>$bids->form($_GET));
+$router->post('/freelancer/bids/create',static fn()=>$bids->save($_POST));
+$router->get('/freelancer/bids/edit',static fn()=>$bids->form($_GET,true));
+$router->post('/freelancer/bids/update',static fn()=>$bids->save($_POST,true));
+$router->post('/freelancer/bids/withdraw',static fn()=>$bids->withdraw($_POST));
+$router->get('/client/jobs/bids',static fn()=>$bids->client($_GET));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));

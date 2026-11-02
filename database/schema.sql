@@ -126,7 +126,7 @@ CREATE TABLE bids (
     amount DECIMAL(10,2) NOT NULL,
     delivery_days SMALLINT UNSIGNED NOT NULL,
     cover_letter TEXT NOT NULL,
-    status ENUM('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
+    status ENUM('pending','accepted','rejected','withdrawn') NOT NULL DEFAULT 'pending',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),

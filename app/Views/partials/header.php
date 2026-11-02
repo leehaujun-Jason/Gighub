@@ -9,6 +9,9 @@ if ($navigationUser === null) {
         $navigationLinks[] = ['/client/jobs', 'My Jobs'];
         $navigationLinks[] = ['/client/jobs/create', 'Post a Job'];
     }
+    if ($navigationUser['role'] === 'freelancer') {
+        $navigationLinks[] = ['/freelancer/bids', 'My Bids'];
+    }
     $workspace = match ($navigationUser['role']) {
         'client' => ['/client', 'My Workspace'],
         'freelancer' => ['/freelancer', 'My Workspace'],
