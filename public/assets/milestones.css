@@ -1,0 +1,27 @@
+.gh-milestones-layout{width:min(100% - 2rem,60rem);margin:2.5rem auto 4rem;flex:1;overflow-wrap:anywhere}
+.gh-milestones-layout h1{font-size:clamp(2rem,5vw,3rem);line-height:1.2;margin:.4rem 0 1rem}
+.gh-milestones-layout h2{font-size:1.35rem;line-height:1.4}
+.gh-milestones-eyebrow{color:var(--gh-green);font-size:.8rem;font-weight:700;letter-spacing:.1em}
+.gh-milestone-card{padding:clamp(1rem,4vw,2rem);margin-block:1.5rem;background:var(--gh-surface);border:1px solid var(--gh-border);border-radius:var(--gh-card-radius);min-width:0}
+.gh-milestone-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.75rem}
+.gh-milestone-pos-badge{display:inline-block;padding:.25rem .75rem;border-radius:999px;font-size:.85rem;font-weight:700;background:var(--gh-header-background);color:var(--gh-green);border:1px solid var(--gh-border)}
+.gh-milestone-status-badge{font-size:.85rem;font-weight:600;color:var(--gh-muted);text-transform:uppercase}
+.gh-milestone-meta{display:flex;gap:1.5rem;flex-wrap:wrap;margin-block:.75rem}
+.gh-milestone-meta dt{color:var(--gh-muted);font-size:.9rem}
+.gh-milestone-meta dd{margin:0;font-weight:600}
+.gh-milestone-desc{white-space:pre-wrap;margin-block:.75rem;line-height:1.6}
+.gh-milestone-form{display:grid;gap:1.25rem;margin-top:1rem}
+.gh-milestone-form label{display:block;font-weight:600;margin-bottom:.4rem}
+.gh-milestone-form input[type=text],.gh-milestone-form input[type=date],.gh-milestone-form textarea{width:100%;box-sizing:border-box;padding:.75rem;border:1px solid var(--gh-border);border-radius:var(--gh-card-radius);font-family:inherit;font-size:1rem}
+.gh-milestone-form textarea{resize:vertical;min-height:7rem}
+.gh-milestone-actions{display:flex;align-items:center;flex-wrap:wrap;gap:1rem;margin-top:1rem}
+.gh-milestones-notice{background:var(--gh-header-background);border-left:4px solid var(--gh-green);padding:1rem;margin-block:1rem;border-radius:0 var(--gh-card-radius) var(--gh-card-radius) 0}
+.gh-milestones-error{border:2px solid #a52b2b;border-radius:8px;padding:1rem;background:#fff5f5;margin-block:1rem}
+.field-error{color:#9f2424;font-size:.9rem;font-weight:600;margin-top:.35rem}
+.gh-milestones-layout a:not(.gh-button){color:var(--gh-green);text-decoration:underline;text-underline-offset:3px}
+.gh-milestones-layout :focus-visible{outline:3px solid var(--gh-green);outline-offset:3px}
+@media(max-width:480px){
+.gh-milestones-layout{margin-top:1.5rem}
+.gh-milestone-actions .gh-button{width:100%}
+.gh-milestone-meta{display:grid;gap:.5rem}
+}

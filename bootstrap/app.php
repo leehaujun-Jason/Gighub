@@ -116,6 +116,19 @@ $walletFactory=static function() use ($config): \GigHub\Services\WalletService {
 $wallets=new \GigHub\Controllers\WalletController(new AuthGuard($authenticationFactory,$authSession),$walletFactory);
 $router->get('/client/wallet',static fn()=>$wallets->show($_GET));
 $router->post('/client/wallet/claim-demo-credit',static fn()=>$wallets->claimDemoCredit($_POST));
+foreach (['Repositories/MilestoneRepository','Services/MilestoneValidator','Services/MilestoneException','Services/MilestoneService','Controllers/MilestoneController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$milestoneFactory=static function() use ($config): \GigHub\Services\MilestoneService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\MilestoneService($pdo,new \GigHub\Repositories\MilestoneRepository($pdo));
+};
+$milestones=new \GigHub\Controllers\MilestoneController(new AuthGuard($authenticationFactory,$authSession),$milestoneFactory);
+$router->get('/client/jobs/milestones',static fn()=>$milestones->index($_GET));
+$router->post('/client/jobs/milestones/create',static fn()=>$milestones->create($_POST));
+$router->get('/client/jobs/milestones/edit',static fn()=>$milestones->edit($_GET));
+$router->post('/client/jobs/milestones/update',static fn()=>$milestones->update($_POST));
+$router->post('/client/jobs/milestones/delete',static fn()=>$milestones->delete($_POST));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));
