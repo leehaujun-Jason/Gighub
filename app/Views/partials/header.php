@@ -47,3 +47,4 @@ if ($navigationUser === null) {
         <?php endif; ?>
     </div>
 </header>
+<?php require __DIR__ . '/notifications.php'; ?>

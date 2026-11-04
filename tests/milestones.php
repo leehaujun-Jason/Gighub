@@ -5,6 +5,7 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 $root = dirname(__DIR__);
 foreach ([
     'Core/Csrf',
+    'Core/Notification',
     'Core/AuthSession',
     'Core/AuthGuard',
     'Core/Router',
@@ -78,6 +79,8 @@ $repo = new class extends MilestoneRepository {
     ];
     public bool $clientEligible = true;
     public bool $hasEscrow = false;
+    public bool $freelancerEligible = true;
+    public bool $isAwarded = true;
     public array $milestones = [];
     public int $nextId = 1;
     public bool $failInsert = false;
@@ -98,6 +101,16 @@ $repo = new class extends MilestoneRepository {
     public function eligibleClient(int $id, bool $lock = false): bool {
         $this->events[] = 'client:' . ($lock ? 'lock' : 'read');
         return $this->clientEligible;
+    }
+
+    public function eligibleFreelancer(int $id, bool $lock = false): bool {
+        $this->events[] = 'freelancer:' . ($lock ? 'lock' : 'read');
+        return $this->freelancerEligible;
+    }
+
+    public function isAwardedFreelancer(int $jobId, int $freelancerId): bool {
+        $this->events[] = 'is_awarded_freelancer';
+        return $this->isAwarded;
     }
 
     public function forJob(int $jobId): array {
@@ -320,21 +333,40 @@ denied(fn() => $service->listForJob(6, 2), 403, 'ineligible client cannot list')
 denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 403, 'ineligible client cannot create');
 $repo->clientEligible = true;
 
-// Non-awarded job rejected with 409
-foreach (['draft', 'open', 'in_progress', 'completed', 'cancelled'] as $status) {
+// Non-awarded or un-funded initial status (draft, open) rejected with 409
+foreach (['draft', 'open'] as $status) {
     $repo->jobRow['status'] = $status;
     denied(fn() => $service->listForJob(6, 2), 409, "job in status $status cannot list milestones");
     denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 409, "job in status $status cannot create milestone");
 }
 $repo->jobRow['status'] = 'awarded';
 
-// Unfunded rule: funded job (escrow exists) rejected with 409
+// Funded job allows read-only viewing for Client, but blocks mutations with 409
 $repo->hasEscrow = true;
-denied(fn() => $service->listForJob(6, 2), 409, 'funded job cannot list milestones');
+$repo->jobRow['status'] = 'in_progress';
+$fundedView = $service->listForJob(6, 2);
+check($fundedView['is_locked'] === true, 'funded job has is_locked true');
+check($fundedView['has_escrow'] === true, 'funded job has has_escrow true');
 denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 409, 'funded job cannot create milestone');
 denied(fn() => $service->updateMilestone(6, 2, 1, ['title' => 'X', 'due_date' => '2026-11-20']), 409, 'funded job cannot update milestone');
 denied(fn() => $service->deleteMilestone(6, 2, 1), 409, 'funded job cannot delete milestone');
+
+// Winning Freelancer can view funded job milestones
+$flView = $service->listForFreelancer(116, 2);
+check($flView['is_locked'] === true, 'freelancer view is locked');
+check($flView['is_client'] === false, 'freelancer view is not client');
+
+// Ineligible or non-awarded freelancer rejected
+$repo->freelancerEligible = false;
+denied(fn() => $service->listForFreelancer(116, 2), 403, 'ineligible freelancer cannot view milestones');
+$repo->freelancerEligible = true;
+
+$repo->isAwarded = false;
+denied(fn() => $service->listForFreelancer(999, 2), 404, 'non-awarded freelancer cannot view milestones');
+$repo->isAwarded = true;
+
 $repo->hasEscrow = false;
+$repo->jobRow['status'] = 'awarded';
 
 // 12. Non-pending milestone cannot be edited or deleted
 $repo->milestones[0]['status'] = 'approved';
@@ -433,5 +465,18 @@ foreach (['freelancer', 'admin'] as $role) {
     check($controller->create(['job_id' => 2, 'csrf_token' => $validToken])['status'] === 403, "role $role forbidden from milestones create");
 }
 $users->row['role'] = 'client';
+
+// Freelancer milestone viewing
+$users->row = ['id' => 116, 'role' => 'freelancer', 'display_name' => 'Alice Freelancer', 'status' => 'active', 'email_verified_at' => '2026-11-04 00:00:00'];
+$session->establish(116);
+$flResp = $controller->freelancerIndex(['job_id' => 2]);
+check($flResp['status'] === 200, 'freelancer can view milestones via freelancerIndex');
+check(str_contains($flResp['body'], 'FREELANCER WORKSPACE'), 'freelancer view shows freelancer workspace eyebrow');
+check(!str_contains($flResp['body'], 'Add Milestone'), 'freelancer view hides add milestone form');
+
+// Client calling freelancerIndex receives 403
+$users->row['role'] = 'client';
+$session->establish(6);
+check($controller->freelancerIndex(['job_id' => 2])['status'] === 403, 'client forbidden from freelancerIndex');
 
 echo "PASS: {$count} milestone offline checks; no database connections.\n";

@@ -61,3 +61,9 @@ Recommend only essential, trusted extensions, skills, or MCP servers. Check whet
 
 ## 11. Approval Boundaries
 Approval to implement a module does not authorize database migrations, live database writes, extension/skill installation, Git commits, or remote pushes. Each of these operations requires separate, explicit user approval.
+
+## 12. Global Dismissible Notification UI/UX
+- Render recoverable user-facing messages, validation errors, and operation outcomes as dismissible notifications (`.gh-alert`) on the relevant page using the shared notification component rather than navigating to standalone plain-text error screens.
+- Use session flash storage with Post/Redirect/Get (PRG) across state-changing flows.
+- Preserve dedicated HTTP responses for unauthenticated requests (303 to login), unauthorized access (403), missing resources (404), malformed input (400), and internal server failures (503). Never expose internal exceptions, SQL details, or stack traces.
+- Ensure notifications have accessible semantics (`role="alert"` / `role="status"`), responsive styling, visible and keyboard-accessible dismissal ("X" button), and clear visual status distinctions (success, error, warning, info).

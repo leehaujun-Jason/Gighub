@@ -1,16 +1,20 @@
 <?php
 declare(strict_types=1);
 namespace GigHub\Controllers;
-use Closure;
+
 use GigHub\Core\AuthGuard;
 use GigHub\Core\Csrf;
+use GigHub\Core\Notification;
 use GigHub\Services\BidValidator;
 use GigHub\Services\MilestoneException;
 use Throwable;
 
-final class MilestoneController
+class MilestoneController
 {
-    public function __construct(private readonly AuthGuard $guard, private readonly Closure $serviceFactory) {}
+    public function __construct(
+        private readonly AuthGuard $guard,
+        private readonly mixed $serviceFactory
+    ) {}
 
     public function index(array $query): array
     {
@@ -38,6 +42,47 @@ final class MilestoneController
         $user = $access['user'];
         $job = $data['job'];
         $milestones = $data['milestones'];
+        $isLocked = $data['is_locked'] ?? false;
+        $hasEscrow = $data['has_escrow'] ?? false;
+        $isClient = true;
+        $navigationUser = $user;
+        $logoutToken = Csrf::token('logout');
+        $token = Csrf::token('job_milestone');
+        $escape = static fn(mixed $v): string => htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        ob_start();
+        require dirname(__DIR__) . '/Views/client/milestones/index.php';
+        $body = (string)ob_get_clean();
+
+        return ['status' => 200, 'type' => 'text/html; charset=UTF-8', 'body' => $body];
+    }
+
+    public function freelancerIndex(array $query): array
+    {
+        $access = $this->guard->check('freelancer');
+        if (!isset($access['user'])) return $access;
+
+        $jobId = self::id($query['job_id'] ?? null);
+        if ($jobId === null) return self::text(400, 'Invalid job identifier.');
+
+        try {
+            $data = ($this->serviceFactory)()->listForFreelancer((int)$access['user']['id'], $jobId);
+        } catch (MilestoneException $e) {
+            return self::text($e->status, $e->errors['form'] ?? 'Milestones could not be loaded.');
+        } catch (Throwable) {
+            return self::text(503, 'Milestones service is temporarily unavailable. Please try again later.');
+        }
+
+        $notice = null;
+        $errors = [];
+        $old = [];
+
+        $user = $access['user'];
+        $job = $data['job'];
+        $milestones = $data['milestones'];
+        $isLocked = true;
+        $hasEscrow = $data['has_escrow'] ?? true;
+        $isClient = false;
         $navigationUser = $user;
         $logoutToken = Csrf::token('logout');
         $token = Csrf::token('job_milestone');
@@ -66,14 +111,17 @@ final class MilestoneController
             ($this->serviceFactory)()->createMilestone((int)$access['user']['id'], $jobId, $input);
             Csrf::rotate('job_milestone');
             $_SESSION['milestone_notice'] = 'Milestone added successfully.';
+            Notification::success('Milestone added successfully.');
             return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (MilestoneException $e) {
             if ($e->status === 422) {
                 $_SESSION['milestone_errors'] = $e->errors;
                 $_SESSION['milestone_old'] = $input;
+                Notification::error('Please correct the validation errors in the milestone form.');
                 return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
             }
-            return self::text($e->status, $e->errors['form'] ?? 'Milestone could not be created.');
+            Notification::error($e->errors['form'] ?? 'Milestone could not be created.');
+            return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (Throwable) {
             return self::text(503, 'Milestone operation is temporarily unavailable. Please try again later.');
         }
@@ -133,14 +181,17 @@ final class MilestoneController
             ($this->serviceFactory)()->updateMilestone((int)$access['user']['id'], $jobId, $id, $input);
             Csrf::rotate('job_milestone');
             $_SESSION['milestone_notice'] = 'Milestone updated successfully.';
+            Notification::success('Milestone updated successfully.');
             return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (MilestoneException $e) {
             if ($e->status === 422) {
                 $_SESSION['milestone_edit_errors'] = $e->errors;
                 $_SESSION['milestone_edit_old'] = $input;
+                Notification::error('Please correct the validation errors in the milestone form.');
                 return self::text(303, '') + ['location' => '?route=/client/jobs/milestones/edit&job_id=' . $jobId . '&id=' . $id];
             }
-            return self::text($e->status, $e->errors['form'] ?? 'Milestone could not be updated.');
+            Notification::error($e->errors['form'] ?? 'Milestone could not be updated.');
+            return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (Throwable) {
             return self::text(503, 'Milestone operation is temporarily unavailable. Please try again later.');
         }
@@ -163,9 +214,11 @@ final class MilestoneController
             ($this->serviceFactory)()->deleteMilestone((int)$access['user']['id'], $jobId, $id);
             Csrf::rotate('job_milestone');
             $_SESSION['milestone_notice'] = 'Milestone deleted successfully.';
+            Notification::success('Milestone deleted successfully.');
             return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (MilestoneException $e) {
-            return self::text($e->status, $e->errors['form'] ?? 'Milestone could not be deleted.');
+            Notification::error($e->errors['form'] ?? 'Milestone could not be deleted.');
+            return self::text(303, '') + ['location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (Throwable) {
             return self::text(503, 'Milestone operation is temporarily unavailable. Please try again later.');
         }

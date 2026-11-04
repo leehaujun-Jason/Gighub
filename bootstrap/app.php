@@ -23,7 +23,7 @@ use GigHub\Controllers\AccountHomeController;
 $root = dirname(__DIR__);
 // Optional while mail is disabled; SMTP configuration fails closed without PHPMailer.
 if (is_file($root . '/vendor/autoload.php')) { require_once $root . '/vendor/autoload.php'; }
-foreach (['Config', 'Database', 'SecureSession', 'Router', 'Csrf', 'RegistrationThrottle', 'VerificationThrottle', 'LoginThrottle', 'AuthSession', 'AuthGuard', 'PublicIdentity'] as $class) {
+foreach (['Config', 'Database', 'SecureSession', 'Router', 'Csrf', 'Notification', 'RegistrationThrottle', 'VerificationThrottle', 'LoginThrottle', 'AuthSession', 'AuthGuard', 'PublicIdentity'] as $class) {
     require_once $root . '/app/Core/' . $class . '.php';
 }
 require_once $root . '/app/Controllers/HomeController.php';
@@ -125,10 +125,21 @@ $milestoneFactory=static function() use ($config): \GigHub\Services\MilestoneSer
 };
 $milestones=new \GigHub\Controllers\MilestoneController(new AuthGuard($authenticationFactory,$authSession),$milestoneFactory);
 $router->get('/client/jobs/milestones',static fn()=>$milestones->index($_GET));
+$router->get('/freelancer/jobs/milestones',static fn()=>$milestones->freelancerIndex($_GET));
 $router->post('/client/jobs/milestones/create',static fn()=>$milestones->create($_POST));
 $router->get('/client/jobs/milestones/edit',static fn()=>$milestones->edit($_GET));
 $router->post('/client/jobs/milestones/update',static fn()=>$milestones->update($_POST));
 $router->post('/client/jobs/milestones/delete',static fn()=>$milestones->delete($_POST));
+foreach (['Repositories/EscrowRepository','Services/EscrowException','Services/EscrowService','Controllers/EscrowController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$escrowFactory=static function() use ($config): \GigHub\Services\EscrowService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\EscrowService($pdo,new \GigHub\Repositories\EscrowRepository($pdo));
+};
+$escrows=new \GigHub\Controllers\EscrowController(new AuthGuard($authenticationFactory,$authSession),$escrowFactory);
+$router->get('/client/jobs/fund',static fn()=>$escrows->preview($_GET));
+$router->post('/client/jobs/fund/confirm',static fn()=>$escrows->confirm($_POST));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));

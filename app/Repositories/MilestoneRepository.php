@@ -31,6 +31,22 @@ class MilestoneRepository
         return $q->fetchColumn() !== false;
     }
 
+    public function eligibleFreelancer(int $id, bool $lock = false): bool
+    {
+        $sql = "SELECT u.id FROM users u JOIN freelancer_profiles p ON p.user_id = u.id WHERE u.id = ? AND u.role = 'freelancer' AND u.status = 'active' AND u.email_verified_at IS NOT NULL" . ($lock ? ' FOR UPDATE' : '');
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$id]);
+        return $q->fetchColumn() !== false;
+    }
+
+    public function isAwardedFreelancer(int $jobId, int $freelancerId): bool
+    {
+        $sql = "SELECT b.id FROM bids b JOIN jobs j ON j.id = b.job_id AND j.awarded_bid_id = b.id WHERE j.id = ? AND b.freelancer_id = ?";
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$jobId, $freelancerId]);
+        return $q->fetchColumn() !== false;
+    }
+
     public function forJob(int $jobId): array
     {
         $q = $this->pdo->prepare('SELECT id, job_id, title, description, due_date, position, status, approved_at, created_at, updated_at FROM milestones WHERE job_id = ? ORDER BY position ASC, id ASC');

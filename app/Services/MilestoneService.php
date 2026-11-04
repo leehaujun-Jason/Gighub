@@ -20,16 +20,47 @@ class MilestoneService
         if (!$this->milestones->eligibleClient($clientId)) {
             throw new MilestoneException(['form' => 'Your account cannot access milestones.'], 403);
         }
-        if ($job['status'] !== 'awarded' || $job['awarded_bid_id'] === null) {
-            throw new MilestoneException(['form' => 'Milestones can only be managed for awarded jobs awaiting funding.'], 409);
+        $allowedStatuses = ['awarded', 'in_progress', 'under_review', 'completed', 'disputed', 'closed_disputed'];
+        if (!in_array($job['status'], $allowedStatuses, true) || $job['awarded_bid_id'] === null) {
+            throw new MilestoneException(['form' => 'Milestones are only available for awarded or in-progress jobs.'], 409);
         }
-        if ($this->milestones->hasEscrow($jobId)) {
-            throw new MilestoneException(['form' => 'Milestones cannot be modified once a job is funded.'], 409);
+
+        $hasEscrow = $this->milestones->hasEscrow($jobId);
+        $isLocked = $hasEscrow || $job['status'] !== 'awarded';
+
+        return [
+            'job' => $job,
+            'milestones' => $this->milestones->forJob($jobId),
+            'is_locked' => $isLocked,
+            'has_escrow' => $hasEscrow,
+            'is_client' => true,
+        ];
+    }
+
+    public function listForFreelancer(int $freelancerId, int $jobId): array
+    {
+        $job = $this->milestones->job($jobId);
+        if ($job === false) {
+            throw new MilestoneException(['form' => 'Job not found.'], 404);
+        }
+        if (!$this->milestones->eligibleFreelancer($freelancerId)) {
+            throw new MilestoneException(['form' => 'Your account cannot access milestones.'], 403);
+        }
+        if (!$this->milestones->isAwardedFreelancer($jobId, $freelancerId)) {
+            throw new MilestoneException(['form' => 'Job not found or you are not the awarded freelancer.'], 404);
+        }
+
+        $allowedStatuses = ['awarded', 'in_progress', 'under_review', 'completed', 'disputed', 'closed_disputed'];
+        if (!in_array($job['status'], $allowedStatuses, true)) {
+            throw new MilestoneException(['form' => 'Milestones are not available for this job yet.'], 409);
         }
 
         return [
             'job' => $job,
             'milestones' => $this->milestones->forJob($jobId),
+            'is_locked' => true,
+            'has_escrow' => $this->milestones->hasEscrow($jobId),
+            'is_client' => false,
         ];
     }
 

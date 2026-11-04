@@ -1,0 +1,37 @@
+.gh-escrow-layout { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+.gh-escrow-eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; margin-bottom: 0.5rem; font-weight: 600; }
+.gh-escrow-sub { color: #4b5563; font-size: 1.05rem; margin-top: -0.25rem; margin-bottom: 1rem; }
+.gh-escrow-nav { margin-bottom: 1.5rem; font-size: 0.9rem; }
+.gh-escrow-nav a { color: #2563eb; text-decoration: none; }
+.gh-escrow-nav a:hover { text-decoration: underline; }
+
+.gh-escrow-simulation-banner { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; padding: 0.85rem 1.15rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.88rem; color: #1e40af; line-height: 1.45; }
+.gh-escrow-error { background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #dc2626; padding: 0.85rem 1.15rem; border-radius: 6px; margin-bottom: 1.5rem; color: #991b1b; }
+
+.gh-escrow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+@media (max-width: 768px) { .gh-escrow-grid { grid-template-columns: 1fr; } }
+
+.gh-escrow-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.gh-escrow-card h2 { font-size: 1.25rem; margin-top: 0; margin-bottom: 1rem; color: #111827; }
+.gh-escrow-card h3 { font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #374151; }
+
+.gh-escrow-dl dt { font-size: 0.85rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.75rem; }
+.gh-escrow-dl dd { font-size: 1.05rem; color: #1f2937; margin-left: 0; margin-bottom: 0.5rem; }
+.gh-escrow-highlight { font-size: 1.35rem !important; font-weight: 700; color: #047857 !important; }
+
+.gh-escrow-milestone-list { list-style: none; padding: 0; margin: 0; border: 1px solid #f3f4f6; border-radius: 6px; }
+.gh-escrow-milestone-list li { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; }
+.gh-escrow-milestone-list li:last-child { border-bottom: none; }
+.gh-milestone-pos { background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+.gh-milestone-date { display: block; font-size: 0.78rem; color: #6b7280; }
+
+.gh-finance-row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; font-size: 0.95rem; color: #374151; }
+.gh-finance-deduct { color: #b91c1c; font-weight: 600; }
+.gh-finance-divider { border: 0; border-top: 1px solid #e5e7eb; margin: 0.75rem 0; }
+.gh-finance-total { font-size: 1.1rem; color: #111827; }
+
+.gh-escrow-status-box { padding: 0.85rem 1rem; border-radius: 6px; margin: 1.25rem 0; font-size: 0.88rem; line-height: 1.4; }
+.gh-status-sufficient { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+.gh-status-insufficient { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+.gh-button-full { width: 100%; text-align: center; padding: 0.75rem 1.25rem; font-size: 1rem; font-weight: 600; margin-top: 0.5rem; }
