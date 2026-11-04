@@ -106,6 +106,16 @@ $awardFactory=static function() use ($config): \GigHub\Services\AwardService {
 };
 $awards=new \GigHub\Controllers\AwardController(new AuthGuard($authenticationFactory,$authSession),$awardFactory);
 $router->post('/client/jobs/award',static fn()=>$awards->award($_POST));
+foreach (['Repositories/WalletRepository','Services/WalletException','Services/WalletService','Controllers/WalletController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$walletFactory=static function() use ($config): \GigHub\Services\WalletService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\WalletService($pdo,new \GigHub\Repositories\WalletRepository($pdo));
+};
+$wallets=new \GigHub\Controllers\WalletController(new AuthGuard($authenticationFactory,$authSession),$walletFactory);
+$router->get('/client/wallet',static fn()=>$wallets->show($_GET));
+$router->post('/client/wallet/claim-demo-credit',static fn()=>$wallets->claimDemoCredit($_POST));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));

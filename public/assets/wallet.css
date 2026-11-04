@@ -1,0 +1,26 @@
+.gh-wallet-layout{width:min(100% - 2rem,60rem);margin:2.5rem auto 4rem;flex:1;overflow-wrap:anywhere}
+.gh-wallet-layout h1{font-size:clamp(2rem,5vw,3rem);line-height:1.2;margin:.4rem 0 1rem}
+.gh-wallet-layout h2{font-size:1.35rem;line-height:1.4}
+.gh-wallet-eyebrow{color:var(--gh-green);font-size:.8rem;font-weight:700;letter-spacing:.1em}
+.gh-wallet-card{padding:clamp(1rem,4vw,2rem);margin-block:1.5rem;background:var(--gh-surface);border:1px solid var(--gh-border);border-radius:var(--gh-card-radius);min-width:0}
+.gh-wallet-balance-wrap{display:flex;align-items:baseline;gap:.75rem;margin-block:1rem}
+.gh-wallet-balance-label{font-size:1.1rem;color:var(--gh-muted);font-weight:600}
+.gh-wallet-balance{font-size:clamp(2rem,6vw,3.25rem);font-weight:800;color:var(--gh-green);line-height:1}
+.gh-wallet-notice{background:var(--gh-header-background);border-left:4px solid var(--gh-green);padding:1rem;margin-block:1rem;border-radius:0 var(--gh-card-radius) var(--gh-card-radius) 0}
+.gh-wallet-disclaimer{background:var(--gh-surface);border:1px dashed var(--gh-border);padding:1rem;border-radius:var(--gh-card-radius);font-size:.9rem;color:var(--gh-muted);margin-block:1rem}
+.gh-wallet-actions{display:flex;align-items:center;flex-wrap:wrap;gap:1rem;margin-top:1.25rem}
+.gh-wallet-table-wrap{overflow-x:auto;margin-block:1.5rem}
+.gh-wallet-table{width:100%;border-collapse:collapse;text-align:left;font-size:.95rem}
+.gh-wallet-table th,.gh-wallet-table td{padding:.85rem 1rem;border-bottom:1px solid var(--gh-border)}
+.gh-wallet-table th{background:var(--gh-header-background);font-weight:600;color:var(--gh-muted)}
+.gh-delta-positive{color:#0d8a55;font-weight:700}
+.gh-delta-negative{color:#c53030;font-weight:700}
+.gh-wallet-badge{display:inline-block;padding:.25rem .65rem;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--gh-header-background);color:var(--gh-green);border:1px solid var(--gh-border)}
+.gh-wallet-layout a:not(.gh-button){color:var(--gh-green);text-decoration:underline;text-underline-offset:3px}
+.gh-wallet-layout :focus-visible{outline:3px solid var(--gh-green);outline-offset:3px}
+@media(max-width:480px){
+.gh-wallet-layout{margin-top:1.5rem}
+.gh-wallet-actions .gh-button{width:100%}
+.gh-wallet-balance-wrap{flex-direction:column;gap:.25rem}
+.gh-wallet-table th,.gh-wallet-table td{padding:.6rem .5rem;font-size:.85rem}
+}
