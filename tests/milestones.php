@@ -120,6 +120,10 @@ $repo = new class extends MilestoneRepository {
         return $rows;
     }
 
+    public function submissionsForJob(int $jobId): array {
+        return [];
+    }
+
     public function find(int $id, int $jobId, bool $lock = false): array|false {
         $this->events[] = 'milestone:' . ($lock ? 'lock' : 'read');
         foreach ($this->milestones as $m) {

@@ -42,6 +42,7 @@ class MilestoneController
         $user = $access['user'];
         $job = $data['job'];
         $milestones = $data['milestones'];
+        $submissions = $data['submissions'] ?? [];
         $isLocked = $data['is_locked'] ?? false;
         $hasEscrow = $data['has_escrow'] ?? false;
         $isClient = true;
@@ -80,6 +81,7 @@ class MilestoneController
         $user = $access['user'];
         $job = $data['job'];
         $milestones = $data['milestones'];
+        $submissions = $data['submissions'] ?? [];
         $isLocked = true;
         $hasEscrow = $data['has_escrow'] ?? true;
         $isClient = false;

@@ -12,6 +12,7 @@
 <?php
     $isLocked = $isLocked ?? false;
     $isClient = $isClient ?? true;
+    $submissions = $submissions ?? [];
 ?>
 <main id="main-content" tabindex="-1" class="gh-milestones-layout">
     <p class="gh-milestones-eyebrow"><?= $isClient ? 'CLIENT WORKSPACE' : 'FREELANCER WORKSPACE' ?></p>
@@ -76,6 +77,10 @@
                         <div class="gh-milestone-desc"><?= $escape($m['description']) ?></div>
                     <?php endif; ?>
 
+                    <?php
+                        $milestoneSubs = array_values(array_filter($submissions, static fn($s) => (int)($s['milestone_id'] ?? 0) === (int)$m['id']));
+                    ?>
+
                     <?php if (!$isLocked && $isClient): ?>
                         <div class="gh-milestone-actions">
                             <a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones/edit&amp;job_id=<?= (int)$job['id'] ?>&amp;id=<?= (int)$m['id'] ?>">Edit milestone</a>
@@ -85,6 +90,45 @@
                                 <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">
                                 <button class="gh-button gh-button-secondary" type="submit">Delete</button>
                             </form>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!$isClient && $job['status'] === 'in_progress'): ?>
+                        <div class="gh-milestone-actions" style="margin-top: 1rem;">
+                            <?php if (in_array($m['status'], ['pending', 'revisions_requested'], true)): ?>
+                                <a class="gh-button gh-button-primary" href="?route=/freelancer/milestones/submit&amp;job_id=<?= (int)$job['id'] ?>&amp;milestone_id=<?= (int)$m['id'] ?>">Submit Deliverable</a>
+                            <?php elseif ($m['status'] === 'submitted'): ?>
+                                <span class="gh-badge" style="background: #e0f2fe; color: #0369a1; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">Deliverable submitted — Awaiting client review</span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($isClient && $m['status'] === 'submitted'): ?>
+                        <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; font-size: 0.875rem; color: #166534;">
+                            <strong>Deliverable submitted by freelancer.</strong> Client review and milestone approval will be available in the next module.
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($milestoneSubs)): ?>
+                        <div class="gh-submission-history-section" style="margin-top: 1.25rem; border-top: 1px solid var(--gh-border); padding-top: 1rem;">
+                            <h4 style="margin: 0 0 0.75rem; font-size: 0.95rem; color: var(--gh-text);">Submitted Deliverables (<?= count($milestoneSubs) ?>)</h4>
+                            <?php foreach ($milestoneSubs as $sub): ?>
+                                <div class="gh-submission-history-item" style="background: var(--gh-header-background); padding: 0.875rem 1rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 3px solid var(--gh-primary);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.8125rem;">
+                                        <span style="font-weight: 600;">Attempt #<?= (int)$sub['id'] ?> · Status: <?= $escape(ucwords(str_replace('_', ' ', $sub['status']))) ?></span>
+                                        <span style="color: var(--gh-muted);">Submitted (UTC): <?= $escape($sub['submitted_at'] ?? $sub['created_at']) ?></span>
+                                    </div>
+                                    <?php if (!empty($sub['deliverable_url'])): ?>
+                                        <div style="font-size: 0.875rem; margin: 0.35rem 0; word-break: break-all;">
+                                            <strong>Deliverable URL:</strong>
+                                            <a href="<?= $escape($sub['deliverable_url']) ?>" target="_blank" rel="noopener noreferrer"><?= $escape($sub['deliverable_url']) ?></a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div style="font-size: 0.875rem; margin-top: 0.35rem; white-space: pre-wrap; color: var(--gh-text);">
+                                        <strong>Notes:</strong><br><?= nl2br($escape($sub['notes'])) ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </article>

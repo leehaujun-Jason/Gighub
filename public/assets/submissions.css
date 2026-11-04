@@ -1,0 +1,23 @@
+/* Freelancer Work Submission Styles */
+.gh-submission-layout { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+.gh-submission-eyebrow { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.05em; color: var(--gh-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+.gh-submission-card { background: #fff; border: 1px solid var(--gh-border); border-radius: var(--gh-control-radius); padding: 1.5rem; margin-top: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.gh-submission-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0 1.5rem; padding: 1rem; background: var(--gh-header-background); border-radius: var(--gh-control-radius); }
+.gh-submission-meta dt { font-size: 0.8125rem; color: var(--gh-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem; }
+.gh-submission-meta dd { font-size: 1rem; font-weight: 600; color: var(--gh-text); margin: 0; }
+.gh-submission-form { display: flex; flex-direction: column; gap: 1.25rem; }
+.gh-submission-form label { font-weight: 600; font-size: 0.95rem; color: var(--gh-text); display: block; margin-bottom: 0.25rem; }
+.gh-submission-form label span { font-weight: 400; font-size: 0.85rem; color: var(--gh-muted); }
+.gh-submission-form input[type="url"],
+.gh-submission-form textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--gh-border); border-radius: var(--gh-control-radius); font-family: inherit; font-size: 0.95rem; line-height: 1.4; color: var(--gh-text); }
+.gh-submission-form input[type="url"]:focus,
+.gh-submission-form textarea:focus { border-color: var(--gh-primary); outline: 2px solid rgba(37,99,235,0.2); }
+.gh-submission-form .hint { font-size: 0.8125rem; color: var(--gh-muted); margin-top: 0.25rem; }
+.gh-submission-form .field-error { font-size: 0.85rem; color: var(--gh-error); margin-top: 0.25rem; font-weight: 600; }
+.gh-submission-actions { display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap; }
+.gh-submission-history-section { margin-top: 2rem; }
+.gh-submission-history-item { border-left: 3px solid var(--gh-primary); background: #f8fafc; padding: 1rem; border-radius: 0 var(--gh-control-radius) var(--gh-control-radius) 0; margin-bottom: 1rem; }
+.gh-submission-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.875rem; }
+.gh-submission-history-date { color: var(--gh-muted); }
+.gh-submission-history-url { margin: 0.5rem 0; word-break: break-all; }
+.gh-submission-history-notes { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5; color: var(--gh-text); }

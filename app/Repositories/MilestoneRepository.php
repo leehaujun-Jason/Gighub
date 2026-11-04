@@ -54,6 +54,16 @@ class MilestoneRepository
         return $q->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function submissionsForJob(int $jobId): array
+    {
+        if (!isset($this->pdo)) {
+            return [];
+        }
+        $q = $this->pdo->prepare('SELECT id, job_id, milestone_id, submitted_by, submission_type, notes, deliverable_url, status, submitted_at, reviewed_by, reviewed_at, feedback, created_at FROM work_submissions WHERE job_id = ? ORDER BY id DESC');
+        $q->execute([$jobId]);
+        return $q->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function find(int $id, int $jobId, bool $lock = false): array|false
     {
         $sql = 'SELECT id, job_id, title, description, due_date, position, status, approved_at, created_at, updated_at FROM milestones WHERE id = ? AND job_id = ?' . ($lock ? ' FOR UPDATE' : '');

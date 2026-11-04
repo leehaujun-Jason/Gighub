@@ -31,6 +31,7 @@ class MilestoneService
         return [
             'job' => $job,
             'milestones' => $this->milestones->forJob($jobId),
+            'submissions' => $this->milestones->submissionsForJob($jobId),
             'is_locked' => $isLocked,
             'has_escrow' => $hasEscrow,
             'is_client' => true,
@@ -58,6 +59,7 @@ class MilestoneService
         return [
             'job' => $job,
             'milestones' => $this->milestones->forJob($jobId),
+            'submissions' => $this->milestones->submissionsForJob($jobId),
             'is_locked' => true,
             'has_escrow' => $this->milestones->hasEscrow($jobId),
             'is_client' => false,
