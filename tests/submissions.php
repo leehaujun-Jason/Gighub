@@ -2,6 +2,13 @@
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
 $root = dirname(__DIR__);
 foreach ([
     'Core/Csrf',
@@ -15,6 +22,7 @@ foreach ([
     'Repositories/SubmissionRepository',
     'Services/SubmissionException',
     'Services/SubmissionValidator',
+    'Services/ReviewValidator',
     'Services/SubmissionService',
     'Controllers/SubmissionController',
 ] as $class) {
@@ -30,6 +38,7 @@ use GigHub\Services\AuthenticationService;
 use GigHub\Repositories\SubmissionRepository;
 use GigHub\Services\SubmissionException;
 use GigHub\Services\SubmissionValidator;
+use GigHub\Services\ReviewValidator;
 use GigHub\Services\SubmissionService;
 use GigHub\Controllers\SubmissionController;
 
@@ -196,6 +205,81 @@ class MockSubmissionRepository extends SubmissionRepository {
         $filtered = array_filter($this->submissions, static fn($s) => (int)$s['job_id'] === $jobId && (int)$s['milestone_id'] === $milestoneId);
         usort($filtered, static fn($a, $b) => $b['id'] <=> $a['id']);
         return array_values($filtered);
+    }
+
+    public bool $failSubUpdate = false;
+    public bool $failMilestoneUpdate = false;
+
+    public function latestSubmissionForMilestone(int $jobId, int $milestoneId, bool $lock = false): array|false {
+        $subs = $this->submissionsForMilestone($jobId, $milestoneId);
+        return $subs[0] ?? false;
+    }
+
+    public function submissionById(int $submissionId, bool $lock = false): array|false {
+        foreach ($this->submissions as $s) {
+            if ((int)$s['id'] === $submissionId) {
+                return $s;
+            }
+        }
+        return false;
+    }
+
+    public function approveSubmission(int $submissionId, int $reviewedBy, ?string $feedback): int {
+        if ($this->failSubUpdate) {
+            return 0;
+        }
+        foreach ($this->submissions as &$s) {
+            if ((int)$s['id'] === $submissionId && $s['status'] === 'submitted') {
+                $s['status'] = 'approved';
+                $s['reviewed_by'] = $reviewedBy;
+                $s['reviewed_at'] = gmdate('Y-m-d H:i:s');
+                $s['feedback'] = $feedback;
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    public function requestSubmissionRevision(int $submissionId, int $reviewedBy, string $feedback): int {
+        if ($this->failSubUpdate) {
+            return 0;
+        }
+        foreach ($this->submissions as &$s) {
+            if ((int)$s['id'] === $submissionId && $s['status'] === 'submitted') {
+                $s['status'] = 'revisions_requested';
+                $s['reviewed_by'] = $reviewedBy;
+                $s['reviewed_at'] = gmdate('Y-m-d H:i:s');
+                $s['feedback'] = $feedback;
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    public function approveMilestoneStatus(int $jobId, int $milestoneId): int {
+        if ($this->failMilestoneUpdate) {
+            return 0;
+        }
+        if (isset($this->milestones[$milestoneId]) && (int)$this->milestones[$milestoneId]['job_id'] === $jobId && $this->milestones[$milestoneId]['status'] === 'submitted') {
+            $this->milestones[$milestoneId]['status'] = 'approved';
+            $this->milestones[$milestoneId]['approved_at'] = gmdate('Y-m-d H:i:s');
+            $this->milestones[$milestoneId]['updated_at'] = gmdate('Y-m-d H:i:s');
+            return 1;
+        }
+        return 0;
+    }
+
+    public function requestMilestoneRevisionStatus(int $jobId, int $milestoneId): int {
+        if ($this->failMilestoneUpdate) {
+            return 0;
+        }
+        if (isset($this->milestones[$milestoneId]) && (int)$this->milestones[$milestoneId]['job_id'] === $jobId && $this->milestones[$milestoneId]['status'] === 'submitted') {
+            $this->milestones[$milestoneId]['status'] = 'revisions_requested';
+            $this->milestones[$milestoneId]['approved_at'] = null;
+            $this->milestones[$milestoneId]['updated_at'] = gmdate('Y-m-d H:i:s');
+            return 1;
+        }
+        return 0;
     }
 }
 
@@ -523,5 +607,469 @@ $clientForm = $controller->createForm(['job_id' => 2, 'milestone_id' => 2]);
 check($clientForm['status'] === 403, 'client forbidden from submission createForm');
 $clientSubmit = $controller->submit(['job_id' => 2, 'milestone_id' => 2, 'csrf_token' => 'x']);
 check($clientSubmit['status'] === 403, 'client forbidden from submission POST');
+
+// =========================================================================
+// SECTION 6: ReviewValidator Unit Tests (Module 15B)
+// =========================================================================
+
+// 35. validateApproval: empty input returns null feedback
+$appr1 = ReviewValidator::validateApproval([]);
+check($appr1['feedback'] === null, 'approval with empty input returns null feedback');
+
+// 36. validateApproval: whitespace input returns null feedback
+$appr2 = ReviewValidator::validateApproval(['feedback' => "   \t\n  "]);
+check($appr2['feedback'] === null, 'approval with whitespace feedback returns null');
+
+// 37. validateApproval: valid feedback trimmed
+$appr3 = ReviewValidator::validateApproval(['feedback' => '  Looks solid. Good work!  ']);
+check($appr3['feedback'] === 'Looks solid. Good work!', 'approval feedback trimmed');
+
+// 38. validateApproval: feedback > 5000 chars throws 422
+try {
+    ReviewValidator::validateApproval(['feedback' => str_repeat('a', 5001)]);
+    check(false, 'approval feedback > 5000 should fail');
+} catch (SubmissionException $e) {
+    check($e->status === 422, 'approval feedback > 5000 returns 422');
+    check(str_contains($e->errors['feedback'], '5,000') || str_contains($e->errors['feedback'], '5000'), 'mentions 5000 limit');
+}
+
+// 39. validateRevision: missing feedback throws 422
+try {
+    ReviewValidator::validateRevision([]);
+    check(false, 'missing revision feedback should fail');
+} catch (SubmissionException $e) {
+    check($e->status === 422, 'missing revision feedback returns 422');
+    check(isset($e->errors['feedback']), 'feedback error key present');
+}
+
+// 40. validateRevision: whitespace-only feedback throws 422
+try {
+    ReviewValidator::validateRevision(['feedback' => "   \n\t  "]);
+    check(false, 'whitespace revision feedback should fail');
+} catch (SubmissionException $e) {
+    check($e->status === 422, 'whitespace revision feedback returns 422');
+    check(isset($e->errors['feedback']), 'feedback error key present');
+}
+
+// 41. validateRevision: feedback > 5000 chars throws 422
+try {
+    ReviewValidator::validateRevision(['feedback' => str_repeat('b', 5001)]);
+    check(false, 'revision feedback > 5000 should fail');
+} catch (SubmissionException $e) {
+    check($e->status === 422, 'revision feedback > 5000 returns 422');
+    check(str_contains($e->errors['feedback'], '5,000') || str_contains($e->errors['feedback'], '5000'), 'mentions 5000 limit');
+}
+
+// 42. validateRevision: valid feedback trimmed
+$revValid = ReviewValidator::validateRevision(['feedback' => '  Please add unit tests and fix responsiveness.  ']);
+check($revValid['feedback'] === 'Please add unit tests and fix responsiveness.', 'revision feedback trimmed and accepted');
+
+// =========================================================================
+// SECTION 7: approveMilestone Service Tests (Module 15B)
+// =========================================================================
+
+// Setup baseline state for Review tests:
+// Job 2 (client 6, in_progress, escrow locked)
+// Milestone 2 (status = 'submitted')
+// Submission 1 (id = 1, milestone 2, submitted_by 116, status = 'submitted')
+$repo->jobs[2] = ['id' => 2, 'client_id' => 6, 'status' => 'in_progress', 'title' => 'E-Commerce Marketplace'];
+$repo->milestones[2] = [
+    'id' => 2,
+    'job_id' => 2,
+    'title' => 'Initial Prototype',
+    'status' => 'submitted',
+    'approved_at' => null,
+    'due_date' => '2026-12-31',
+];
+$repo->escrows[2] = ['status' => 'locked'];
+$repo->eligibleClients = [6];
+$repo->submissions = [
+    [
+        'id' => 1,
+        'job_id' => 2,
+        'milestone_id' => 2,
+        'submitted_by' => 116,
+        'submission_type' => 'milestone',
+        'notes' => 'Attempt 1 notes',
+        'deliverable_url' => 'https://github.com/example/repo',
+        'status' => 'submitted',
+        'submitted_at' => gmdate('Y-m-d H:i:s'),
+        'reviewed_by' => null,
+        'reviewed_at' => null,
+        'feedback' => null,
+        'created_at' => gmdate('Y-m-d H:i:s'),
+    ],
+];
+$repo->nextSubmissionId = 2;
+
+// 43. approveMilestone: Non-owner Client -> 404
+denied(
+    static fn() => $service->approveMilestone(999, 2, 2, 1, ['feedback' => 'Good']),
+    404,
+    'approveMilestone by non-owner client fails with 404'
+);
+
+// 44. approveMilestone: Ineligible Client -> 403
+$repo->eligibleClients = [];
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    403,
+    'approveMilestone by suspended client fails with 403'
+);
+$repo->eligibleClients = [6];
+
+// 45. approveMilestone: Job not in_progress -> 409
+$repo->jobs[2]['status'] = 'completed';
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'approveMilestone for completed job fails with 409'
+);
+$repo->jobs[2]['status'] = 'in_progress';
+
+// 46. approveMilestone: Escrow not locked -> 409
+$repo->escrows[2]['status'] = 'released';
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'approveMilestone with released escrow fails with 409'
+);
+$repo->escrows[2]['status'] = 'locked';
+
+// 47. approveMilestone: Milestone not found -> 404
+denied(
+    static fn() => $service->approveMilestone(6, 2, 999, 1, ['feedback' => 'Good']),
+    404,
+    'approveMilestone with missing milestone fails with 404'
+);
+
+// 48. approveMilestone: Milestone not in submitted status -> 409
+$repo->milestones[2]['status'] = 'pending';
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'approveMilestone when milestone is pending fails with 409'
+);
+$repo->milestones[2]['status'] = 'submitted';
+
+// 49. approveMilestone: Submission not found -> 404
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 999, ['feedback' => 'Good']),
+    404,
+    'approveMilestone with missing submission fails with 404'
+);
+
+// 50. approveMilestone: Stale submission status (already approved) -> 409
+$repo->submissions[0]['status'] = 'approved';
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'approveMilestone with non-submitted submission fails with 409'
+);
+$repo->submissions[0]['status'] = 'submitted';
+
+// 51. approveMilestone: Stale targeting when newer submission exists -> 409
+$repo->submissions[] = [
+    'id' => 2,
+    'job_id' => 2,
+    'milestone_id' => 2,
+    'submitted_by' => 116,
+    'submission_type' => 'milestone',
+    'notes' => 'Attempt 2 notes',
+    'deliverable_url' => null,
+    'status' => 'submitted',
+    'submitted_at' => gmdate('Y-m-d H:i:s'),
+    'reviewed_by' => null,
+    'reviewed_at' => null,
+    'feedback' => null,
+    'created_at' => gmdate('Y-m-d H:i:s'),
+];
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'approveMilestone targeting older submission when newer exists fails with 409'
+);
+// Remove attempt 2 to restore single submission baseline
+array_pop($repo->submissions);
+
+// 52. approveMilestone: Guarded update failure on submission -> rollback and 409
+$repo->failSubUpdate = true;
+$pdo->events = [];
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'guarded submission update failure triggers 409'
+);
+check(in_array('tx:rollback', $pdo->events, true), 'transaction rolled back on submission guarded update failure');
+$repo->failSubUpdate = false;
+
+// 53. approveMilestone: Guarded update failure on milestone -> rollback and 409
+$repo->failMilestoneUpdate = true;
+$pdo->events = [];
+denied(
+    static fn() => $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Good']),
+    409,
+    'guarded milestone update failure triggers 409'
+);
+check(in_array('tx:rollback', $pdo->events, true), 'transaction rolled back on milestone guarded update failure');
+$repo->failMilestoneUpdate = false;
+
+// 54. Successful approveMilestone -> updates submission & milestone, commits
+$pdo->events = [];
+$apprResult = $service->approveMilestone(6, 2, 2, 1, ['feedback' => 'Exceeds expectations!']);
+check($apprResult['milestone_id'] === 2 && $apprResult['submission_id'] === 1, 'service returns identifiers');
+check(in_array('tx:begin', $pdo->events, true), 'transaction started');
+check(in_array('tx:commit', $pdo->events, true), 'transaction committed');
+
+// Verify submission record updated
+$subAfter = $repo->submissionById(1);
+check($subAfter['status'] === 'approved', 'submission status is approved');
+check((int)$subAfter['reviewed_by'] === 6, 'reviewed_by set to client id 6');
+check($subAfter['reviewed_at'] !== null, 'reviewed_at is populated');
+check($subAfter['feedback'] === 'Exceeds expectations!', 'feedback saved');
+
+// Verify milestone record updated
+$msAfter = $repo->milestone(2, 2);
+check($msAfter['status'] === 'approved', 'milestone status is approved');
+check($msAfter['approved_at'] !== null, 'approved_at is populated');
+
+// =========================================================================
+// SECTION 8: requestMilestoneRevision Service & Resubmission Workflow
+// =========================================================================
+
+// Reset to submitted state for revision test
+$repo->milestones[2]['status'] = 'submitted';
+$repo->milestones[2]['approved_at'] = null;
+$repo->submissions[0]['status'] = 'submitted';
+$repo->submissions[0]['reviewed_by'] = null;
+$repo->submissions[0]['reviewed_at'] = null;
+$repo->submissions[0]['feedback'] = null;
+
+// 55. requestMilestoneRevision: missing feedback throws 422
+denied(
+    static fn() => $service->requestMilestoneRevision(6, 2, 2, 1, ['feedback' => '']),
+    422,
+    'requestMilestoneRevision with empty feedback fails with 422'
+);
+
+// 56. requestMilestoneRevision: non-owner client -> 404
+denied(
+    static fn() => $service->requestMilestoneRevision(999, 2, 2, 1, ['feedback' => 'Needs changes']),
+    404,
+    'requestMilestoneRevision by non-owner fails with 404'
+);
+
+// 57. requestMilestoneRevision: milestone not submitted -> 409
+$repo->milestones[2]['status'] = 'pending';
+denied(
+    static fn() => $service->requestMilestoneRevision(6, 2, 2, 1, ['feedback' => 'Needs changes']),
+    409,
+    'requestMilestoneRevision on non-submitted milestone fails with 409'
+);
+$repo->milestones[2]['status'] = 'submitted';
+
+// 58. requestMilestoneRevision: Guarded update failure on submission -> rollback and 409
+$repo->failSubUpdate = true;
+$pdo->events = [];
+denied(
+    static fn() => $service->requestMilestoneRevision(6, 2, 2, 1, ['feedback' => 'Needs changes']),
+    409,
+    'guarded update failure triggers 409'
+);
+check(in_array('tx:rollback', $pdo->events, true), 'transaction rolled back');
+$repo->failSubUpdate = false;
+
+// 59. Successful requestMilestoneRevision -> updates submission & milestone, commits
+$pdo->events = [];
+$revResult = $service->requestMilestoneRevision(6, 2, 2, 1, ['feedback' => 'Please add responsive layout for mobile.']);
+check($revResult['milestone_id'] === 2 && $revResult['submission_id'] === 1, 'revision service returns identifiers');
+check(in_array('tx:begin', $pdo->events, true), 'transaction started');
+check(in_array('tx:commit', $pdo->events, true), 'transaction committed');
+
+// Verify submission record: status = revisions_requested, feedback present
+$subRev = $repo->submissionById(1);
+check($subRev['status'] === 'revisions_requested', 'submission status is revisions_requested');
+check((int)$subRev['reviewed_by'] === 6, 'reviewed_by set to 6');
+check($subRev['reviewed_at'] !== null, 'reviewed_at is populated');
+check($subRev['feedback'] === 'Please add responsive layout for mobile.', 'revision feedback preserved');
+
+// Verify milestone record: status = revisions_requested, approved_at is null
+$msRev = $repo->milestone(2, 2);
+check($msRev['status'] === 'revisions_requested', 'milestone status is revisions_requested');
+check($msRev['approved_at'] === null, 'approved_at remains null');
+
+// 60. Resubmission Workflow: Freelancer submits Attempt #2
+$repo->eligibleFreelancers = [116];
+$repo->awardedBids[2] = 116;
+$resubResult = $service->submitMilestoneWork(116, 2, 2, [
+    'notes' => 'Attempt 2: added mobile responsive styles and breakpoints.',
+    'deliverable_url' => 'https://github.com/example/repo/tree/v2',
+]);
+check($resubResult['submission_id'] === 2, 'attempt 2 created with ID 2');
+
+// Verify submission history contains both attempts
+$allSubs = $repo->submissionsForMilestone(2, 2);
+check(count($allSubs) === 2, 'both attempts preserved in submission history');
+check($allSubs[0]['id'] === 2 && $allSubs[0]['status'] === 'submitted', 'latest attempt #2 is submitted');
+check($allSubs[1]['id'] === 1 && $allSubs[1]['status'] === 'revisions_requested', 'attempt #1 preserved as revisions_requested');
+check($allSubs[1]['feedback'] === 'Please add responsive layout for mobile.', 'attempt #1 feedback preserved');
+
+// Verify milestone status moved back to 'submitted'
+$msAfterResub = $repo->milestone(2, 2);
+check($msAfterResub['status'] === 'submitted', 'milestone status back to submitted after attempt 2');
+
+// 61. Client approves Attempt #2
+$appr2 = $service->approveMilestone(6, 2, 2, 2, ['feedback' => 'Mobile layout verified. Approved!']);
+check($appr2['submission_id'] === 2, 'attempt 2 approved');
+
+$allSubsFinal = $repo->submissionsForMilestone(2, 2);
+check($allSubsFinal[0]['status'] === 'approved', 'attempt #2 is approved');
+check($allSubsFinal[1]['status'] === 'revisions_requested', 'attempt #1 still revisions_requested');
+$msFinal = $repo->milestone(2, 2);
+check($msFinal['status'] === 'approved' && $msFinal['approved_at'] !== null, 'milestone fully approved');
+
+// =========================================================================
+// SECTION 9: Controller Review Endpoints (Module 15B)
+// =========================================================================
+
+// Reset to test controller approve & requestRevision:
+$repo->milestones[2]['status'] = 'submitted';
+$repo->milestones[2]['approved_at'] = null;
+$repo->submissions = [
+    [
+        'id' => 10,
+        'job_id' => 2,
+        'milestone_id' => 2,
+        'submitted_by' => 116,
+        'submission_type' => 'milestone',
+        'notes' => 'Controller test submission notes',
+        'deliverable_url' => null,
+        'status' => 'submitted',
+        'submitted_at' => gmdate('Y-m-d H:i:s'),
+        'reviewed_by' => null,
+        'reviewed_at' => null,
+        'feedback' => null,
+        'created_at' => gmdate('Y-m-d H:i:s'),
+    ],
+];
+
+// 62. Controller: Anonymous User -> 303 Redirect to Login
+$session->forget();
+$anonAppr = $controller->approve(['job_id' => 2, 'milestone_id' => 2, 'submission_id' => 10]);
+check($anonAppr['status'] === 303 && $anonAppr['location'] === '?route=/login', 'anonymous approve redirects to login');
+$anonRev = $controller->requestRevision(['job_id' => 2, 'milestone_id' => 2, 'submission_id' => 10]);
+check($anonRev['status'] === 303 && $anonRev['location'] === '?route=/login', 'anonymous requestRevision redirects to login');
+
+// 63. Controller: Freelancer Role -> 403 Forbidden
+$session->establish(116);
+$users->row['id'] = 116;
+$users->row['role'] = 'freelancer';
+$freelancerAppr = $controller->approve(['job_id' => 2, 'milestone_id' => 2, 'submission_id' => 10, 'csrf_token' => 'x']);
+check($freelancerAppr['status'] === 403, 'freelancer forbidden from approve');
+$freelancerRev = $controller->requestRevision(['job_id' => 2, 'milestone_id' => 2, 'submission_id' => 10, 'csrf_token' => 'x']);
+check($freelancerRev['status'] === 403, 'freelancer forbidden from requestRevision');
+
+// Authenticate Client 6
+$session->establish(6);
+$users->row['id'] = 6;
+$users->row['role'] = 'client';
+
+// 64. Controller: Invalid CSRF -> 403
+$badCsrfAppr = $controller->approve([
+    'job_id' => 2,
+    'milestone_id' => 2,
+    'submission_id' => 10,
+    'csrf_token' => 'invalid-token',
+]);
+check($badCsrfAppr['status'] === 403, 'invalid CSRF rejected with 403 on approve');
+
+$badCsrfRev = $controller->requestRevision([
+    'job_id' => 2,
+    'milestone_id' => 2,
+    'submission_id' => 10,
+    'csrf_token' => 'invalid-token',
+]);
+check($badCsrfRev['status'] === 403, 'invalid CSRF rejected with 403 on requestRevision');
+
+// 65. Controller: Malformed IDs -> 400
+$validRevCsrf = Csrf::token('milestone_review');
+$badIdAppr = $controller->approve([
+    'job_id' => 'abc',
+    'milestone_id' => 2,
+    'submission_id' => 10,
+    'csrf_token' => $validRevCsrf,
+]);
+check($badIdAppr['status'] === 400, 'malformed job_id returns 400 on approve');
+
+$badIdRev = $controller->requestRevision([
+    'job_id' => 2,
+    'milestone_id' => -1,
+    'submission_id' => 10,
+    'csrf_token' => $validRevCsrf,
+]);
+check($badIdRev['status'] === 400, 'malformed milestone_id returns 400 on requestRevision');
+
+// 66. Controller: Validation failure on requestRevision (empty feedback) -> 303 PRG with session error
+$valFailRev = $controller->requestRevision([
+    'job_id' => 2,
+    'milestone_id' => 2,
+    'submission_id' => 10,
+    'feedback' => '   ',
+    'csrf_token' => $validRevCsrf,
+]);
+check($valFailRev['status'] === 303, 'validation failure returns 303 PRG');
+check($valFailRev['location'] === '?route=/client/jobs/milestones&job_id=2', 'redirects back to milestones view');
+check(isset($_SESSION['review_errors']['feedback']), 'review error preserved in session');
+check(isset($_SESSION['review_old']['feedback']), 'review old input preserved in session');
+
+// 67. Controller: Successful requestRevision -> 303 PRG with exact notification
+Csrf::rotate('milestone_review');
+$newCsrfRev = Csrf::token('milestone_review');
+$validRevPost = $controller->requestRevision([
+    'job_id' => 2,
+    'milestone_id' => 2,
+    'submission_id' => 10,
+    'feedback' => 'Controller revision instructions: add search filter.',
+    'csrf_token' => $newCsrfRev,
+]);
+check($validRevPost['status'] === 303, 'successful revision request returns 303 PRG');
+check($validRevPost['location'] === '?route=/client/jobs/milestones&job_id=2', 'redirects to milestones view');
+
+$revNotes = Notification::consume();
+$foundRevMsg = false;
+foreach ($revNotes as $n) {
+    if ($n['message'] === 'Revision requested successfully. The freelancer can view your feedback.') {
+        $foundRevMsg = true;
+        break;
+    }
+}
+check($foundRevMsg, 'exact required revision success message flashed');
+
+// Reset to submitted for approve controller test
+$repo->milestones[2]['status'] = 'submitted';
+$repo->submissions[0]['status'] = 'submitted';
+
+// 68. Controller: Successful approve -> 303 PRG with exact notification
+Csrf::rotate('milestone_review');
+$newCsrfAppr = Csrf::token('milestone_review');
+$validApprPost = $controller->approve([
+    'job_id' => 2,
+    'milestone_id' => 2,
+    'submission_id' => 10,
+    'feedback' => 'Approved via controller.',
+    'csrf_token' => $newCsrfAppr,
+]);
+check($validApprPost['status'] === 303, 'successful approval returns 303 PRG');
+check($validApprPost['location'] === '?route=/client/jobs/milestones&job_id=2', 'redirects to milestones view');
+
+$apprNotes = Notification::consume();
+$foundApprMsg = false;
+foreach ($apprNotes as $n) {
+    if ($n['message'] === 'Milestone approved successfully. Checkpoint marked as completed.') {
+        $foundApprMsg = true;
+        break;
+    }
+}
+check($foundApprMsg, 'exact required approval success message flashed');
 
 echo "PASS: $count submission offline checks; no database connections.\n";

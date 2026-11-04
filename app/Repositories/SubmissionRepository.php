@@ -90,12 +90,53 @@ class SubmissionRepository
         return $q->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function latestSubmissionForMilestone(int $jobId, int $milestoneId): array|false
+    public function latestSubmissionForMilestone(int $jobId, int $milestoneId, bool $lock = false): array|false
     {
         $sql = 'SELECT id, job_id, milestone_id, submitted_by, submission_type, notes, deliverable_url, status, submitted_at, reviewed_by, reviewed_at, feedback, created_at'
-            . ' FROM work_submissions WHERE job_id = ? AND milestone_id = ? ORDER BY id DESC LIMIT 1';
+            . ' FROM work_submissions WHERE job_id = ? AND milestone_id = ? ORDER BY id DESC LIMIT 1' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId, $milestoneId]);
         return $q->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function submissionById(int $submissionId, bool $lock = false): array|false
+    {
+        $sql = 'SELECT id, job_id, milestone_id, submitted_by, submission_type, notes, deliverable_url, status, submitted_at, reviewed_by, reviewed_at, feedback, created_at'
+            . ' FROM work_submissions WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$submissionId]);
+        return $q->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function approveSubmission(int $submissionId, int $reviewerId, ?string $feedback): int
+    {
+        $sql = "UPDATE work_submissions SET status = 'approved', reviewed_by = ?, reviewed_at = UTC_TIMESTAMP(), feedback = ? WHERE id = ? AND status = 'submitted'";
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$reviewerId, $feedback, $submissionId]);
+        return $q->rowCount();
+    }
+
+    public function requestSubmissionRevision(int $submissionId, int $reviewerId, string $feedback): int
+    {
+        $sql = "UPDATE work_submissions SET status = 'revisions_requested', reviewed_by = ?, reviewed_at = UTC_TIMESTAMP(), feedback = ? WHERE id = ? AND status = 'submitted'";
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$reviewerId, $feedback, $submissionId]);
+        return $q->rowCount();
+    }
+
+    public function approveMilestoneStatus(int $jobId, int $milestoneId): int
+    {
+        $sql = "UPDATE milestones SET status = 'approved', approved_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP() WHERE id = ? AND job_id = ? AND status = 'submitted'";
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$milestoneId, $jobId]);
+        return $q->rowCount();
+    }
+
+    public function requestMilestoneRevisionStatus(int $jobId, int $milestoneId): int
+    {
+        $sql = "UPDATE milestones SET status = 'revisions_requested', approved_at = NULL, updated_at = UTC_TIMESTAMP() WHERE id = ? AND job_id = ? AND status = 'submitted'";
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$milestoneId, $jobId]);
+        return $q->rowCount();
     }
 }

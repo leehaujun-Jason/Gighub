@@ -180,4 +180,188 @@ class SubmissionService
             'submissions' => $this->submissions->submissionsForJob($jobId),
         ];
     }
+
+    public function approveMilestone(int $clientId, int $jobId, int $milestoneId, int $submissionId, array $input): array
+    {
+        $validated = ReviewValidator::validateApproval($input);
+
+        $ownTx = !$this->pdo->inTransaction();
+        if ($ownTx) {
+            $this->pdo->beginTransaction();
+        } else {
+            $this->pdo->exec('SAVEPOINT sp_milestone_review');
+        }
+
+        try {
+            // Lock Order 1: Job
+            $job = $this->submissions->job($jobId, true);
+            if ($job === false || (int)$job['client_id'] !== $clientId) {
+                throw new SubmissionException(['form' => 'Job not found.'], 404);
+            }
+
+            // Lock Order 2: Client User
+            if (!$this->submissions->eligibleClient($clientId, true)) {
+                throw new SubmissionException(['form' => 'Your account cannot review milestones.'], 403);
+            }
+
+            if ($job['status'] !== 'in_progress') {
+                throw new SubmissionException(['form' => 'Milestones can only be reviewed for jobs currently in progress.'], 409);
+            }
+
+            if (!$this->submissions->hasLockedEscrow($jobId)) {
+                throw new SubmissionException(['form' => 'Escrow must be funded and locked to review milestones.'], 409);
+            }
+
+            // Lock Order 3: Milestone
+            $milestone = $this->submissions->milestone($jobId, $milestoneId, true);
+            if ($milestone === false) {
+                throw new SubmissionException(['form' => 'Milestone not found for this project.'], 404);
+            }
+
+            if ($milestone['status'] !== 'submitted') {
+                throw new SubmissionException(['form' => 'This milestone is not currently awaiting review.'], 409);
+            }
+
+            // Lock Order 4: Targeted Submission
+            $submission = $this->submissions->submissionById($submissionId, true);
+            if ($submission === false || (int)$submission['job_id'] !== $jobId || (int)$submission['milestone_id'] !== $milestoneId) {
+                throw new SubmissionException(['form' => 'Submitted deliverable not found for this milestone.'], 404);
+            }
+
+            if ($submission['status'] !== 'submitted') {
+                throw new SubmissionException(['form' => 'Stale review request: this submission is no longer pending review.'], 409);
+            }
+
+            // Check that targeted submission is the latest attempt
+            $latest = $this->submissions->latestSubmissionForMilestone($jobId, $milestoneId, true);
+            if ($latest === false || (int)$latest['id'] !== $submissionId) {
+                throw new SubmissionException(['form' => 'Stale review request: a newer submission exists for this milestone.'], 409);
+            }
+
+            // Guarded Update 1: Work Submission
+            $subUpdated = $this->submissions->approveSubmission($submissionId, $clientId, $validated['feedback']);
+            if ($subUpdated !== 1) {
+                throw new SubmissionException(['form' => 'Submission status could not be updated.'], 409);
+            }
+
+            // Guarded Update 2: Milestone
+            $msUpdated = $this->submissions->approveMilestoneStatus($jobId, $milestoneId);
+            if ($msUpdated !== 1) {
+                throw new SubmissionException(['form' => 'Milestone status could not be updated.'], 409);
+            }
+
+            if ($ownTx) {
+                $this->pdo->commit();
+            } else {
+                $this->pdo->exec('RELEASE SAVEPOINT sp_milestone_review');
+            }
+
+            return [
+                'job_id' => $jobId,
+                'milestone_id' => $milestoneId,
+                'submission_id' => $submissionId,
+            ];
+        } catch (Throwable $e) {
+            if ($ownTx) {
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+            } else {
+                $this->pdo->exec('ROLLBACK TO SAVEPOINT sp_milestone_review');
+            }
+            throw $e;
+        }
+    }
+
+    public function requestMilestoneRevision(int $clientId, int $jobId, int $milestoneId, int $submissionId, array $input): array
+    {
+        $validated = ReviewValidator::validateRevision($input);
+
+        $ownTx = !$this->pdo->inTransaction();
+        if ($ownTx) {
+            $this->pdo->beginTransaction();
+        } else {
+            $this->pdo->exec('SAVEPOINT sp_milestone_review');
+        }
+
+        try {
+            // Lock Order 1: Job
+            $job = $this->submissions->job($jobId, true);
+            if ($job === false || (int)$job['client_id'] !== $clientId) {
+                throw new SubmissionException(['form' => 'Job not found.'], 404);
+            }
+
+            // Lock Order 2: Client User
+            if (!$this->submissions->eligibleClient($clientId, true)) {
+                throw new SubmissionException(['form' => 'Your account cannot review milestones.'], 403);
+            }
+
+            if ($job['status'] !== 'in_progress') {
+                throw new SubmissionException(['form' => 'Milestones can only be reviewed for jobs currently in progress.'], 409);
+            }
+
+            if (!$this->submissions->hasLockedEscrow($jobId)) {
+                throw new SubmissionException(['form' => 'Escrow must be funded and locked to review milestones.'], 409);
+            }
+
+            // Lock Order 3: Milestone
+            $milestone = $this->submissions->milestone($jobId, $milestoneId, true);
+            if ($milestone === false) {
+                throw new SubmissionException(['form' => 'Milestone not found for this project.'], 404);
+            }
+
+            if ($milestone['status'] !== 'submitted') {
+                throw new SubmissionException(['form' => 'This milestone is not currently awaiting review.'], 409);
+            }
+
+            // Lock Order 4: Targeted Submission
+            $submission = $this->submissions->submissionById($submissionId, true);
+            if ($submission === false || (int)$submission['job_id'] !== $jobId || (int)$submission['milestone_id'] !== $milestoneId) {
+                throw new SubmissionException(['form' => 'Submitted deliverable not found for this milestone.'], 404);
+            }
+
+            if ($submission['status'] !== 'submitted') {
+                throw new SubmissionException(['form' => 'Stale review request: this submission is no longer pending review.'], 409);
+            }
+
+            // Check that targeted submission is the latest attempt
+            $latest = $this->submissions->latestSubmissionForMilestone($jobId, $milestoneId, true);
+            if ($latest === false || (int)$latest['id'] !== $submissionId) {
+                throw new SubmissionException(['form' => 'Stale review request: a newer submission exists for this milestone.'], 409);
+            }
+
+            // Guarded Update 1: Work Submission
+            $subUpdated = $this->submissions->requestSubmissionRevision($submissionId, $clientId, $validated['feedback']);
+            if ($subUpdated !== 1) {
+                throw new SubmissionException(['form' => 'Submission status could not be updated.'], 409);
+            }
+
+            // Guarded Update 2: Milestone
+            $msUpdated = $this->submissions->requestMilestoneRevisionStatus($jobId, $milestoneId);
+            if ($msUpdated !== 1) {
+                throw new SubmissionException(['form' => 'Milestone status could not be updated.'], 409);
+            }
+
+            if ($ownTx) {
+                $this->pdo->commit();
+            } else {
+                $this->pdo->exec('RELEASE SAVEPOINT sp_milestone_review');
+            }
+
+            return [
+                'job_id' => $jobId,
+                'milestone_id' => $milestoneId,
+                'submission_id' => $submissionId,
+            ];
+        } catch (Throwable $e) {
+            if ($ownTx) {
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+            } else {
+                $this->pdo->exec('ROLLBACK TO SAVEPOINT sp_milestone_review');
+            }
+            throw $e;
+        }
+    }
 }

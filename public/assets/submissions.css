@@ -15,9 +15,44 @@
 .gh-submission-form .hint { font-size: 0.8125rem; color: var(--gh-muted); margin-top: 0.25rem; }
 .gh-submission-form .field-error { font-size: 0.85rem; color: var(--gh-error); margin-top: 0.25rem; font-weight: 600; }
 .gh-submission-actions { display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap; }
-.gh-submission-history-section { margin-top: 2rem; }
-.gh-submission-history-item { border-left: 3px solid var(--gh-primary); background: #f8fafc; padding: 1rem; border-radius: 0 var(--gh-control-radius) var(--gh-control-radius) 0; margin-bottom: 1rem; }
-.gh-submission-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.875rem; }
-.gh-submission-history-date { color: var(--gh-muted); }
-.gh-submission-history-url { margin: 0.5rem 0; word-break: break-all; }
-.gh-submission-history-notes { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5; color: var(--gh-text); }
+
+/* Submission History Cards (Shared with Milestones) */
+.gh-sub-history-list{margin-top:2rem;border-top:1px solid var(--gh-border);padding-top:1.25rem}
+.gh-sub-history-title{margin:0 0 1rem;font-size:1.15rem;font-weight:700;color:var(--gh-text)}
+.gh-sub-card{background:var(--gh-surface);border:1px solid var(--gh-border);border-radius:var(--gh-card-radius);padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow-wrap:anywhere}
+.gh-sub-card--submitted{border-left:4px solid var(--gh-green)}
+.gh-sub-card--revision{border-left:4px solid #d97706}
+.gh-sub-card--approved{border-left:4px solid #16a34a}
+.gh-sub-card-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:.875rem;padding-bottom:.75rem;border-bottom:1px solid rgba(119,135,123,0.25)}
+.gh-sub-card-identity{display:inline-flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.gh-sub-attempt-badge{font-weight:700;font-size:.9rem;color:var(--gh-text)}
+.gh-badge--submitted{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:.2rem .65rem;border-radius:999px;font-size:.8rem;font-weight:600}
+.gh-badge--revision{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:.2rem .65rem;border-radius:999px;font-size:.8rem;font-weight:600}
+.gh-badge--approved{background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:.2rem .65rem;border-radius:999px;font-size:.8rem;font-weight:600}
+.gh-sub-card-time{font-size:.8125rem;color:var(--gh-muted)}
+.gh-sub-card-url-row{margin-bottom:.75rem;font-size:.9rem;line-height:1.5}
+.gh-sub-row-label{display:block;font-weight:600;font-size:.8125rem;text-transform:uppercase;letter-spacing:.04em;color:var(--gh-muted);margin-bottom:.25rem}
+.gh-sub-url-link{color:var(--gh-green);text-decoration:underline;text-underline-offset:3px;word-break:break-all;overflow-wrap:anywhere;font-weight:500}
+.gh-sub-url-link:hover{color:var(--gh-green-hover)}
+.gh-sub-card-notes-row{margin-bottom:.75rem;font-size:.925rem;line-height:1.55}
+.gh-sub-notes-body,.gh-sub-notes-preview{white-space:pre-wrap;color:var(--gh-text);background:var(--gh-background);padding:.75rem 1rem;border-radius:var(--gh-control-radius);border:1px solid rgba(119,135,123,0.2)}
+.gh-sub-notes-expandable{display:flex;flex-direction:column;gap:.35rem}
+.gh-sub-notes-details{margin-top:.15rem}
+.gh-sub-notes-summary{cursor:pointer;font-size:.85rem;font-weight:600;color:var(--gh-green);text-decoration:underline;text-underline-offset:2px;padding:.2rem 0;list-style:none;display:inline-block}
+.gh-sub-notes-summary::-webkit-details-marker{display:none}
+.gh-sub-notes-summary:hover{color:var(--gh-green-hover)}
+.gh-sub-notes-summary:focus-visible{outline:2px solid var(--gh-green);outline-offset:2px}
+.gh-sub-notes-details .gh-summary-less{display:none}
+.gh-sub-notes-details[open] .gh-summary-more{display:none}
+.gh-sub-notes-details[open] .gh-summary-less{display:inline}
+.gh-sub-notes-details[open] ~ .gh-sub-notes-preview{display:none}
+.gh-sub-notes-details .gh-sub-notes-body{margin-top:.5rem}
+
+/* Client Review Feedback in History */
+.gh-sub-review-box{margin-top:.875rem;padding:.875rem 1rem;border-radius:var(--gh-control-radius);font-size:.9rem;line-height:1.5}
+.gh-sub-review-box--approved{background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #16a34a;color:#166534}
+.gh-sub-review-box--revision{background:#fffbeb;border:1px solid #fef3c7;border-left:4px solid #d97706;color:#92400e}
+.gh-sub-review-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.35rem}
+.gh-sub-review-title{font-weight:700;font-size:.875rem}
+.gh-sub-review-time{font-size:.775rem;opacity:.85}
+.gh-sub-review-body{white-space:pre-wrap;margin-top:.25rem;color:var(--gh-text)}

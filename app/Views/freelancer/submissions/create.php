@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="assets/design-tokens.css?v=1">
     <link rel="stylesheet" href="assets/components.css?v=1">
     <link rel="stylesheet" href="assets/shared-shell.css?v=1">
-    <link rel="stylesheet" href="assets/submissions.css?v=1">
+    <link rel="stylesheet" href="assets/submissions.css?v=2">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>
@@ -41,6 +41,27 @@
             </div>
         <?php endif; ?>
 
+        <?php
+            $latestRevisionFeedback = null;
+            if (($milestone['status'] ?? '') === 'revisions_requested' && !empty($previousSubmissions)) {
+                foreach ($previousSubmissions as $p) {
+                    if ($p['status'] === 'revisions_requested' && !empty($p['feedback'])) {
+                        $latestRevisionFeedback = $p;
+                        break;
+                    }
+                }
+            }
+        ?>
+        <?php if ($latestRevisionFeedback !== null): ?>
+            <div style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #d97706; border-radius: 4px;">
+                <strong style="color: #92400e; font-size: 1rem;">Client Requested Revisions:</strong>
+                <div style="margin: 0.5rem 0 0; color: #78350f; white-space: pre-wrap; font-size: 0.9375rem;"><?= nl2br($escape($latestRevisionFeedback['feedback'])) ?></div>
+                <?php if (!empty($latestRevisionFeedback['reviewed_at'])): ?>
+                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--gh-muted);">Reviewed on <?= $escape($latestRevisionFeedback['reviewed_at']) ?> (UTC)</div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <form method="post" action="?route=/freelancer/milestones/submit" class="gh-submission-form">
             <input type="hidden" name="csrf_token" value="<?= $escape($token) ?>">
             <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
@@ -65,34 +86,17 @@
             </div>
 
             <div class="gh-submission-actions">
-                <button type="submit" class="gh-button gh-button-primary">Submit Work for Review</button>
+                <button type="submit" class="gh-button gh-button-primary"><?= ($milestone['status'] ?? '') === 'revisions_requested' ? 'Submit Revised Deliverable' : 'Submit Work for Review' ?></button>
                 <a href="?route=/freelancer/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>" class="gh-button gh-button-secondary">Cancel and Return</a>
             </div>
         </form>
     </div>
 
     <?php if (!empty($previousSubmissions)): ?>
-        <section class="gh-submission-history-section" aria-label="Previous submissions">
-            <h2>Submission History (<?= count($previousSubmissions) ?>)</h2>
-            <?php foreach ($previousSubmissions as $prev): ?>
-                <div class="gh-submission-history-item">
-                    <div class="gh-submission-history-header">
-                        <span class="gh-badge">Status: <?= $escape(ucwords(str_replace('_', ' ', $prev['status']))) ?></span>
-                        <span class="gh-submission-history-date">Submitted (UTC): <?= $escape($prev['submitted_at'] ?? $prev['created_at']) ?></span>
-                    </div>
-                    <?php if (!empty($prev['deliverable_url'])): ?>
-                        <div class="gh-submission-history-url">
-                            <strong>Deliverable Link:</strong>
-                            <a href="<?= $escape($prev['deliverable_url']) ?>" target="_blank" rel="noopener noreferrer"><?= $escape($prev['deliverable_url']) ?></a>
-                        </div>
-                    <?php endif; ?>
-                    <div class="gh-submission-history-notes">
-                        <strong>Notes:</strong><br>
-                        <?= nl2br($escape($prev['notes'])) ?>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </section>
+        <?php
+            $milestoneSubs = $previousSubmissions;
+            require dirname(__DIR__, 2) . '/partials/submission-history.php';
+        ?>
     <?php endif; ?>
 </main>
 

@@ -2,6 +2,13 @@
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
 $root = dirname(__DIR__);
 foreach ([
     'Core/Csrf',
@@ -120,8 +127,9 @@ $repo = new class extends MilestoneRepository {
         return $rows;
     }
 
+    public array $submissions = [];
     public function submissionsForJob(int $jobId): array {
-        return [];
+        return $this->submissions;
     }
 
     public function find(int $id, int $jobId, bool $lock = false): array|false {
@@ -482,5 +490,40 @@ check(!str_contains($flResp['body'], 'Add Milestone'), 'freelancer view hides ad
 $users->row['role'] = 'client';
 $session->establish(6);
 check($controller->freelancerIndex(['job_id' => 2])['status'] === 403, 'client forbidden from freelancerIndex');
+
+// 16. View Rendering Regression Tests with strict error handler (no warnings/exceptions)
+$repo->milestones[0]['status'] = 'submitted';
+$repo->submissions = [
+    [
+        'id' => 1,
+        'job_id' => 2,
+        'milestone_id' => $repo->milestones[0]['id'],
+        'submitted_by' => 116,
+        'status' => 'submitted',
+        'notes' => 'Attempt 1 submission deliverable notes that exceed 300 characters to test the expandable component thoroughly across all views. ' . str_repeat('Additional details and scope explanation. ', 5),
+        'deliverable_url' => 'https://github.com/example/cafe-ordering',
+        'feedback' => null,
+        'reviewed_by' => null,
+        'reviewed_at' => null,
+        'created_at' => '2026-11-04 12:00:00',
+    ],
+];
+
+// Test Client Workspace Rendering (GET /client/jobs/milestones)
+$users->row = ['id' => 6, 'role' => 'client', 'display_name' => 'Test Client', 'status' => 'active', 'email_verified_at' => '2026-11-04 00:00:00'];
+$session->establish(6);
+$clientRender = $controller->index(['job_id' => 2]);
+check($clientRender['status'] === 200, 'client milestone view renders 200 OK with strict error handler');
+check(str_contains($clientRender['body'], 'gh-review-panel'), 'client review panel rendered');
+check(str_contains($clientRender['body'], 'gh-sub-card'), 'submission history card rendered');
+check(str_contains($clientRender['body'], 'Attempt #1'), 'attempt number rendered in history');
+
+// Test Freelancer Workspace Rendering (GET /freelancer/jobs/milestones)
+$users->row = ['id' => 116, 'role' => 'freelancer', 'display_name' => 'Alice Freelancer', 'status' => 'active', 'email_verified_at' => '2026-11-04 00:00:00'];
+$session->establish(116);
+$flRender = $controller->freelancerIndex(['job_id' => 2]);
+check($flRender['status'] === 200, 'freelancer milestone view renders 200 OK with strict error handler');
+check(str_contains($flRender['body'], 'gh-sub-card'), 'freelancer view renders submission history card');
+check(str_contains($flRender['body'], 'Attempt #1'), 'freelancer view shows attempt #1');
 
 echo "PASS: {$count} milestone offline checks; no database connections.\n";

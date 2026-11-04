@@ -140,7 +140,7 @@ $escrowFactory=static function() use ($config): \GigHub\Services\EscrowService {
 $escrows=new \GigHub\Controllers\EscrowController(new AuthGuard($authenticationFactory,$authSession),$escrowFactory);
 $router->get('/client/jobs/fund',static fn()=>$escrows->preview($_GET));
 $router->post('/client/jobs/fund/confirm',static fn()=>$escrows->confirm($_POST));
-foreach (['Repositories/SubmissionRepository','Services/SubmissionException','Services/SubmissionValidator','Services/SubmissionService','Controllers/SubmissionController'] as $class) {
+foreach (['Repositories/SubmissionRepository','Services/SubmissionException','Services/SubmissionValidator','Services/ReviewValidator','Services/SubmissionService','Controllers/SubmissionController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
 }
 $submissionFactory=static function() use ($config): \GigHub\Services\SubmissionService {
@@ -150,6 +150,8 @@ $submissionFactory=static function() use ($config): \GigHub\Services\SubmissionS
 $submissions=new \GigHub\Controllers\SubmissionController(new AuthGuard($authenticationFactory,$authSession),$submissionFactory);
 $router->get('/freelancer/milestones/submit',static fn()=>$submissions->createForm($_GET));
 $router->post('/freelancer/milestones/submit',static fn()=>$submissions->submit($_POST));
+$router->post('/client/milestones/approve',static fn()=>$submissions->approve($_POST));
+$router->post('/client/milestones/request-revision',static fn()=>$submissions->requestRevision($_POST));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));

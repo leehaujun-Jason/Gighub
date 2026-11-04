@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Job Milestones · GigHub</title>
     <?php require dirname(__DIR__, 2) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/milestones.css?v=1">
+    <link rel="stylesheet" href="assets/milestones.css?v=2">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>
@@ -13,6 +13,9 @@
     $isLocked = $isLocked ?? false;
     $isClient = $isClient ?? true;
     $submissions = $submissions ?? [];
+    $reviewToken = $reviewToken ?? '';
+    $reviewErrors = $reviewErrors ?? [];
+    $reviewOld = $reviewOld ?? [];
 ?>
 <main id="main-content" tabindex="-1" class="gh-milestones-layout">
     <p class="gh-milestones-eyebrow"><?= $isClient ? 'CLIENT WORKSPACE' : 'FREELANCER WORKSPACE' ?></p>
@@ -95,41 +98,135 @@
 
                     <?php if (!$isClient && $job['status'] === 'in_progress'): ?>
                         <div class="gh-milestone-actions" style="margin-top: 1rem;">
-                            <?php if (in_array($m['status'], ['pending', 'revisions_requested'], true)): ?>
+                            <?php if ($m['status'] === 'pending'): ?>
                                 <a class="gh-button gh-button-primary" href="?route=/freelancer/milestones/submit&amp;job_id=<?= (int)$job['id'] ?>&amp;milestone_id=<?= (int)$m['id'] ?>">Submit Deliverable</a>
+                            <?php elseif ($m['status'] === 'revisions_requested'): ?>
+                                <a class="gh-button gh-button-primary" href="?route=/freelancer/milestones/submit&amp;job_id=<?= (int)$job['id'] ?>&amp;milestone_id=<?= (int)$m['id'] ?>">Submit Revised Deliverable</a>
                             <?php elseif ($m['status'] === 'submitted'): ?>
                                 <span class="gh-badge" style="background: #e0f2fe; color: #0369a1; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">Deliverable submitted — Awaiting client review</span>
+                            <?php elseif ($m['status'] === 'approved'): ?>
+                                <span class="gh-badge" style="background: #dcfce7; color: #15803d; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">✓ Checkpoint Approved</span>
                             <?php endif; ?>
                         </div>
+
+                        <?php
+                            $latestRevisionFeedback = null;
+                            if ($m['status'] === 'revisions_requested') {
+                                foreach ($milestoneSubs as $s) {
+                                    if ($s['status'] === 'revisions_requested' && !empty($s['feedback'])) {
+                                        $latestRevisionFeedback = $s;
+                                        break;
+                                    }
+                                }
+                            }
+                        ?>
+                        <?php if ($latestRevisionFeedback !== null): ?>
+                            <div style="margin-top: 1rem; padding: 0.875rem 1rem; background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #d97706; border-radius: 4px;">
+                                <strong style="color: #92400e; font-size: 0.95rem;">Client Revision Feedback:</strong>
+                                <div style="margin-top: 0.35rem; color: #78350f; font-size: 0.875rem; white-space: pre-wrap;"><?= nl2br($escape($latestRevisionFeedback['feedback'])) ?></div>
+                                <?php if (!empty($latestRevisionFeedback['reviewed_at'])): ?>
+                                    <div style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--gh-muted);">Reviewed on <?= $escape($latestRevisionFeedback['reviewed_at']) ?> (UTC)</div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
 
-                    <?php if ($isClient && $m['status'] === 'submitted'): ?>
-                        <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; font-size: 0.875rem; color: #166534;">
-                            <strong>Deliverable submitted by freelancer.</strong> Client review and milestone approval will be available in the next module.
-                        </div>
+                    <?php if ($isClient): ?>
+                        <?php if ($m['status'] === 'submitted'): ?>
+                            <?php
+                                $latestSubmittedSub = null;
+                                foreach ($milestoneSubs as $s) {
+                                    if ($s['status'] === 'submitted') {
+                                        $latestSubmittedSub = $s;
+                                        break;
+                                    }
+                                }
+                            ?>
+                            <?php if ($latestSubmittedSub !== null): ?>
+                                <section class="gh-review-panel" aria-label="Milestone review actions">
+                                    <h4 class="gh-review-panel-title">Review Milestone Deliverable (Attempt #<?= (int)$latestSubmittedSub['id'] ?>)</h4>
+                                    <p class="gh-review-panel-desc">
+                                        Review the submission notes and deliverable link below. You can approve this milestone checkpoint or request revisions with written feedback.
+                                    </p>
+
+                                    <div class="gh-review-actions-grid">
+                                        <!-- Approve Milestone Card -->
+                                        <div class="gh-review-card gh-review-card--approve">
+                                            <div class="gh-review-card-header">
+                                                <h5 class="gh-review-card-title">✓ Approve Milestone</h5>
+                                                <p class="gh-review-card-desc">Accept the deliverable and mark this milestone checkpoint as completed.</p>
+                                            </div>
+                                            <form method="post" action="?route=/client/milestones/approve" class="gh-review-form">
+                                                <input type="hidden" name="csrf_token" value="<?= $escape($reviewToken) ?>">
+                                                <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
+                                                <input type="hidden" name="milestone_id" value="<?= (int)$m['id'] ?>">
+                                                <input type="hidden" name="submission_id" value="<?= (int)$latestSubmittedSub['id'] ?>">
+
+                                                <div class="gh-review-field">
+                                                    <label for="approve_feedback_<?= (int)$m['id'] ?>" class="gh-review-label">
+                                                        Approval Note <span>(optional)</span>
+                                                    </label>
+                                                    <textarea id="approve_feedback_<?= (int)$m['id'] ?>" name="feedback" rows="2" maxlength="5000" class="gh-review-textarea" placeholder="Optional comments for freelancer (e.g. Looks great, verified!)..."><?= (isset($reviewOld['milestone_id']) && (int)$reviewOld['milestone_id'] === (int)$m['id'] && ($reviewOld['action'] ?? '') === 'approve') ? $escape($reviewOld['feedback'] ?? '') : '' ?></textarea>
+                                                </div>
+
+                                                <div class="gh-review-submit-wrap">
+                                                    <button type="submit" class="gh-button gh-button--approve">
+                                                        Approve Milestone
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <!-- Request Revisions Card -->
+                                        <?php
+                                            $isTargetRevision = isset($reviewOld['milestone_id']) && (int)$reviewOld['milestone_id'] === (int)$m['id'];
+                                            $revisionFeedbackVal = $isTargetRevision ? ($reviewOld['feedback'] ?? '') : '';
+                                            $hasRevisionError = $isTargetRevision && isset($reviewErrors['feedback']);
+                                        ?>
+                                        <div class="gh-review-card gh-review-card--revision">
+                                            <div class="gh-review-card-header">
+                                                <h5 class="gh-review-card-title">↺ Request Revisions</h5>
+                                                <p class="gh-review-card-desc">Send the deliverable back to the freelancer with required changes.</p>
+                                            </div>
+                                            <form method="post" action="?route=/client/milestones/request-revision" class="gh-review-form">
+                                                <input type="hidden" name="csrf_token" value="<?= $escape($reviewToken) ?>">
+                                                <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
+                                                <input type="hidden" name="milestone_id" value="<?= (int)$m['id'] ?>">
+                                                <input type="hidden" name="submission_id" value="<?= (int)$latestSubmittedSub['id'] ?>">
+
+                                                <div class="gh-review-field">
+                                                    <label for="revision_feedback_<?= (int)$m['id'] ?>" class="gh-review-label">
+                                                        Revision Feedback <span>(required)</span>
+                                                    </label>
+                                                    <textarea id="revision_feedback_<?= (int)$m['id'] ?>" name="feedback" rows="4" maxlength="5000" required class="gh-review-textarea" placeholder="Describe specifically what needs to be changed or improved before this milestone can be approved..." <?= $hasRevisionError ? 'aria-invalid="true" aria-describedby="rev-err-' . (int)$m['id'] . '"' : '' ?>><?= $escape($revisionFeedbackVal) ?></textarea>
+                                                    <?php if ($hasRevisionError): ?>
+                                                        <p class="field-error" id="rev-err-<?= (int)$m['id'] ?>" role="alert"><?= $escape($reviewErrors['feedback']) ?></p>
+                                                    <?php endif; ?>
+                                                </div>
+
+                                                <div class="gh-review-submit-wrap">
+                                                    <button type="submit" class="gh-button gh-button-secondary gh-button--revision">
+                                                        Request Revisions
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </section>
+                            <?php endif; ?>
+                        <?php elseif ($m['status'] === 'revisions_requested'): ?>
+                            <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 4px; font-size: 0.875rem; color: #92400e;">
+                                <strong>Revisions requested.</strong> Awaiting updated deliverable from freelancer.
+                            </div>
+                        <?php elseif ($m['status'] === 'approved'): ?>
+                            <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; font-size: 0.875rem; color: #166534;">
+                                <strong>Milestone Approved.</strong> Checkpoint completed<?= !empty($m['approved_at']) ? ' on ' . $escape($m['approved_at']) . ' (UTC)' : '' ?>.
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if (!empty($milestoneSubs)): ?>
-                        <div class="gh-submission-history-section" style="margin-top: 1.25rem; border-top: 1px solid var(--gh-border); padding-top: 1rem;">
-                            <h4 style="margin: 0 0 0.75rem; font-size: 0.95rem; color: var(--gh-text);">Submitted Deliverables (<?= count($milestoneSubs) ?>)</h4>
-                            <?php foreach ($milestoneSubs as $sub): ?>
-                                <div class="gh-submission-history-item" style="background: var(--gh-header-background); padding: 0.875rem 1rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 3px solid var(--gh-primary);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.8125rem;">
-                                        <span style="font-weight: 600;">Attempt #<?= (int)$sub['id'] ?> · Status: <?= $escape(ucwords(str_replace('_', ' ', $sub['status']))) ?></span>
-                                        <span style="color: var(--gh-muted);">Submitted (UTC): <?= $escape($sub['submitted_at'] ?? $sub['created_at']) ?></span>
-                                    </div>
-                                    <?php if (!empty($sub['deliverable_url'])): ?>
-                                        <div style="font-size: 0.875rem; margin: 0.35rem 0; word-break: break-all;">
-                                            <strong>Deliverable URL:</strong>
-                                            <a href="<?= $escape($sub['deliverable_url']) ?>" target="_blank" rel="noopener noreferrer"><?= $escape($sub['deliverable_url']) ?></a>
-                                        </div>
-                                    <?php endif; ?>
-                                    <div style="font-size: 0.875rem; margin-top: 0.35rem; white-space: pre-wrap; color: var(--gh-text);">
-                                        <strong>Notes:</strong><br><?= nl2br($escape($sub['notes'])) ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                        <?php require dirname(__DIR__, 2) . '/partials/submission-history.php'; ?>
                     <?php endif; ?>
                 </article>
             <?php endforeach; ?>

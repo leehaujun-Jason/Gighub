@@ -21,7 +21,7 @@ class MilestoneController
         $access = $this->guard->check('client');
         if (!isset($access['user'])) return $access;
 
-        $jobId = self::id($query['job_id'] ?? null);
+        $jobId = self::id($query['job_id'] ?? $query['id'] ?? null);
         if ($jobId === null) return self::text(400, 'Invalid job identifier.');
 
         try {
@@ -38,6 +38,10 @@ class MilestoneController
         unset($_SESSION['milestone_errors']);
         $old = $_SESSION['milestone_old'] ?? [];
         unset($_SESSION['milestone_old']);
+        $reviewErrors = $_SESSION['review_errors'] ?? [];
+        unset($_SESSION['review_errors']);
+        $reviewOld = $_SESSION['review_old'] ?? [];
+        unset($_SESSION['review_old']);
 
         $user = $access['user'];
         $job = $data['job'];
@@ -49,6 +53,7 @@ class MilestoneController
         $navigationUser = $user;
         $logoutToken = Csrf::token('logout');
         $token = Csrf::token('job_milestone');
+        $reviewToken = Csrf::token('milestone_review');
         $escape = static fn(mixed $v): string => htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         ob_start();
@@ -63,7 +68,7 @@ class MilestoneController
         $access = $this->guard->check('freelancer');
         if (!isset($access['user'])) return $access;
 
-        $jobId = self::id($query['job_id'] ?? null);
+        $jobId = self::id($query['job_id'] ?? $query['id'] ?? null);
         if ($jobId === null) return self::text(400, 'Invalid job identifier.');
 
         try {
@@ -77,6 +82,9 @@ class MilestoneController
         $notice = null;
         $errors = [];
         $old = [];
+        $reviewErrors = [];
+        $reviewOld = [];
+        $reviewToken = '';
 
         $user = $access['user'];
         $job = $data['job'];
