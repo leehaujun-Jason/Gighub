@@ -8,15 +8,37 @@ declare(strict_types=1);
  */
 $milestoneSubs = $milestoneSubs ?? [];
 $escape = $escape ?? static fn(mixed $v): string => htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$historyTitle = $historyTitle ?? ('Submitted Deliverables (' . count($milestoneSubs) . ')');
+$historyAriaLabel = $historyAriaLabel ?? 'Submitted deliverables history';
 
 if (empty($milestoneSubs)) {
     return;
 }
+
+$milestoneSubs = array_values($milestoneSubs);
+$attemptMap = [];
+$chronological = $milestoneSubs;
+usort($chronological, static function (array $a, array $b): int {
+    $timeA = (string)($a['submitted_at'] ?? $a['created_at'] ?? '');
+    $timeB = (string)($b['submitted_at'] ?? $b['created_at'] ?? '');
+    if ($timeA !== $timeB) {
+        return strcmp($timeA, $timeB);
+    }
+    return ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+});
+
+$seqCounter = 1;
+foreach ($chronological as $item) {
+    if (isset($item['id'])) {
+        $attemptMap[$item['id']] = $seqCounter++;
+    }
+}
 ?>
-<div class="gh-sub-history-list" aria-label="Submitted deliverables history">
-    <h4 class="gh-sub-history-title">Submitted Deliverables (<?= count($milestoneSubs) ?>)</h4>
+<div class="gh-sub-history-list" aria-label="<?= $escape($historyAriaLabel) ?>">
+    <h4 class="gh-sub-history-title"><?= $escape($historyTitle) ?></h4>
     <?php foreach ($milestoneSubs as $sub): ?>
         <?php
+            $attemptNum = $sub['attempt_number'] ?? ($attemptMap[$sub['id']] ?? $sub['id']);
             $statusClass = match ($sub['status']) {
                 'approved' => 'gh-sub-card--approved',
                 'revisions_requested' => 'gh-sub-card--revision',
@@ -38,7 +60,7 @@ if (empty($milestoneSubs)) {
         <article class="gh-sub-card <?= $statusClass ?>">
             <header class="gh-sub-card-header">
                 <div class="gh-sub-card-identity">
-                    <span class="gh-sub-attempt-badge">Attempt #<?= (int)$sub['id'] ?></span>
+                    <span class="gh-sub-attempt-badge">Attempt #<?= (int)$attemptNum ?></span>
                     <span class="gh-badge <?= $badgeClass ?>"><?= $statusLabel ?></span>
                 </div>
                 <time class="gh-sub-card-time" datetime="<?= $escape($submittedTime) ?>">

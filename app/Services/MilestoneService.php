@@ -26,6 +26,7 @@ class MilestoneService
         }
 
         $hasEscrow = $this->milestones->hasEscrow($jobId);
+        $escrow = $hasEscrow ? $this->milestones->escrow($jobId) : false;
         $isLocked = $hasEscrow || $job['status'] !== 'awarded';
 
         return [
@@ -34,6 +35,7 @@ class MilestoneService
             'submissions' => $this->milestones->submissionsForJob($jobId),
             'is_locked' => $isLocked,
             'has_escrow' => $hasEscrow,
+            'escrow' => $escrow !== false ? $escrow : null,
             'is_client' => true,
         ];
     }
@@ -56,12 +58,16 @@ class MilestoneService
             throw new MilestoneException(['form' => 'Milestones are not available for this job yet.'], 409);
         }
 
+        $hasEscrow = $this->milestones->hasEscrow($jobId);
+        $escrow = $hasEscrow ? $this->milestones->escrow($jobId) : false;
+
         return [
             'job' => $job,
             'milestones' => $this->milestones->forJob($jobId),
             'submissions' => $this->milestones->submissionsForJob($jobId),
             'is_locked' => true,
-            'has_escrow' => $this->milestones->hasEscrow($jobId),
+            'has_escrow' => $hasEscrow,
+            'escrow' => $escrow !== false ? $escrow : null,
             'is_client' => false,
         ];
     }

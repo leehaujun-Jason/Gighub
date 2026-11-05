@@ -9,7 +9,7 @@ class MilestoneRepository
 
     public function job(int $jobId, bool $lock = false): array|false
     {
-        $sql = 'SELECT id, client_id, title, status, deadline, awarded_bid_id FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $sql = 'SELECT id, client_id, title, budget, status, deadline, awarded_bid_id FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         return $q->fetch(PDO::FETCH_ASSOC);
@@ -21,6 +21,17 @@ class MilestoneRepository
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         return $q->fetchColumn() !== false;
+    }
+
+    public function escrow(int $jobId, bool $lock = false): array|false
+    {
+        if (!isset($this->pdo)) {
+            return false;
+        }
+        $sql = 'SELECT id, job_id, bid_id, amount, status, funded_at, settled_at FROM escrows WHERE job_id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$jobId]);
+        return $q->fetch(PDO::FETCH_ASSOC);
     }
 
     public function eligibleClient(int $id, bool $lock = false): bool

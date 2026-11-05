@@ -100,9 +100,16 @@ $repo = new class extends MilestoneRepository {
         return ($this->jobRow !== false && $this->jobRow['id'] === $jobId) ? $this->jobRow : false;
     }
 
+    public array|false $escrowRow = false;
+
     public function hasEscrow(int $jobId, bool $lock = false): bool {
         $this->events[] = 'escrow:' . ($lock ? 'lock' : 'read');
         return $this->hasEscrow;
+    }
+
+    public function escrow(int $jobId, bool $lock = false): array|false {
+        $this->events[] = 'escrow:' . ($lock ? 'lock' : 'read');
+        return $this->escrowRow;
     }
 
     public function eligibleClient(int $id, bool $lock = false): bool {

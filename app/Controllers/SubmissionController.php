@@ -179,6 +179,170 @@ class SubmissionController
         }
     }
 
+    public function finalSubmitForm(array $query): array
+    {
+        $access = $this->guard->check('freelancer');
+        if (!isset($access['user'])) {
+            return $access;
+        }
+
+        $jobId = self::id($query['job_id'] ?? null);
+        if ($jobId === null) {
+            return self::text(400, 'Invalid submission parameters.');
+        }
+
+        try {
+            $context = ($this->serviceFactory)()->getFinalSubmissionContext((int)$access['user']['id'], $jobId);
+        } catch (SubmissionException $e) {
+            Notification::error($e->getMessage());
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/freelancer/jobs/milestones&job_id=' . $jobId];
+        } catch (Throwable) {
+            return self::unavailable();
+        }
+
+        $errors = $_SESSION['submission_errors'] ?? [];
+        $old = $_SESSION['submission_old'] ?? [];
+        unset($_SESSION['submission_errors'], $_SESSION['submission_old']);
+
+        $user = $access['user'];
+        $job = $context['job'];
+        $escrow = $context['escrow'] ?? null;
+        $milestones = $context['milestones'];
+        $previousSubmissions = $context['previous_submissions'];
+        $latestSubmission = $context['latest_submission'];
+        $navigationUser = $user;
+        $logoutToken = Csrf::token('logout');
+        $token = Csrf::token('final_submission');
+        $escape = static fn(mixed $v): string => htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        ob_start();
+        require dirname(__DIR__) . '/Views/freelancer/submissions/final.php';
+        $body = (string)ob_get_clean();
+
+        return ['status' => 200, 'type' => 'text/html; charset=UTF-8', 'body' => $body];
+    }
+
+    public function submitFinal(array $input): array
+    {
+        $access = $this->guard->check('freelancer');
+        if (!isset($access['user'])) {
+            return $access;
+        }
+
+        if (!Csrf::valid($input['csrf_token'] ?? null, 'final_submission')) {
+            return self::text(403, 'Your form expired. Reload the page and try again.');
+        }
+
+        $jobId = self::id($input['job_id'] ?? null);
+        if ($jobId === null) {
+            return self::text(400, 'Invalid submission parameters.');
+        }
+
+        try {
+            ($this->serviceFactory)()->submitFinalWork(
+                (int)$access['user']['id'],
+                $jobId,
+                $input
+            );
+            Csrf::rotate('final_submission');
+            Notification::success('Final work deliverable submitted successfully. Awaiting client review.');
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/freelancer/jobs/milestones&job_id=' . $jobId];
+        } catch (SubmissionException $e) {
+            if ($e->status === 422) {
+                $_SESSION['submission_errors'] = $e->errors;
+                $_SESSION['submission_old'] = $input;
+                Notification::error('Please correct the validation errors in your final deliverable submission.');
+                return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/freelancer/jobs/final-submit&job_id=' . $jobId];
+            }
+            Notification::error($e->getMessage());
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/freelancer/jobs/milestones&job_id=' . $jobId];
+        } catch (Throwable) {
+            return self::unavailable();
+        }
+    }
+
+    public function approveFinal(array $input): array
+    {
+        $access = $this->guard->check('client');
+        if (!isset($access['user'])) {
+            return $access;
+        }
+
+        if (!Csrf::valid($input['csrf_token'] ?? null, 'final_review')) {
+            return self::text(403, 'Your form expired. Reload the page and try again.');
+        }
+
+        $jobId = self::id($input['job_id'] ?? null);
+        $submissionId = self::id($input['submission_id'] ?? null);
+        if ($jobId === null || $submissionId === null) {
+            return self::text(400, 'Invalid final review request.');
+        }
+
+        try {
+            ($this->serviceFactory)()->approveFinalWork(
+                (int)$access['user']['id'],
+                $jobId,
+                $submissionId,
+                $input
+            );
+            Csrf::rotate('final_review');
+            Notification::success('Final deliverable approved successfully. All project requirements completed and awaiting settlement.');
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        } catch (SubmissionException $e) {
+            if ($e->status === 422) {
+                $_SESSION['final_review_errors'] = $e->errors;
+                $_SESSION['final_review_old'] = $input;
+                Notification::error($e->errors['feedback'] ?? 'Please correct the error in your approval form.');
+            } else {
+                Notification::error($e->getMessage());
+            }
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        } catch (Throwable) {
+            return self::unavailable();
+        }
+    }
+
+    public function requestFinalRevision(array $input): array
+    {
+        $access = $this->guard->check('client');
+        if (!isset($access['user'])) {
+            return $access;
+        }
+
+        if (!Csrf::valid($input['csrf_token'] ?? null, 'final_review')) {
+            return self::text(403, 'Your form expired. Reload the page and try again.');
+        }
+
+        $jobId = self::id($input['job_id'] ?? null);
+        $submissionId = self::id($input['submission_id'] ?? null);
+        if ($jobId === null || $submissionId === null) {
+            return self::text(400, 'Invalid revision request parameters.');
+        }
+
+        try {
+            ($this->serviceFactory)()->requestFinalRevision(
+                (int)$access['user']['id'],
+                $jobId,
+                $submissionId,
+                $input
+            );
+            Csrf::rotate('final_review');
+            Notification::success('Revision requested on final deliverable. The freelancer can view your feedback.');
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        } catch (SubmissionException $e) {
+            if ($e->status === 422) {
+                $_SESSION['final_review_errors'] = $e->errors;
+                $_SESSION['final_review_old'] = $input;
+                Notification::error($e->errors['feedback'] ?? 'Please provide feedback explaining the requested revisions.');
+            } else {
+                Notification::error($e->getMessage());
+            }
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        } catch (Throwable) {
+            return self::unavailable();
+        }
+    }
+
     private static function id(mixed $value): ?int
     {
         if (is_int($value) && $value > 0) return $value;

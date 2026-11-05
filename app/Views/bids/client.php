@@ -3,14 +3,25 @@
 <body class="gh-shell"><?php require dirname(__DIR__).'/partials/header.php'; ?>
 <main id="main-content" tabindex="-1" class="gh-bids-layout">
 <p class="gh-bids-eyebrow">CLIENT WORKSPACE</p><h1>Bids for <?= $escape($job['title']) ?></h1>
-<p>Select one eligible proposal for this job. Selection closes bidding but does not transfer funds or authorize work to begin. Escrow and payments are not available yet.</p>
+<p>Select one eligible proposal for this job. Selection closes bidding but does not transfer funds or authorize work to begin. Escrow funding and milestone deliverable handovers are managed through simulated project workflows.</p>
+<p>
 <a href="?route=/client/jobs/show&amp;id=<?= (int)$job['id'] ?>">Back to your job</a>
+<?php if (in_array($job['status'], ['awarded', 'in_progress', 'under_review', 'completed'], true) && $job['awarded_bid_id'] !== null): ?>
+ · <a href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Job Milestones</a>
+<?php endif; ?>
+</p>
 <?php if (($awardNotice??false)===true): ?><p class="gh-bids-notice" role="status">Your bid selection has been saved. No funds have been transferred.</p><?php endif; ?>
 <?php if ($job['status']==='awarded' && $job['awarded_bid_id']!==null): ?>
 <section class="gh-bids-notice" aria-label="Award result"><h2>A bid has been selected — awaiting funding</h2><p>This job is closed to further bids. Selection is not payment; work has not started.</p><?php if (!empty($job['awarded_at'])): ?><p>Selected (UTC): <?= $escape($job['awarded_at']) ?></p><?php endif; ?><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">Set Up Milestones</a> <a class="gh-button gh-button-primary" href="?route=/client/jobs/fund&amp;job_id=<?= (int)$job['id'] ?>">Fund Escrow</a></p></section>
 <?php endif; ?>
 <?php if ($job['status']==='in_progress'): ?>
 <section class="gh-bids-notice" aria-label="Award result"><h2>Job is funded and in progress</h2><p>Work has started with the selected freelancer. Escrow funds are locked.</p><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Milestones</a></p></section>
+<?php endif; ?>
+<?php if ($job['status']==='under_review'): ?>
+<section class="gh-bids-notice" aria-label="Award result"><h2>Job deliverables are under review</h2><p>Work has been submitted and final deliverables are undergoing client review. Escrow funds remain locked.</p><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Job Milestones</a></p></section>
+<?php endif; ?>
+<?php if ($job['status']==='completed'): ?>
+<section class="gh-bids-notice" aria-label="Award result"><h2>Job completed</h2><p>All milestones and deliverables have been accepted and finalized.</p><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Job Milestones</a></p></section>
 <?php endif; ?>
 <?php if ($bids===[]): ?><section class="gh-bid-card"><h2>No bids <?= $page>1?'on this page':'yet' ?></h2><p>Freelancer proposals will appear here when submitted.</p></section><?php endif; ?>
 <?php foreach ($bids as $row): ?>
