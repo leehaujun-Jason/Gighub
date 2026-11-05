@@ -6,6 +6,7 @@
     <title>Job Milestones · GigHub</title>
     <?php require dirname(__DIR__, 2) . '/partials/page-shell.php'; ?>
     <link rel="stylesheet" href="assets/milestones.css?v=2">
+    <link rel="stylesheet" href="assets/reviews.css?v=1">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>
@@ -13,10 +14,23 @@
     $isLocked = $isLocked ?? false;
     $isClient = $isClient ?? true;
     $submissions = $submissions ?? [];
+    $reviews = $reviews ?? [];
+    $myReview = null;
+    $counterpartReview = null;
+    $currentUserId = (int)($navigationUser['id'] ?? $user['id'] ?? 0);
+    foreach ($reviews as $r) {
+        if ((int)$r['reviewer_id'] === $currentUserId) {
+            $myReview = $r;
+        } else {
+            $counterpartReview = $r;
+        }
+    }
     $escrow = $escrow ?? null;
     $escrowAmount = ($escrow !== null && isset($escrow['amount'])) ? (float)$escrow['amount'] : (float)($job['budget'] ?? 0);
     $freelancer = $freelancer ?? null;
     $freelancerName = $freelancer['display_name'] ?? 'Freelancer';
+    $client = $client ?? null;
+    $clientName = $job['client_name'] ?? ($client['display_name'] ?? 'Client');
     $escrowReleaseToken = $escrowReleaseToken ?? '';
     $reviewToken = $reviewToken ?? '';
     $reviewErrors = $reviewErrors ?? [];
@@ -155,8 +169,41 @@
                                     <?php endif; ?>
                                 </div>
                                 <div class="gh-settlement-actions">
-                                    <a class="gh-button gh-button-primary" href="?route=/freelancer/wallet&amp;job_id=<?= (int)$job['id'] ?>">View My Wallet</a>
+                                    <?php if ($myReview === null): ?>
+                                        <a class="gh-button gh-button-primary" href="?route=/jobs/review&amp;job_id=<?= (int)$job['id'] ?>">★ Leave a Review for <?= $escape($clientName) ?></a>
+                                        <a class="gh-button gh-button-secondary" href="?route=/freelancer/wallet&amp;job_id=<?= (int)$job['id'] ?>">View My Wallet</a>
+                                    <?php else: ?>
+                                        <a class="gh-button gh-button-primary" href="?route=/freelancer/wallet&amp;job_id=<?= (int)$job['id'] ?>">View My Wallet</a>
+                                    <?php endif; ?>
                                 </div>
+                                <?php if ($myReview !== null || $counterpartReview !== null): ?>
+                                    <div class="gh-reviews-workspace-grid">
+                                        <?php if ($myReview !== null): ?>
+                                            <div class="gh-review-box gh-review-box--submitted">
+                                                <div class="gh-review-box-header">
+                                                    <span class="gh-review-badge">✓ Your Review for <?= $escape($clientName) ?></span>
+                                                    <span class="gh-review-stars"><?= str_repeat('★', (int)$myReview['rating']) . str_repeat('☆', 5 - (int)$myReview['rating']) ?> (<?= (int)$myReview['rating'] ?>/5)</span>
+                                                </div>
+                                                <?php if (!empty($myReview['comment'])): ?>
+                                                    <p class="gh-review-comment">"<?= $escape($myReview['comment']) ?>"</p>
+                                                <?php endif; ?>
+                                                <span class="gh-review-date">Submitted on <?= $escape($myReview['created_at']) ?> UTC</span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if ($counterpartReview !== null): ?>
+                                            <div class="gh-review-box gh-review-box--received">
+                                                <div class="gh-review-box-header">
+                                                    <span class="gh-review-badge gh-review-badge--partner">Feedback from <?= $escape($clientName) ?></span>
+                                                    <span class="gh-review-stars"><?= str_repeat('★', (int)$counterpartReview['rating']) . str_repeat('☆', 5 - (int)$counterpartReview['rating']) ?> (<?= (int)$counterpartReview['rating'] ?>/5)</span>
+                                                </div>
+                                                <?php if (!empty($counterpartReview['comment'])): ?>
+                                                    <p class="gh-review-comment">"<?= $escape($counterpartReview['comment']) ?>"</p>
+                                                <?php endif; ?>
+                                                <span class="gh-review-date">Submitted on <?= $escape($counterpartReview['created_at']) ?> UTC</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         <?php else: ?>
                             <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px;">
@@ -296,8 +343,41 @@
                                     <?php endif; ?>
                                 </div>
                                 <div class="gh-settlement-actions">
-                                    <a class="gh-button gh-button-secondary" href="?route=/client/wallet&amp;job_id=<?= (int)$job['id'] ?>">View Wallet Ledger</a>
+                                    <?php if ($myReview === null): ?>
+                                        <a class="gh-button gh-button-primary" href="?route=/jobs/review&amp;job_id=<?= (int)$job['id'] ?>">★ Leave a Review for <?= $escape($freelancerName) ?></a>
+                                        <a class="gh-button gh-button-secondary" href="?route=/client/wallet&amp;job_id=<?= (int)$job['id'] ?>">View Wallet Ledger</a>
+                                    <?php else: ?>
+                                        <a class="gh-button gh-button-secondary" href="?route=/client/wallet&amp;job_id=<?= (int)$job['id'] ?>">View Wallet Ledger</a>
+                                    <?php endif; ?>
                                 </div>
+                                <?php if ($myReview !== null || $counterpartReview !== null): ?>
+                                    <div class="gh-reviews-workspace-grid">
+                                        <?php if ($myReview !== null): ?>
+                                            <div class="gh-review-box gh-review-box--submitted">
+                                                <div class="gh-review-box-header">
+                                                    <span class="gh-review-badge">✓ Your Review for <?= $escape($freelancerName) ?></span>
+                                                    <span class="gh-review-stars"><?= str_repeat('★', (int)$myReview['rating']) . str_repeat('☆', 5 - (int)$myReview['rating']) ?> (<?= (int)$myReview['rating'] ?>/5)</span>
+                                                </div>
+                                                <?php if (!empty($myReview['comment'])): ?>
+                                                    <p class="gh-review-comment">"<?= $escape($myReview['comment']) ?>"</p>
+                                                <?php endif; ?>
+                                                <span class="gh-review-date">Submitted on <?= $escape($myReview['created_at']) ?> UTC</span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if ($counterpartReview !== null): ?>
+                                            <div class="gh-review-box gh-review-box--received">
+                                                <div class="gh-review-box-header">
+                                                    <span class="gh-review-badge gh-review-badge--partner">Feedback from <?= $escape($freelancerName) ?></span>
+                                                    <span class="gh-review-stars"><?= str_repeat('★', (int)$counterpartReview['rating']) . str_repeat('☆', 5 - (int)$counterpartReview['rating']) ?> (<?= (int)$counterpartReview['rating'] ?>/5)</span>
+                                                </div>
+                                                <?php if (!empty($counterpartReview['comment'])): ?>
+                                                    <p class="gh-review-comment">"<?= $escape($counterpartReview['comment']) ?>"</p>
+                                                <?php endif; ?>
+                                                <span class="gh-review-date">Submitted on <?= $escape($counterpartReview['created_at']) ?> UTC</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         <?php else: ?>
                             <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px; margin-bottom: 1.25rem;">

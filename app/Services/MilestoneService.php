@@ -38,6 +38,7 @@ class MilestoneService
             'has_escrow' => $hasEscrow,
             'escrow' => $escrow !== false ? $escrow : null,
             'freelancer' => $freelancer !== false ? $freelancer : null,
+            'reviews' => method_exists($this->milestones, 'reviewsForJob') ? $this->milestones->reviewsForJob($jobId) : [],
             'is_client' => true,
         ];
     }
@@ -62,14 +63,20 @@ class MilestoneService
 
         $hasEscrow = $this->milestones->hasEscrow($jobId);
         $escrow = $hasEscrow ? $this->milestones->escrow($jobId) : false;
+        $client = method_exists($this->milestones, 'jobClient') ? $this->milestones->jobClient($jobId) : false;
+        if ($client !== false && !empty($client['display_name'])) {
+            $job['client_name'] = $client['display_name'];
+        }
 
         return [
             'job' => $job,
+            'client' => $client !== false ? $client : null,
             'milestones' => $this->milestones->forJob($jobId),
             'submissions' => $this->milestones->submissionsForJob($jobId),
             'is_locked' => true,
             'has_escrow' => $hasEscrow,
             'escrow' => $escrow !== false ? $escrow : null,
+            'reviews' => method_exists($this->milestones, 'reviewsForJob') ? $this->milestones->reviewsForJob($jobId) : [],
             'is_client' => false,
         ];
     }

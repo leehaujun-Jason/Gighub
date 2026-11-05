@@ -53,6 +53,7 @@ class MilestoneController
         $freelancer = $data['freelancer'] ?? null;
         $milestones = $data['milestones'];
         $submissions = $data['submissions'] ?? [];
+        $reviews = $data['reviews'] ?? [];
         $isLocked = $data['is_locked'] ?? false;
         $hasEscrow = $data['has_escrow'] ?? false;
         $isClient = true;
@@ -103,6 +104,7 @@ class MilestoneController
         $escrow = $data['escrow'] ?? null;
         $milestones = $data['milestones'];
         $submissions = $data['submissions'] ?? [];
+        $reviews = $data['reviews'] ?? [];
         $isLocked = true;
         $hasEscrow = $data['has_escrow'] ?? true;
         $isClient = false;

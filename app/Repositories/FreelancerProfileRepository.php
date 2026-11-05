@@ -33,4 +33,44 @@ class FreelancerProfileRepository
         $q=$this->pdo->prepare('INSERT INTO user_skills (freelancer_id,skill_id) VALUES (?,?)');
         foreach ($data['skills'] as $skillId) $q->execute([$userId,$skillId]);
     }
+
+    public function reputation(int $freelancerId): array
+    {
+        if (!isset($this->pdo)) {
+            return ['count' => 0, 'average' => null];
+        }
+        $sql = "SELECT COUNT(r.id) AS total_count, ROUND(AVG(r.rating), 1) AS average_rating\n" .
+               "FROM reviews r\n" .
+               "JOIN jobs j ON j.id = r.job_id AND j.status = 'completed' AND j.client_id = r.reviewer_id\n" .
+               "JOIN bids b ON b.id = j.awarded_bid_id AND b.freelancer_id = r.reviewee_id\n" .
+               "WHERE r.reviewee_id = ?";
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$freelancerId]);
+        $row = $q->fetch(PDO::FETCH_ASSOC);
+        $count = (int)($row['total_count'] ?? 0);
+        $avg = ($count > 0 && isset($row['average_rating']) && $row['average_rating'] !== null)
+            ? (float)$row['average_rating']
+            : null;
+        return ['count' => $count, 'average' => $avg];
+    }
+
+    public function reviews(int $freelancerId, int $limit = 20): array
+    {
+        if (!isset($this->pdo)) {
+            return [];
+        }
+        $sql = "SELECT r.id, r.job_id, r.rating, r.comment, r.created_at, cu.display_name AS client_name, j.title AS job_title\n" .
+               "FROM reviews r\n" .
+               "JOIN jobs j ON j.id = r.job_id AND j.status = 'completed' AND j.client_id = r.reviewer_id\n" .
+               "JOIN bids b ON b.id = j.awarded_bid_id AND b.freelancer_id = r.reviewee_id\n" .
+               "JOIN users cu ON cu.id = r.reviewer_id\n" .
+               "WHERE r.reviewee_id = ?\n" .
+               "ORDER BY r.created_at DESC, r.id DESC\n" .
+               "LIMIT ?";
+        $q = $this->pdo->prepare($sql);
+        $q->bindValue(1, $freelancerId, PDO::PARAM_INT);
+        $q->bindValue(2, $limit, PDO::PARAM_INT);
+        $q->execute();
+        return $q->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

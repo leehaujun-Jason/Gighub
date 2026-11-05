@@ -158,6 +158,16 @@ $router->get('/freelancer/jobs/final-submit',static fn()=>$submissions->finalSub
 $router->post('/freelancer/jobs/final-submit',static fn()=>$submissions->submitFinal($_POST));
 $router->post('/client/jobs/final-review/approve',static fn()=>$submissions->approveFinal($_POST));
 $router->post('/client/jobs/final-review/request-revision',static fn()=>$submissions->requestFinalRevision($_POST));
+foreach (['Repositories/ReviewRepository','Services/ReviewSubmissionValidator','Services/ReviewException','Services/ReviewService','Controllers/ReviewController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$reviewFactory=static function() use ($config): \GigHub\Services\ReviewService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\ReviewService($pdo,new \GigHub\Repositories\ReviewRepository($pdo));
+};
+$reviews=new \GigHub\Controllers\ReviewController(new AuthGuard($authenticationFactory,$authSession),$reviewFactory);
+$router->get('/jobs/review',static fn()=>$reviews->createForm($_GET));
+$router->post('/jobs/review',static fn()=>$reviews->store($_POST));
 $publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));

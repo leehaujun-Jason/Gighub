@@ -13,7 +13,11 @@ class FreelancerProfileService
     public function profile(int $userId): array|false
     {
         $profile=$this->profiles->find($userId);
-        if ($profile!==false) $profile['skills']=$this->profiles->skills($userId);
+        if ($profile!==false) {
+            $profile['skills']=$this->profiles->skills($userId);
+            $profile['reputation']=method_exists($this->profiles, 'reputation') ? $this->profiles->reputation($userId) : ['count' => 0, 'average' => null];
+            $profile['reviews']=method_exists($this->profiles, 'reviews') ? $this->profiles->reviews($userId) : [];
+        }
         return $profile;
     }
     public function save(int $userId,array $input): void

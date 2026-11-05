@@ -69,6 +69,17 @@ class MilestoneRepository
         return $q->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function jobClient(int $jobId): array|false
+    {
+        if (!isset($this->pdo)) {
+            return false;
+        }
+        $sql = 'SELECT u.id, u.display_name FROM jobs j JOIN users u ON u.id = j.client_id WHERE j.id = ?';
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$jobId]);
+        return $q->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function forJob(int $jobId): array
     {
         $q = $this->pdo->prepare('SELECT id, job_id, title, description, due_date, position, status, approved_at, created_at, updated_at FROM milestones WHERE job_id = ? ORDER BY position ASC, id ASC');
@@ -132,5 +143,23 @@ class MilestoneRepository
         // Safe sequential reindexing: updates rows in ascending order so each moves into the vacated slot without duplicate collision.
         $q = $this->pdo->prepare('UPDATE milestones SET position = position - 1 WHERE job_id = ? AND position > ? ORDER BY position ASC');
         $q->execute([$jobId, $deletedPosition]);
+    }
+
+    public function reviewsForJob(int $jobId): array
+    {
+        if (!isset($this->pdo)) {
+            return [];
+        }
+        $sql = 'SELECT r.id, r.job_id, r.reviewer_id, r.reviewee_id, r.rating, r.comment, r.created_at,' . "\n" .
+               '       ru.display_name AS reviewer_name, ru.role AS reviewer_role,' . "\n" .
+               '       ee.display_name AS reviewee_name, ee.role AS reviewee_role' . "\n" .
+               'FROM reviews r' . "\n" .
+               'JOIN users ru ON ru.id = r.reviewer_id' . "\n" .
+               'JOIN users ee ON ee.id = r.reviewee_id' . "\n" .
+               'WHERE r.job_id = ?' . "\n" .
+               'ORDER BY r.created_at ASC, r.id ASC';
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$jobId]);
+        return $q->fetchAll(PDO::FETCH_ASSOC);
     }
 }

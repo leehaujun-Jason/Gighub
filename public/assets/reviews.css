@@ -1,0 +1,360 @@
+/* GigHub Module 17: Two-Way Reviews & Ratings Styling */
+
+/* --- Review Page Layout (Centered Responsive Container: 760–820px) --- */
+.gh-review-layout {
+    width: 100%;
+    max-width: 780px;
+    margin: 2rem auto 4rem;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+}
+
+.gh-review-layout h1 {
+    font-size: clamp(1.8rem, 4vw, 2.35rem);
+    line-height: 1.2;
+    color: var(--gh-text);
+    margin: 0.35rem 0 1.5rem;
+    font-weight: 700;
+}
+
+.gh-review-eyebrow {
+    color: var(--gh-green);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 0.35rem;
+}
+
+/* Breadcrumb Navigation inside Review Layout */
+.gh-review-layout .gh-back-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+}
+
+.gh-review-layout .gh-back-nav a {
+    color: var(--gh-green);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 500;
+}
+
+.gh-review-layout .gh-back-nav a:hover {
+    color: var(--gh-green-hover);
+}
+
+.gh-review-layout .gh-back-nav-sep {
+    color: var(--gh-muted);
+    user-select: none;
+}
+
+/* --- Star Rating Form Controls --- */
+.gh-rating-field {
+    margin-bottom: 1.5rem;
+}
+
+.gh-rating-label {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--gh-text);
+    margin-bottom: 0.5rem;
+}
+
+.gh-star-rating-group {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.gh-star-rating-group input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.gh-star-rating-group label {
+    font-size: 2rem;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: color 0.15s ease-in-out, transform 0.1s ease;
+    line-height: 1;
+    user-select: none;
+}
+
+.gh-star-rating-group label:hover,
+.gh-star-rating-group label:hover ~ label,
+.gh-star-rating-group input[type="radio"]:checked ~ label {
+    color: #f59e0b;
+}
+
+.gh-star-rating-group label:hover {
+    transform: scale(1.15);
+}
+
+.gh-star-rating-group input[type="radio"]:focus-visible + label {
+    outline: 2px solid var(--gh-green);
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+.gh-rating-hint {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+    color: var(--gh-muted);
+}
+
+/* --- Review Submission Form Card --- */
+.gh-review-form-card {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-card-radius);
+    padding: 2rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.gh-review-form-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.35rem;
+    color: var(--gh-text);
+    font-weight: 700;
+}
+
+.gh-review-form-desc {
+    margin: 0 0 1.75rem;
+    font-size: 0.9375rem;
+    color: var(--gh-muted);
+    line-height: 1.5;
+}
+
+.gh-comment-field {
+    margin-bottom: 1.5rem;
+}
+
+.gh-review-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.75rem;
+}
+
+.gh-review-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 1rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    color: var(--gh-text);
+    background: var(--gh-background);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gh-review-textarea:focus {
+    outline: none;
+    border-color: var(--gh-green);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+/* --- Workspace Review Display Boxes --- */
+.gh-reviews-workspace-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.gh-review-box {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-card-radius);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.gh-review-box--submitted {
+    border-left: 4px solid var(--gh-green);
+    background: #fdfdfd;
+}
+
+.gh-review-box--received {
+    border-left: 4px solid #f59e0b;
+    background: #fffdfa;
+}
+
+.gh-review-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.gh-review-badge {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #166534;
+    background: #ecfdf5;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #a7f3d0;
+}
+
+.gh-review-badge--partner {
+    color: #92400e;
+    background: #fef3c7;
+    border-color: #fde68a;
+}
+
+.gh-review-stars {
+    color: #f59e0b;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.gh-review-comment {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--gh-text);
+    line-height: 1.5;
+    font-style: italic;
+    white-space: pre-wrap;
+}
+
+.gh-review-date {
+    font-size: 0.78125rem;
+    color: var(--gh-muted);
+}
+
+/* --- Freelancer Profile Reputation Header & Review Cards --- */
+.gh-profile-reputation {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    font-size: 1rem;
+}
+
+.gh-reputation-stars {
+    color: #f59e0b;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.gh-reputation-score {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--gh-text);
+}
+
+.gh-reputation-count {
+    color: var(--gh-muted);
+    font-size: 0.875rem;
+}
+
+.gh-reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.gh-review-card {
+    background: var(--gh-background);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.gh-review-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.gh-review-body {
+    margin: 0;
+    padding: 0;
+    font-size: 0.9375rem;
+    color: var(--gh-text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.gh-review-meta {
+    font-size: 0.8125rem;
+    color: var(--gh-muted);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.gh-review-meta strong {
+    color: var(--gh-text);
+}
+
+@media (max-width: 768px) {
+    .gh-review-layout {
+        margin: 1.5rem auto 3rem;
+        padding: 0 1rem;
+    }
+
+    .gh-review-form-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .gh-review-layout {
+        margin: 1rem auto 2rem;
+        padding: 0 0.75rem;
+    }
+
+    .gh-review-form-card {
+        padding: 1.25rem 1rem;
+    }
+
+    .gh-star-rating-group label {
+        font-size: 1.75rem;
+    }
+
+    .gh-review-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gh-review-actions .gh-button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+}
