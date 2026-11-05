@@ -50,6 +50,7 @@ class MilestoneController
         $user = $access['user'];
         $job = $data['job'];
         $escrow = $data['escrow'] ?? null;
+        $freelancer = $data['freelancer'] ?? null;
         $milestones = $data['milestones'];
         $submissions = $data['submissions'] ?? [];
         $isLocked = $data['is_locked'] ?? false;
@@ -60,6 +61,7 @@ class MilestoneController
         $token = Csrf::token('job_milestone');
         $reviewToken = Csrf::token('milestone_review');
         $finalReviewToken = Csrf::token('final_review');
+        $escrowReleaseToken = Csrf::token('escrow_release');
         $escape = static fn(mixed $v): string => htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         ob_start();
@@ -94,6 +96,7 @@ class MilestoneController
         $finalReviewErrors = [];
         $finalReviewOld = [];
         $finalReviewToken = '';
+        $escrowReleaseToken = '';
 
         $user = $access['user'];
         $job = $data['job'];

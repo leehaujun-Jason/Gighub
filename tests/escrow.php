@@ -185,7 +185,7 @@ class MockEscrowRepository extends EscrowRepository {
         return $this->hasEscrowRecord;
     }
 
-    public function getEscrow(int $jobId): array|false {
+    public function getEscrow(int $jobId, bool $lock = false): array|false {
         return $this->hasEscrowRecord ? ($this->escrowsCreated[0] ?? ['id' => 1, 'job_id' => $jobId, 'amount' => '4300.00', 'status' => 'locked']) : false;
     }
 

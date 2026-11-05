@@ -115,6 +115,7 @@ $walletFactory=static function() use ($config): \GigHub\Services\WalletService {
 };
 $wallets=new \GigHub\Controllers\WalletController(new AuthGuard($authenticationFactory,$authSession),$walletFactory);
 $router->get('/client/wallet',static fn()=>$wallets->show($_GET));
+$router->get('/freelancer/wallet',static fn()=>$wallets->showFreelancer($_GET));
 $router->post('/client/wallet/claim-demo-credit',static fn()=>$wallets->claimDemoCredit($_POST));
 foreach (['Repositories/MilestoneRepository','Services/MilestoneValidator','Services/MilestoneException','Services/MilestoneService','Controllers/MilestoneController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
@@ -140,6 +141,7 @@ $escrowFactory=static function() use ($config): \GigHub\Services\EscrowService {
 $escrows=new \GigHub\Controllers\EscrowController(new AuthGuard($authenticationFactory,$authSession),$escrowFactory);
 $router->get('/client/jobs/fund',static fn()=>$escrows->preview($_GET));
 $router->post('/client/jobs/fund/confirm',static fn()=>$escrows->confirm($_POST));
+$router->post('/client/jobs/escrow/release',static fn()=>$escrows->release($_POST));
 foreach (['Repositories/SubmissionRepository','Services/SubmissionException','Services/SubmissionValidator','Services/ReviewValidator','Services/SubmissionService','Controllers/SubmissionController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
 }

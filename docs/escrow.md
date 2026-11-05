@@ -133,9 +133,7 @@ The manual acceptance checks were performed on live clean MariaDB (`127.0.0.1:33
 
 ---
 
-## Next Planned Module
+## Subsequent Modules
 
-- **Module 15 — Deliverable Submission & Milestone Approval MVP**:
-  - Freelancers can submit deliverable proofs/links for individual milestones on in-progress jobs.
-  - Clients can review and approve deliverable submissions.
-  - Escrow settlement and release upon project completion.
+- **Module 15 — Deliverable Submission & Milestone Approval MVP**: Detailed in `docs/submissions.md`, `docs/milestone-reviews.md`, and `docs/final-submissions.md`.
+- **Module 16 — Simulated Escrow Release & Job Completion**: Implemented atomic escrow release, freelancer wallet credit, and job completion. Detailed in `docs/settlement.md`.

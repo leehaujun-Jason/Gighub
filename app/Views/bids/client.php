@@ -21,7 +21,7 @@
 <section class="gh-bids-notice" aria-label="Award result"><h2>Job deliverables are under review</h2><p>Work has been submitted and final deliverables are undergoing client review. Escrow funds remain locked.</p><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Job Milestones</a></p></section>
 <?php endif; ?>
 <?php if ($job['status']==='completed'): ?>
-<section class="gh-bids-notice" aria-label="Award result"><h2>Job completed</h2><p>All milestones and deliverables have been accepted and finalized.</p><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Job Milestones</a></p></section>
+<section class="gh-bids-notice" aria-label="Award result"><h2>Job completed — Escrow released</h2><p>All milestones and deliverables have been accepted and escrow payment has been released.</p><p><a class="gh-button gh-button-secondary" href="?route=/client/jobs/milestones&amp;job_id=<?= (int)$job['id'] ?>">View Job Milestones</a></p></section>
 <?php endif; ?>
 <?php if ($bids===[]): ?><section class="gh-bid-card"><h2>No bids <?= $page>1?'on this page':'yet' ?></h2><p>Freelancer proposals will appear here when submitted.</p></section><?php endif; ?>
 <?php foreach ($bids as $row): ?>

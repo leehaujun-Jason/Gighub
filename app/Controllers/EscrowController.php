@@ -97,6 +97,41 @@ class EscrowController
         }
     }
 
+    public function release(array $input): array
+    {
+        $access = $this->guard->check('client');
+        if (!isset($access['user'])) return $access;
+        $this->navigationUser = $access['user'];
+
+        if (!Csrf::valid($input['csrf_token'] ?? null, 'escrow_release')) {
+            return self::text(403, 'Your form expired. Reload the page and try again.');
+        }
+
+        $jobId = self::id($input['job_id'] ?? null);
+        if ($jobId === null) return self::text(400, 'Invalid job ID.');
+
+        try {
+            $result = ($this->serviceFactory)()->releaseEscrowAndCompleteJob((int)$access['user']['id'], $jobId);
+        } catch (EscrowException $e) {
+            Csrf::rotate('escrow_release');
+            Notification::error($e->getMessage());
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        } catch (Throwable $e) {
+            error_log('Escrow release error: ' . $e->getMessage());
+            return self::unavailable();
+        }
+
+        try {
+            Csrf::rotate('escrow_release');
+            $msg = 'Escrow payment of RM' . number_format((float)$result['amount'], 2) . ' successfully released to ' . $result['freelancer_name'] . '. Project is now complete!';
+            Notification::success($msg);
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        } catch (Throwable $e) {
+            error_log('Escrow post-commit notification error: ' . $e->getMessage());
+            return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
+        }
+    }
+
     private static function id(mixed $value): ?int
     {
         if (is_int($value) && $value > 0) return $value;

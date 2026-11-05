@@ -18,9 +18,26 @@ final class WalletController
             return $access;
         }
 
+        return $this->renderWallet($access, 'client', $query);
+    }
+
+    public function showFreelancer(array $query = []): array
+    {
+        $access = $this->guard->check('freelancer');
+        if (!isset($access['user'])) {
+            return $access;
+        }
+
+        return $this->renderWallet($access, 'freelancer', $query);
+    }
+
+    private function renderWallet(array $access, string $role, array $query): array
+    {
+        $user = $access['user'];
         $page = max(1, (int)($query['page'] ?? 1));
+        $jobId = self::id($query['job_id'] ?? null);
         try {
-            $data = ($this->serviceFactory)()->getWalletOverview((int)$access['user']['id'], $page);
+            $data = ($this->serviceFactory)()->getWalletOverview((int)$user['id'], $role, $page, $jobId);
         } catch (WalletException $e) {
             return self::text($e->status, $e->errors['form'] ?? 'Wallet could not be loaded.');
         } catch (Throwable) {
@@ -30,11 +47,11 @@ final class WalletController
         $notice = $_SESSION['wallet_notice'] ?? null;
         unset($_SESSION['wallet_notice']);
 
-        $user = $access['user'];
         $wallet = $data['wallet'];
         $entries = $data['entries'];
         $hasDemoCredit = $data['has_demo_credit'];
         $hasNext = $data['has_next'];
+        $returnJobId = $data['return_job_id'] ?? null;
         $navigationUser = $user;
         $logoutToken = Csrf::token('logout');
         $token = Csrf::token('wallet_credit');
@@ -73,5 +90,11 @@ final class WalletController
     private static function text(int $status, string $body): array
     {
         return ['status' => $status, 'type' => 'text/plain; charset=UTF-8', 'body' => $body];
+    }
+
+    private static function id(mixed $value): ?int
+    {
+        if (is_int($value) && $value > 0) return $value;
+        return is_string($value) && preg_match('/\A[1-9][0-9]{0,9}\z/D', $value) && (int)$value <= 4294967295 ? (int)$value : null;
     }
 }

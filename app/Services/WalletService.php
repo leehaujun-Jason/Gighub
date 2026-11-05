@@ -10,17 +10,39 @@ class WalletService
 {
     public function __construct(private readonly PDO $pdo, private readonly WalletRepository $wallets) {}
 
-    public function getWalletOverview(int $clientId, int $page = 1): array
+    public function getWalletOverview(int $userId, string|int $roleOrPage = 'client', int $page = 1, ?int $jobId = null): array
     {
-        if (!$this->wallets->eligibleClient($clientId)) {
+        if (is_int($roleOrPage)) {
+            $role = 'client';
+            $page = $roleOrPage;
+        } else {
+            $role = $roleOrPage;
+        }
+
+        if (!$this->wallets->eligibleUser($userId, $role)) {
             throw new WalletException(['form' => 'Your account cannot access this wallet.'], 403);
         }
-        $wallet = $this->wallets->getWallet($clientId);
-        if ($wallet === false) {
-            $wallet = ['user_id' => $clientId, 'balance' => '0.00', 'updated_at' => null];
+
+        if ($role === 'freelancer') {
+            $this->wallets->ensureWallet($userId);
         }
-        $hasDemoCredit = $this->wallets->hasDemoCredit($clientId);
-        $entries = $this->wallets->getEntries($clientId, $page);
+
+        $wallet = $this->wallets->getWallet($userId);
+        if ($wallet === false) {
+            $wallet = ['user_id' => $userId, 'balance' => '0.00', 'updated_at' => null];
+        }
+
+        $returnJobId = null;
+        if ($jobId !== null && $jobId > 0) {
+            if ($role === 'client' && method_exists($this->wallets, 'isClientJobOwner') && $this->wallets->isClientJobOwner($userId, $jobId)) {
+                $returnJobId = $jobId;
+            } elseif ($role === 'freelancer' && method_exists($this->wallets, 'isFreelancerAwardedJob') && $this->wallets->isFreelancerAwardedJob($userId, $jobId)) {
+                $returnJobId = $jobId;
+            }
+        }
+
+        $hasDemoCredit = ($role === 'client') ? $this->wallets->hasDemoCredit($userId) : false;
+        $entries = $this->wallets->getEntries($userId, $page);
         $hasNext = count($entries) > 20;
         if ($hasNext) {
             $entries = array_slice($entries, 0, 20);
@@ -31,6 +53,8 @@ class WalletService
             'has_demo_credit' => $hasDemoCredit,
             'page' => $page,
             'has_next' => $hasNext,
+            'role' => $role,
+            'return_job_id' => $returnJobId,
         ];
     }
 

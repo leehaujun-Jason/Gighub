@@ -177,4 +177,194 @@ class EscrowService
     {
         return $this->escrows->getEscrow($jobId);
     }
+
+    public function getSettlementConfirmationDetails(int $clientId, int $jobId): array
+    {
+        $job = $this->escrows->job($jobId);
+        if ($job === false || (int)$job['client_id'] !== $clientId) {
+            throw new EscrowException(['form' => 'Job not found.'], 404);
+        }
+
+        if (!$this->escrows->eligibleClient($clientId)) {
+            throw new EscrowException(['form' => 'Your account cannot release escrow.'], 403);
+        }
+
+        if ($job['status'] !== 'under_review') {
+            throw new EscrowException(['form' => 'Only jobs under review can have escrow released.'], 409);
+        }
+
+        if ($job['awarded_bid_id'] === null) {
+            throw new EscrowException(['form' => 'Job has no awarded bid.'], 409);
+        }
+
+        $bid = $this->escrows->awardedBid($jobId, (int)$job['awarded_bid_id']);
+        if ($bid === false || $bid['status'] !== 'accepted') {
+            throw new EscrowException(['form' => 'Awarded bid is not accepted.'], 409);
+        }
+
+        $escrow = $this->escrows->getEscrow($jobId);
+        if ($escrow === false || $escrow['status'] !== 'locked' || $escrow['settled_at'] !== null) {
+            throw new EscrowException(['form' => 'Escrow is not in locked state or has already been settled.'], 409);
+        }
+
+        $milestones = $this->escrows->milestones($jobId);
+        if (count($milestones) < 1) {
+            throw new EscrowException(['form' => 'Job has no milestones defined.'], 422);
+        }
+        foreach ($milestones as $ms) {
+            if ($ms['status'] !== 'approved') {
+                throw new EscrowException(['form' => 'All milestones must be approved before releasing escrow.'], 422);
+            }
+        }
+
+        $freelancerId = (int)$bid['freelancer_id'];
+        $freelancerWallet = $this->escrows->getWallet($freelancerId);
+        $hasFreelancerWallet = $freelancerWallet !== false;
+
+        $amount = number_format((float)$escrow['amount'], 2, '.', '');
+
+        return [
+            'job' => $job,
+            'bid' => $bid,
+            'escrow' => $escrow,
+            'amount' => $amount,
+            'freelancer_name' => $bid['freelancer_name'] ?? 'Freelancer',
+            'freelancer_id' => $freelancerId,
+            'has_freelancer_wallet' => $hasFreelancerWallet,
+        ];
+    }
+
+    public function releaseEscrowAndCompleteJob(int $clientId, int $jobId): array
+    {
+        if ($this->pdo->inTransaction()) {
+            throw new EscrowException(['form' => 'Cannot execute settlement inside an existing transaction.'], 500);
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            // 1. Lock job row
+            $job = $this->escrows->job($jobId, true);
+            if ($job === false || (int)$job['client_id'] !== $clientId) {
+                throw new EscrowException(['form' => 'Job not found.'], 404);
+            }
+            if ($job['status'] !== 'under_review') {
+                throw new EscrowException(['form' => 'Only jobs under review can have escrow released.'], 409);
+            }
+            if ($job['awarded_bid_id'] === null) {
+                throw new EscrowException(['form' => 'Job has no awarded bid.'], 409);
+            }
+
+            // 2. Lock and verify active, email-verified Client account
+            if (!$this->escrows->eligibleClient($clientId, true)) {
+                throw new EscrowException(['form' => 'Your account cannot release escrow.'], 403);
+            }
+
+            // 3. Lock awarded bid row
+            $bid = $this->escrows->awardedBid($jobId, (int)$job['awarded_bid_id'], true);
+            if ($bid === false) {
+                throw new EscrowException(['form' => 'Awarded bid not found.'], 404);
+            }
+            if ($bid['status'] !== 'accepted') {
+                throw new EscrowException(['form' => 'Awarded bid is not accepted.'], 409);
+            }
+            $bidAmount = number_format((float)$bid['amount'], 2, '.', '');
+
+            // 4. Lock and verify active, email-verified Freelancer
+            $freelancerId = (int)$bid['freelancer_id'];
+            if (!$this->escrows->eligibleFreelancer($freelancerId, true)) {
+                throw new EscrowException(['form' => 'Awarded freelancer account is not eligible for payment.'], 403);
+            }
+
+            // 5. Lock Freelancer destination wallet — must exist, no silent auto-creation
+            $wallet = $this->escrows->getWallet($freelancerId, true);
+            if ($wallet === false) {
+                throw new EscrowException([
+                    'form' => 'Winning freelancer has not initialized their wallet yet. The freelancer must visit their wallet page before payment can be released.'
+                ], 409);
+            }
+
+            // 6. Lock escrow row
+            $escrow = $this->escrows->getEscrow($jobId, true);
+            if ($escrow === false) {
+                throw new EscrowException(['form' => 'Escrow record not found for this job.'], 404);
+            }
+            if ($escrow['status'] !== 'locked' || $escrow['settled_at'] !== null) {
+                throw new EscrowException(['form' => 'Escrow is not in locked state or has already been settled.'], 409);
+            }
+            $escrowAmount = number_format((float)$escrow['amount'], 2, '.', '');
+            if (bccomp($escrowAmount, $bidAmount, 2) !== 0) {
+                throw new EscrowException(['form' => 'Escrow amount does not match the accepted bid amount.'], 422);
+            }
+
+            // 7. Lock milestones in ascending ID order and assert every milestone is approved
+            $milestones = $this->escrows->lockMilestones($jobId);
+            if (empty($milestones)) {
+                throw new EscrowException(['form' => 'Job has no milestones defined.'], 422);
+            }
+            foreach ($milestones as $ms) {
+                if ($ms['status'] !== 'approved') {
+                    throw new EscrowException(['form' => 'All milestones must be approved before releasing escrow.'], 422);
+                }
+            }
+
+            // 8. Lock latest final submission and assert approved
+            $finalSub = $this->escrows->lockLatestFinalSubmission($jobId);
+            if ($finalSub === false || $finalSub['status'] !== 'approved') {
+                throw new EscrowException(['form' => 'Final deliverable must be approved before releasing escrow.'], 409);
+            }
+
+            // 9. Check idempotency guards
+            if ($this->escrows->hasSettlementLedger((int)$escrow['id'])) {
+                throw new EscrowException(['form' => 'Escrow for this job has already been released.'], 409);
+            }
+            $operationKey = 'escrow_release:job:' . $jobId;
+            if ($this->escrows->hasOperationKey($operationKey)) {
+                throw new EscrowException(['form' => 'Settlement operation has already been recorded.'], 409);
+            }
+
+            // 10. Atomic mutations
+            // A. Release locked escrow
+            if (!$this->escrows->releaseEscrow((int)$escrow['id'])) {
+                throw new EscrowException(['form' => 'Failed to release escrow.'], 409);
+            }
+
+            // B. Credit freelancer destination wallet
+            if (!$this->escrows->creditWallet($freelancerId, $escrowAmount)) {
+                throw new EscrowException(['form' => 'Failed to credit freelancer wallet.'], 500);
+            }
+
+            // C. Insert immutable append-only ledger entry
+            $ledgerId = $this->escrows->insertLedgerRelease($freelancerId, (int)$escrow['id'], $escrowAmount, $clientId, $operationKey);
+
+            // D. Transition job to completed
+            if (!$this->escrows->completeJob($jobId)) {
+                throw new EscrowException(['form' => 'Failed to transition job status.'], 409);
+            }
+
+            // E. Create payment released notification for winning freelancer
+            $notifMsg = 'Payment of RM' . number_format((float)$escrowAmount, 2) . ' for "' . $job['title'] . '" has been released to your wallet.';
+            $this->escrows->createPaymentNotification($freelancerId, $jobId, $notifMsg);
+
+            $this->pdo->commit();
+
+            return [
+                'job_id' => $jobId,
+                'escrow_id' => (int)$escrow['id'],
+                'freelancer_id' => $freelancerId,
+                'freelancer_name' => $bid['freelancer_name'] ?? 'Freelancer',
+                'amount' => $escrowAmount,
+                'ledger_id' => $ledgerId,
+            ];
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            if ($error instanceof EscrowException) {
+                throw $error;
+            }
+            error_log('Escrow release error: ' . $error->getMessage());
+            throw new \RuntimeException('Escrow settlement is temporarily unavailable.');
+        }
+    }
 }

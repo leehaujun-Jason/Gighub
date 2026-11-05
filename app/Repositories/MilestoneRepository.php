@@ -58,6 +58,17 @@ class MilestoneRepository
         return $q->fetchColumn() !== false;
     }
 
+    public function awardedFreelancer(int $jobId): array|false
+    {
+        if (!isset($this->pdo)) {
+            return false;
+        }
+        $sql = 'SELECT u.id, u.display_name, b.amount FROM bids b JOIN jobs j ON j.awarded_bid_id = b.id JOIN users u ON u.id = b.freelancer_id WHERE j.id = ?';
+        $q = $this->pdo->prepare($sql);
+        $q->execute([$jobId]);
+        return $q->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function forJob(int $jobId): array
     {
         $q = $this->pdo->prepare('SELECT id, job_id, title, description, due_date, position, status, approved_at, created_at, updated_at FROM milestones WHERE job_id = ? ORDER BY position ASC, id ASC');

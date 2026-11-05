@@ -49,6 +49,7 @@ User confirmed five manual browser checks:
 4. **Duplicate Prevention:** Re-submitting claim returned HTTP 409 Conflict without altering balance or ledger.
 5. **Role Isolation:** Freelancer access to `/client/wallet` returned HTTP 403 Forbidden.
 
-## Next Stage
+## Subsequent Modules & Extensions
 
 - **Module 14B:** Job Milestone Management (defining and validating milestones for awarded jobs prior to escrow funding).
+- **Module 16:** Freelancer Wallet & Simulated Escrow Release (`GET /freelancer/wallet`, `Related Job` transaction history column, and back navigation). Detailed in `docs/settlement.md`.

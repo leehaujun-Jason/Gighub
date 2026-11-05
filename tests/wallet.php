@@ -141,6 +141,10 @@ $repo = new class extends WalletRepository {
         $userEntries = array_values(array_filter($this->entries, fn($e) => $e['wallet_user_id'] === $userId));
         return array_slice($userEntries, ($page - 1) * 20, 21);
     }
+
+    public function isClientJobOwner(int $clientId, int $jobId): bool {
+        return $jobId === 2 && $clientId === 10;
+    }
 };
 
 $service = new WalletService($pdo, $repo);
@@ -266,7 +270,14 @@ check(str_contains($showAfter['body'], 'RM10,000.00'), 'balance RM10,000.00 disp
 check(str_contains($showAfter['body'], 'Demo Credit Claimed'), 'badge displayed');
 check(!str_contains($showAfter['body'], 'Claim RM10,000 Demo Credit'), 'claim button hidden once claimed');
 check(str_contains($showAfter['body'], '+RM10,000.00'), 'entry delta rendered');
-check(str_contains($showAfter['body'], 'demo:user:10'), 'operation key rendered');
+check(str_contains($showAfter['body'], 'Related Job'), 'Related Job column header rendered');
+check(str_contains($showAfter['body'], 'General Wallet Activity'), 'fallback General Wallet Activity rendered for demo credit');
+check(str_contains($showAfter['body'], '← Back to Client Workspace'), 'default back to client workspace link rendered');
+
+$showWithJob = $controller->show(['job_id' => 2]);
+check($showWithJob['status'] === 200, 'show with job_id returns 200');
+check(str_contains($showWithJob['body'], '← Back to Job Milestones'), 'back to job milestones link rendered when job_id supplied');
+check(str_contains($showWithJob['body'], '?route=/client/jobs/milestones&amp;job_id=2'), 'back to job milestones href correct');
 
 // Role restrictions (Freelancer & Admin)
 foreach (['freelancer', 'admin'] as $role) {

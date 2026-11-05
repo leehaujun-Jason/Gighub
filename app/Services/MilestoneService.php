@@ -28,6 +28,7 @@ class MilestoneService
         $hasEscrow = $this->milestones->hasEscrow($jobId);
         $escrow = $hasEscrow ? $this->milestones->escrow($jobId) : false;
         $isLocked = $hasEscrow || $job['status'] !== 'awarded';
+        $freelancer = method_exists($this->milestones, 'awardedFreelancer') ? $this->milestones->awardedFreelancer($jobId) : false;
 
         return [
             'job' => $job,
@@ -36,6 +37,7 @@ class MilestoneService
             'is_locked' => $isLocked,
             'has_escrow' => $hasEscrow,
             'escrow' => $escrow !== false ? $escrow : null,
+            'freelancer' => $freelancer !== false ? $freelancer : null,
             'is_client' => true,
         ];
     }

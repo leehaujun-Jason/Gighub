@@ -15,6 +15,9 @@
     $submissions = $submissions ?? [];
     $escrow = $escrow ?? null;
     $escrowAmount = ($escrow !== null && isset($escrow['amount'])) ? (float)$escrow['amount'] : (float)($job['budget'] ?? 0);
+    $freelancer = $freelancer ?? null;
+    $freelancerName = $freelancer['display_name'] ?? 'Freelancer';
+    $escrowReleaseToken = $escrowReleaseToken ?? '';
     $reviewToken = $reviewToken ?? '';
     $reviewErrors = $reviewErrors ?? [];
     $reviewOld = $reviewOld ?? [];
@@ -27,22 +30,32 @@
     <h1>Milestones for <?= $escape($job['title']) ?></h1>
 
     <?php if ($isLocked): ?>
+        <nav class="gh-back-nav" aria-label="Milestone workspace navigation">
+            <?php if ($isClient): ?>
+                <a href="?route=/client/jobs/show&amp;id=<?= (int)$job['id'] ?>">← Back to Job Details</a>
+                <span class="gh-back-nav-sep" aria-hidden="true">·</span>
+                <a href="?route=/client">Client Workspace</a>
+            <?php else: ?>
+                <a href="?route=/freelancer/bids">← Back to My Bids</a>
+                <span class="gh-back-nav-sep" aria-hidden="true">·</span>
+                <a href="?route=/freelancer">Freelancer Workspace</a>
+            <?php endif; ?>
+        </nav>
         <div class="gh-milestones-notice" role="note">
             <p><strong>Milestones are locked after funding.</strong> Escrow has been funded and work is underway. Deliverable checkpoints are displayed in read-only mode.</p>
         </div>
-        <p>
-            <?php if ($isClient): ?>
-                <a href="?route=/client/jobs/show&amp;id=<?= (int)$job['id'] ?>">Back to job details</a>
-            <?php else: ?>
-                <a href="?route=/freelancer/bids">Back to My Bids</a>
-            <?php endif; ?>
-        </p>
     <?php else: ?>
+        <nav class="gh-back-nav" aria-label="Milestone workspace navigation">
+            <a href="?route=/client/jobs/bids&amp;id=<?= (int)$job['id'] ?>">← Back to Job Bid Review</a>
+            <span class="gh-back-nav-sep" aria-hidden="true">·</span>
+            <a href="?route=/client">Client Workspace</a>
+        </nav>
         <p>Define task and deliverable checkpoints for this project. At least one milestone is required before escrow funding. Milestones represent deliverable scope and do not carry monetary amounts; full payment is held in escrow and settled upon project completion.</p>
-        <p>
-            <a href="?route=/client/jobs/bids&amp;id=<?= (int)$job['id'] ?>">Back to job bid review</a>
-            <?php if (count($milestones) >= 1): ?> · <a class="gh-button gh-button-primary" href="?route=/client/jobs/fund&amp;job_id=<?= (int)$job['id'] ?>">Proceed to Escrow Funding</a><?php endif; ?>
-        </p>
+        <?php if (count($milestones) >= 1): ?>
+            <div class="gh-panel-action-wrap">
+                <a class="gh-button gh-button-primary" href="?route=/client/jobs/fund&amp;job_id=<?= (int)$job['id'] ?>">Proceed to Escrow Funding</a>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($notice !== null): ?>
@@ -80,7 +93,11 @@
                     <?php elseif ($latestFinalSub['status'] === 'revisions_requested'): ?>
                         <span class="gh-badge" style="background: #fef3c7; color: #92400e; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">↺ Revisions Requested</span>
                     <?php elseif ($latestFinalSub['status'] === 'approved'): ?>
-                        <span class="gh-badge" style="background: #dcfce7; color: #15803d; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">✓ Work Accepted — Ready for Settlement</span>
+                        <?php if ($job['status'] === 'completed'): ?>
+                            <span class="gh-badge" style="background: #dcfce7; color: #15803d; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">✓ Completed &amp; Escrow Settled</span>
+                        <?php else: ?>
+                            <span class="gh-badge" style="background: #dcfce7; color: #15803d; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">✓ Work Accepted — Ready for Settlement</span>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -97,7 +114,9 @@
                             <strong style="color: #166534; font-size: 1rem;">All Milestones Approved!</strong>
                             <p style="margin: 0.35rem 0 0; color: #166534; font-size: 0.925rem;">You are now eligible to submit the completed final project deliverables for client review and acceptance.</p>
                         </div>
-                        <a class="gh-button gh-button-primary" href="?route=/freelancer/jobs/final-submit&amp;job_id=<?= (int)$job['id'] ?>">Submit Final Work Deliverable</a>
+                        <div class="gh-panel-action-wrap">
+                            <a class="gh-button gh-button-primary" href="?route=/freelancer/jobs/final-submit&amp;job_id=<?= (int)$job['id'] ?>">Submit Final Work Deliverable</a>
+                        </div>
                     <?php elseif ($latestFinalSub !== null && $latestFinalSub['status'] === 'submitted'): ?>
                         <div style="padding: 1rem 1.25rem; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 4px;">
                             <strong style="color: #0369a1; font-size: 1rem;">Final Deliverable Submitted</strong>
@@ -111,13 +130,41 @@
                                 <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--gh-muted);">Reviewed on <?= $escape($latestFinalSub['reviewed_at']) ?> UTC</div>
                             <?php endif; ?>
                         </div>
-                        <a class="gh-button gh-button-primary" href="?route=/freelancer/jobs/final-submit&amp;job_id=<?= (int)$job['id'] ?>">Submit Revised Final Deliverable</a>
-                    <?php elseif ($latestFinalSub !== null && $latestFinalSub['status'] === 'approved'): ?>
-                        <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px;">
-                            <strong style="color: #166534; font-size: 1.05rem;">✓ Final Work Deliverable Approved by Client!</strong>
-                            <p style="margin: 0.5rem 0 0; color: #166534; font-size: 0.95rem;">All milestone and final deliverables have been verified and accepted. The project is awaiting financial escrow settlement.</p>
-                            <p style="margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--gh-muted);">Agreed Escrow Amount: RM <?= number_format($escrowAmount, 2) ?> (Held safely in escrow).</p>
+                        <div class="gh-panel-action-wrap">
+                            <a class="gh-button gh-button-primary" href="?route=/freelancer/jobs/final-submit&amp;job_id=<?= (int)$job['id'] ?>">Submit Revised Final Deliverable</a>
                         </div>
+                    <?php elseif ($latestFinalSub !== null && $latestFinalSub['status'] === 'approved'): ?>
+                        <?php if ($job['status'] === 'completed'): ?>
+                            <div class="gh-settlement-card">
+                                <h3 class="gh-settlement-title">🎉 Project Completed — Escrow Payment Released!</h3>
+                                <p class="gh-settlement-desc">Congratulations! The client has approved all work and released the escrow payment directly to your simulated wallet.</p>
+                                <div class="gh-settlement-meta-grid" role="list" aria-label="Settlement details">
+                                    <div class="gh-settlement-item" role="listitem">
+                                        <span class="gh-settlement-label">Status:</span>
+                                        <span class="gh-settlement-value">Completed;</span>
+                                    </div>
+                                    <div class="gh-settlement-item" role="listitem">
+                                        <span class="gh-settlement-label">Payment Credited:</span>
+                                        <span class="gh-settlement-value gh-settlement-value--amount">+RM <?= number_format($escrowAmount, 2) ?>;</span>
+                                    </div>
+                                    <?php if (!empty($job['completed_at'])): ?>
+                                        <div class="gh-settlement-item" role="listitem">
+                                            <span class="gh-settlement-label">Completed (UTC):</span>
+                                            <span class="gh-settlement-value"><?= $escape($job['completed_at']) ?>;</span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="gh-settlement-actions">
+                                    <a class="gh-button gh-button-primary" href="?route=/freelancer/wallet&amp;job_id=<?= (int)$job['id'] ?>">View My Wallet</a>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px;">
+                                <strong style="color: #166534; font-size: 1.05rem;">✓ Final Work Deliverable Approved by Client!</strong>
+                                <p style="margin: 0.5rem 0 0; color: #166534; font-size: 0.95rem;">All milestone and final deliverables have been verified and accepted. The project is awaiting financial escrow settlement.</p>
+                                <p style="margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--gh-muted);">Agreed Escrow Amount: RM <?= number_format($escrowAmount, 2) ?> (Held safely in escrow).</p>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             <?php else: ?>
@@ -222,11 +269,83 @@
                             <p style="margin: 0.35rem 0 0; color: #78350f; font-size: 0.925rem;">Awaiting updated deliverables from the freelancer. You can inspect the feedback in the submission history below.</p>
                         </div>
                     <?php elseif ($latestFinalSub['status'] === 'approved'): ?>
-                        <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px;">
-                            <strong style="color: #166534; font-size: 1.05rem;">✓ Final Project Deliverable Approved</strong>
-                            <p style="margin: 0.5rem 0 0; color: #166534; font-size: 0.95rem;">All milestones and final deliverables have been accepted. The project is ready for final escrow settlement.</p>
-                            <p style="margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--gh-muted);">Escrow Status: Locked (RM <?= number_format($escrowAmount, 2) ?>). Payout will be processed in the settlement module.</p>
-                        </div>
+                        <?php if ($job['status'] === 'completed'): ?>
+                            <div class="gh-settlement-card">
+                                <h3 class="gh-settlement-title">✓ Project Completed &amp; Escrow Settled</h3>
+                                <p class="gh-settlement-desc">
+                                    All deliverables have been accepted and the escrow payment of <strong>RM <?= number_format($escrowAmount, 2) ?></strong> has been successfully released to <strong><?= $escape($freelancerName) ?></strong>.
+                                </p>
+                                <div class="gh-settlement-meta-grid" role="list" aria-label="Settlement details">
+                                    <div class="gh-settlement-item" role="listitem">
+                                        <span class="gh-settlement-label">Status:</span>
+                                        <span class="gh-settlement-value">Completed;</span>
+                                    </div>
+                                    <div class="gh-settlement-item" role="listitem">
+                                        <span class="gh-settlement-label">Escrow Released:</span>
+                                        <span class="gh-settlement-value gh-settlement-value--amount">RM <?= number_format($escrowAmount, 2) ?>;</span>
+                                    </div>
+                                    <div class="gh-settlement-item" role="listitem">
+                                        <span class="gh-settlement-label">Awarded Freelancer:</span>
+                                        <span class="gh-settlement-value"><?= $escape($freelancerName) ?>;</span>
+                                    </div>
+                                    <?php if (!empty($job['completed_at'])): ?>
+                                        <div class="gh-settlement-item" role="listitem">
+                                            <span class="gh-settlement-label">Completed (UTC):</span>
+                                            <span class="gh-settlement-value"><?= $escape($job['completed_at']) ?>;</span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="gh-settlement-actions">
+                                    <a class="gh-button gh-button-secondary" href="?route=/client/wallet&amp;job_id=<?= (int)$job['id'] ?>">View Wallet Ledger</a>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px; margin-bottom: 1.25rem;">
+                                <strong style="color: #166534; font-size: 1.05rem;">✓ Final Project Deliverable Approved</strong>
+                                <p style="margin: 0.5rem 0 0; color: #166534; font-size: 0.95rem;">All milestones and final deliverables have been accepted. The project is ready for final escrow settlement.</p>
+                                <p style="margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--gh-muted);">Escrow Status: Locked (RM <?= number_format($escrowAmount, 2) ?>).</p>
+                            </div>
+
+                            <section class="gh-review-panel gh-release-panel" aria-label="Release escrow payment">
+                                <div class="gh-release-panel-header">
+                                    <h3 class="gh-release-panel-title">Release Escrow Payment &amp; Complete Project</h3>
+                                    <p class="gh-release-panel-desc">
+                                        The final deliverable has been accepted. Confirm the simulated escrow release to transfer full payment to the winning freelancer and officially complete this project.
+                                    </p>
+                                </div>
+
+                                <div class="gh-release-meta-box">
+                                    <div class="gh-release-meta-grid" role="list" aria-label="Release details">
+                                        <div class="gh-release-meta-item" role="listitem">
+                                            <span class="gh-release-meta-label">Winning Freelancer:</span>
+                                            <span class="gh-release-meta-value"><?= $escape($freelancerName) ?>;</span>
+                                        </div>
+                                        <div class="gh-release-meta-item" role="listitem">
+                                            <span class="gh-release-meta-label">Locked Escrow Amount:</span>
+                                            <span class="gh-release-meta-value gh-release-meta-value--highlight">RM <?= number_format($escrowAmount, 2) ?>;</span>
+                                        </div>
+                                        <div class="gh-release-meta-item" role="listitem">
+                                            <span class="gh-release-meta-label">Destination:</span>
+                                            <span class="gh-release-meta-value">Freelancer Simulated Wallet;</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="gh-release-notice" role="note">
+                                    <strong>Simulation Notice:</strong> This release operates with simulated FYP wallet accounting. Funds will be credited to the freelancer's wallet balance. No real banking or card transactions occur.
+                                </div>
+
+                                <div class="gh-release-form-wrap">
+                                    <form method="post" action="?route=/client/jobs/escrow/release" class="gh-review-form" onsubmit="return confirm('Are you sure you want to release RM <?= number_format($escrowAmount, 2) ?> to <?= $escape($freelancerName) ?> and complete this project?');">
+                                        <input type="hidden" name="csrf_token" value="<?= $escape($escrowReleaseToken) ?>">
+                                        <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
+                                        <button type="submit" class="gh-button gh-button--approve gh-button--large">
+                                            Confirm &amp; Release Escrow Payment (RM <?= number_format($escrowAmount, 2) ?>)
+                                        </button>
+                                    </form>
+                                </div>
+                            </section>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
