@@ -5,13 +5,25 @@
 .gh-main, .gh-main [id] { scroll-margin-top: 12rem; }
 .gh-skip-link { z-index: 30; }
 .gh-account-menu { position: relative; margin-left: auto; }
-.gh-account-menu > summary { cursor: pointer; list-style: none; border-radius: 50%; }
+.gh-account-menu > summary { cursor: pointer; list-style: none; border-radius: 50%; outline: none; display: inline-flex; align-items: center; justify-content: center; }
 .gh-account-menu > summary::-webkit-details-marker { display: none; }
-.gh-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--gh-green); color: white; font-weight: 700; }
-.gh-account-panel { position: absolute; right: 0; top: calc(100% + .5rem); width: min(15rem, 80vw); padding: 1rem; background: white; border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); box-shadow: 0 8px 24px #142c2520; overflow-wrap: anywhere; }
-.gh-account-panel p { margin-top: 0; }
+.gh-account-menu > summary:focus-visible .gh-avatar { outline: 2px solid var(--gh-green); outline-offset: 2px; }
+.gh-avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--gh-green); color: white; font-weight: 700; font-size: 0.95rem; user-select: none; transition: background-color 0.15s ease; }
+.gh-avatar:hover { background: var(--gh-green-hover); }
+.gh-account-panel { position: absolute; right: 0; top: calc(100% + .5rem); width: 15rem; padding: 0.6rem 0.5rem; background: var(--gh-surface, #ffffff); border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); box-shadow: 0 10px 28px rgba(20, 44, 37, 0.16); z-index: 100; display: flex; flex-direction: column; box-sizing: border-box; }
+.gh-account-header { padding: 0.4rem 0.6rem 0.35rem; }
+.gh-account-name-header { font-weight: 700; font-size: 0.95rem; color: var(--gh-text); overflow-wrap: anywhere; line-height: 1.3; }
+.gh-account-role-badge { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gh-green); margin-top: 0.2rem; }
+.gh-account-divider { height: 1px; background: var(--gh-border); margin: 0.4rem 0; border: none; }
+.gh-account-item { display: flex; align-items: center; gap: 0.65rem; width: 100%; padding: 0.5rem 0.65rem; color: var(--gh-text); font-size: 0.875rem; font-weight: 500; text-decoration: none !important; border: none; background: transparent; border-radius: var(--gh-control-radius); cursor: pointer; box-sizing: border-box; text-align: left; transition: background-color 0.15s ease, color 0.15s ease; }
+.gh-account-item:hover { background: var(--gh-header-background, #eaf1e8); color: var(--gh-green); }
+.gh-account-item:focus-visible { outline: 2px solid var(--gh-green); outline-offset: -1px; }
+.gh-account-icon { flex-shrink: 0; stroke: currentColor; }
+.gh-account-signout { color: var(--gh-muted); }
+.gh-account-signout:hover { background: #fdf2f2; color: #b91c1c; }
+/* gh-account-panel */
 .gh-header-inner, .gh-main, .gh-footer-inner { width: 100%; max-width: 75rem; margin-inline: auto; padding: var(--gh-space-3) var(--gh-space-4); }
-.gh-header-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--gh-space-3); }
+.gh-header-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--gh-space-3); padding-block: 0.625rem; min-height: 4rem; }
 .gh-shell .gh-brand { display: inline-flex; align-items: center; font-size: 1.6rem; font-weight: 800; text-decoration: none; letter-spacing: -.06em; min-height: 44px; }
 .gh-navigation { display: flex; flex-wrap: wrap; align-items: center; justify-content: end; gap: var(--gh-space-1); }
 .gh-mobile-menu { display: none; }

@@ -10,17 +10,53 @@ use Throwable;
 final class PublicJobController
 {
     /** Factory lazily supplies [PublicJobRepository, SkillRepository], without SMTP. */
-    public function __construct(private readonly Closure $repositoryFactory,private readonly ?Closure $clock=null,private readonly ?PublicIdentity $identity=null) {}
-    public function index(array $input=[]): array
+    public function __construct(
+        private readonly Closure $repositoryFactory,
+        private readonly ?Closure $clock = null,
+        private readonly ?PublicIdentity $identity = null,
+        private readonly ?Closure $matchingFactory = null
+    ) {}
+    public function index(array $input = []): array
     {
-        $result=JobBrowseValidator::validate($input);$filters=$result['data'];$errors=$result['errors'];
+        $result = JobBrowseValidator::validate($input);
+        $filters = $result['data'];
+        $errors = $result['errors'];
         try {
-            [$repository,$catalogue]=($this->repositoryFactory)();$skills=$catalogue->all();
-            if(!isset($errors['skills'])&&count($catalogue->existingIds($filters['skills']))!==count($filters['skills']))$errors['skills']='Choose skills from the current catalogue.';
-            $rows=$errors===[]?$repository->browse($filters):[];
-            $hasNext=count($rows)>20&&$filters['page']<100000;$jobs=array_slice($rows,0,20);
-            return $this->render('index',compact('filters','errors','skills','jobs','hasNext'),$errors===[]?200:422);
-        }catch(Throwable){return self::unavailable();}
+            [$repository, $catalogue] = ($this->repositoryFactory)();
+            $skills = $catalogue->all();
+            if (!isset($errors['skills']) && count($catalogue->existingIds($filters['skills'])) !== count($filters['skills'])) {
+                $errors['skills'] = 'Choose skills from the current catalogue.';
+            }
+            $totalCount = ($errors === [] && method_exists($repository, 'count')) ? $repository->count($filters) : 0;
+            $rows = $errors === [] ? $repository->browse($filters) : [];
+            if ($totalCount === 0 && $rows !== []) {
+                $totalCount = count($rows);
+            }
+            $hasNext = count($rows) > 20 && $filters['page'] < 100000;
+            $jobs = array_slice($rows, 0, 20);
+
+            $navigationUser = $this->identity?->current();
+            if ($navigationUser !== null && ($navigationUser['role'] ?? '') === 'freelancer' && $this->matchingFactory !== null && $jobs !== []) {
+                try {
+                    [$matchingRepo, $matchingService] = ($this->matchingFactory)();
+                    $freelancerSkills = $matchingRepo->getFreelancerSkills((int)$navigationUser['id']);
+                    $freelancerSkillIds = array_column($freelancerSkills, 'id');
+                    $jobs = $matchingService->enrichBrowsedJobs($freelancerSkillIds, $jobs);
+
+                    $bidMap = $matchingRepo->getFreelancerBidStatusMap((int)$navigationUser['id']);
+                    foreach ($jobs as &$job) {
+                        $job['bid_status'] = $bidMap[(int)$job['id']] ?? null;
+                    }
+                    unset($job);
+                } catch (Throwable) {
+                    // Graceful degradation: browsing functions normally even if matching is unavailable
+                }
+            }
+
+            return $this->render('index', compact('filters', 'errors', 'skills', 'jobs', 'hasNext', 'totalCount'), $errors === [] ? 200 : 422);
+        } catch (Throwable) {
+            return self::unavailable();
+        }
     }
     public function show(array $input): array
     {
@@ -36,7 +72,7 @@ final class PublicJobController
         extract($data,EXTR_SKIP);$escape=static fn(string $v):string=>htmlspecialchars($v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
         $navigationUser=$this->identity?->current();
         $logoutToken=$navigationUser===null?null:Csrf::token('logout');
-        $assetVersion=static fn(string $name): string=>substr(hash_file('sha256',dirname(__DIR__,2).'/public/assets/'.$name),0,12);
+        $assetVersion=static fn(string $name): string=>is_file(dirname(__DIR__,2).'/public/assets/'.$name)?substr(hash_file('sha256',dirname(__DIR__,2).'/public/assets/'.$name),0,12):'1';
         $today=($this->clock!==null?($this->clock)():new \DateTimeImmutable())->setTimezone(new \DateTimeZone('Asia/Kuala_Lumpur'))->format('Y-m-d');
         $pageUrl=static function(int $page)use($data):string {
             $f=$data['filters'];$f['page']=$page;

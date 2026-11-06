@@ -1,0 +1,719 @@
+/* GigHub Module 18: Skill-Based Matching & Freelancer Workspace Styling */
+
+/* --- Workspace Layout --- */
+.gh-workspace-layout {
+    width: 100%;
+    max-width: 1040px;
+    margin: 2rem auto 4rem;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+}
+
+.gh-workspace-header {
+    margin-bottom: 1.75rem;
+}
+
+.gh-workspace-eyebrow {
+    color: var(--gh-green);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 0.35rem;
+}
+
+.gh-workspace-header h1 {
+    font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+    line-height: 1.2;
+    color: var(--gh-text);
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+}
+
+.gh-workspace-intro {
+    font-size: 1.05rem;
+    color: var(--gh-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* --- Shortcut Navigation Bar --- */
+.gh-workspace-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-bottom: 2rem;
+    padding: 0.85rem 1rem;
+    background: var(--gh-header-background);
+    border-radius: var(--gh-control-radius);
+    border: 1px solid rgba(23, 79, 64, 0.15);
+}
+
+.gh-shell .gh-workspace-nav .gh-workspace-nav-item,
+.gh-workspace-nav-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--gh-surface);
+    color: var(--gh-green);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    line-height: 1.2;
+    box-sizing: border-box;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gh-shell .gh-workspace-nav .gh-workspace-nav-item:hover,
+.gh-workspace-nav-item:hover {
+    background: var(--gh-green);
+    color: #ffffff !important;
+    border-color: var(--gh-green);
+    text-decoration: none !important;
+}
+
+.gh-shell .gh-workspace-nav .gh-workspace-nav-item:active,
+.gh-workspace-nav-item:active {
+    background: var(--gh-green-pressed);
+    color: #ffffff !important;
+    border-color: var(--gh-green-pressed);
+    text-decoration: none !important;
+}
+
+.gh-shell .gh-workspace-nav .gh-workspace-nav-item:focus,
+.gh-workspace-nav-item:focus {
+    text-decoration: none !important;
+}
+
+.gh-shell .gh-workspace-nav .gh-workspace-nav-item:focus-visible,
+.gh-workspace-nav-item:focus-visible {
+    outline: 3px solid var(--gh-green);
+    outline-offset: 2px;
+    text-decoration: none !important;
+}
+
+/* --- Workspace Sections --- */
+.gh-workspace-section {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-card-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.gh-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(119, 135, 123, 0.25);
+}
+
+.gh-section-header h2 {
+    font-size: 1.35rem;
+    margin: 0;
+    color: var(--gh-text);
+}
+
+.gh-workspace-section-desc {
+    font-size: 0.875rem;
+    color: var(--gh-muted);
+    margin: 0.35rem 0 0;
+}
+
+.gh-link-subtle {
+    font-size: 0.875rem;
+    color: var(--gh-green);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 500;
+}
+
+.gh-link-subtle:hover {
+    color: var(--gh-green-hover);
+}
+
+/* --- Freelancer Skills List --- */
+.gh-skills-pill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.gh-skill-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #eaf1e8;
+    color: var(--gh-green);
+    border: 1px solid rgba(23, 79, 64, 0.25);
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.gh-skills-empty {
+    padding: 1rem 0;
+}
+
+.gh-skills-empty p {
+    color: var(--gh-muted);
+    margin: 0 0 1rem;
+}
+
+/* --- Empty States --- */
+.gh-match-empty-card {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: #fafbfa;
+    border: 1.5px dashed var(--gh-border);
+    border-radius: var(--gh-control-radius);
+}
+
+.gh-match-empty-card h3 {
+    font-size: 1.2rem;
+    color: var(--gh-text);
+    margin: 0 0 0.5rem;
+}
+
+.gh-match-empty-card p {
+    color: var(--gh-muted);
+    font-size: 0.95rem;
+    max-width: 540px;
+    margin: 0 auto 0.75rem;
+    line-height: 1.5;
+}
+
+.gh-empty-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+/* --- Recommendations List --- */
+.gh-recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.gh-recommendation-card {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.gh-recommendation-card:hover {
+    border-color: var(--gh-green);
+    box-shadow: 0 4px 12px rgba(23, 79, 64, 0.08);
+}
+
+.gh-recommendation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.gh-recommendation-title-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.gh-recommendation-title {
+    font-size: 1.2rem;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.gh-recommendation-title a {
+    color: var(--gh-green);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.gh-recommendation-title a:hover {
+    color: var(--gh-green-hover);
+    text-decoration: underline;
+}
+
+.gh-recommendation-client {
+    font-size: 0.85rem;
+    color: var(--gh-muted);
+    margin: 0.25rem 0 0;
+}
+
+/* --- Match Pills (Color Tiers) --- */
+.gh-match-pill {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+/* Tier: High Match (>= 70%) */
+.gh-match-pill--high {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+/* Tier: Moderate Match (40% - 69.9%) */
+.gh-match-pill--med {
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #7dd3fc;
+}
+
+/* Tier: Qualified Match (20% - 39.9%) */
+.gh-match-pill--low {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+/* Tier: Below Threshold (< 20%, public browsing) */
+.gh-match-pill--sub {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
+.gh-recommendation-desc {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--gh-text);
+    margin: 0;
+}
+
+.gh-recommendation-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.gh-recommendation-meta dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gh-muted);
+    font-weight: 600;
+}
+
+.gh-recommendation-meta dd {
+    margin: 0.15rem 0 0;
+    font-weight: 600;
+    color: var(--gh-text);
+}
+
+/* --- Skills Breakdown Tags --- */
+.gh-recommendation-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid rgba(119, 135, 123, 0.2);
+    border-bottom: 1px solid rgba(119, 135, 123, 0.2);
+}
+
+.gh-skills-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.gh-skills-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gh-muted);
+    min-width: 145px;
+}
+
+.gh-skills-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Matched skill highlight */
+.gh-skill-tag--matched {
+    display: inline-flex;
+    align-items: center;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+}
+
+/* Unmatched required skill */
+.gh-skill-tag--unmatched {
+    display: inline-flex;
+    align-items: center;
+    background: #f9fafb;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    font-size: 0.8125rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+}
+
+/* Public job browsing: highlight matched skills inside .job-tags */
+.job-tags li.gh-skill-tag--matched {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-weight: 600;
+}
+
+/* Public job browsing: match pill beside title */
+.gh-job-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* --- Bid Badges & Actions --- */
+.gh-bid-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+}
+
+.gh-bid-badge--pending {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.gh-bid-badge--accepted {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.gh-bid-badge--rejected {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.gh-bid-badge--withdrawn {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+
+.gh-recommendation-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* Button reset helper for accessible semantic buttons styled as text links */
+.gh-button-reset {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+/* --- Modal Dialog (Update Your Skills) --- */
+.gh-modal {
+    --gh-green: #174f40;
+    --gh-green-hover: #103d31;
+    --gh-green-pressed: #0b3027;
+    --gh-header-background: #eaf1e8;
+    --gh-background: #f5f7f3;
+    --gh-surface: #ffffff;
+    --gh-text: #172b28;
+    --gh-muted: #52685e;
+    --gh-border: #77877b;
+    --gh-control-radius: .5rem;
+    --gh-card-radius: .75rem;
+    border: none;
+    border-radius: var(--gh-card-radius, .75rem);
+    padding: 0;
+    background: transparent;
+    max-width: 680px;
+    width: 90vw;
+    margin: auto;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+    color: #172b28;
+}
+
+dialog.gh-modal:not([open]) {
+    display: none !important;
+}
+
+dialog.gh-modal[open] {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 9999;
+}
+
+.gh-modal::backdrop {
+    background: rgba(20, 44, 37, 0.65);
+    backdrop-filter: blur(2px);
+}
+
+.gh-modal-card {
+    background: #ffffff;
+    background: var(--gh-surface, #ffffff);
+    color: #172b28;
+    color: var(--gh-text, #172b28);
+    border: 1px solid #77877b;
+    border: 1px solid var(--gh-border, #77877b);
+    border-radius: var(--gh-card-radius, .75rem);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.gh-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(119, 135, 123, 0.25);
+    background: #eaf1e8;
+    background: var(--gh-header-background, #eaf1e8);
+}
+
+.gh-modal-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--gh-text);
+    margin: 0;
+}
+
+.gh-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--gh-muted);
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--gh-control-radius);
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.gh-modal-close:hover {
+    color: var(--gh-text);
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.gh-modal-close:focus-visible {
+    outline: 2px solid var(--gh-green);
+    outline-offset: 2px;
+}
+
+.gh-modal-body {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.gh-modal-search-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.gh-modal-search-box {
+    flex: 1;
+    min-width: 200px;
+}
+
+.gh-modal-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--gh-text);
+    background: var(--gh-surface);
+}
+
+.gh-modal-search-input:focus {
+    outline: 2px solid var(--gh-green);
+    outline-offset: 1px;
+    border-color: var(--gh-green);
+}
+
+.gh-selected-counter {
+    font-size: 0.9rem;
+    color: var(--gh-muted);
+    white-space: nowrap;
+    padding: 0.4rem 0.75rem;
+    background: #eaf1e8;
+    border-radius: var(--gh-control-radius);
+    border: 1px solid rgba(23, 79, 64, 0.2);
+}
+
+.gh-modal-skills-scroll {
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid rgba(119, 135, 123, 0.2);
+    border-radius: var(--gh-control-radius);
+    background: #fafbfa;
+}
+
+.gh-modal-skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.6rem;
+    padding: 0.5rem;
+}
+
+.gh-modal-skill-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    background: var(--gh-surface);
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.gh-modal-skill-item:hover {
+    background: #f0f5ee;
+    border-color: var(--gh-green);
+}
+
+.gh-modal-skill-item input[type="checkbox"] {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: var(--gh-green);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.gh-modal-skill-item span {
+    overflow-wrap: anywhere;
+    color: var(--gh-text);
+}
+
+.gh-modal-no-match,
+.gh-modal-empty-catalogue {
+    text-align: center;
+    color: var(--gh-muted);
+    padding: 2.5rem 1rem;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.gh-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: #fafbfa;
+    border-top: 1px solid rgba(119, 135, 123, 0.25);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .gh-recommendation-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .gh-skills-label {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .gh-recommendation-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gh-recommendation-footer .gh-button {
+        text-align: center;
+    }
+
+    .gh-modal-skills-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -43,4 +43,43 @@ class FreelancerProfileService
             throw new \RuntimeException('Profile is temporarily unavailable.');
         }
     }
+
+    public function saveSkills(int $userId, array $input): void
+    {
+        $ids = $input['skills'] ?? [];
+        if (!is_array($ids) || count($ids) > 1000) {
+            throw new FreelancerProfileException(['skills' => 'Choose skills from the catalogue.']);
+        }
+        $cleanIds = [];
+        foreach ($ids as $id) {
+            if ((!is_string($id) && !is_int($id)) || !preg_match('/\A[1-9][0-9]{0,9}\z/D', (string)$id) || (int)$id > 4294967295) {
+                throw new FreelancerProfileException(['skills' => 'Choose skills from the catalogue.']);
+            }
+            $cleanIds[] = (int)$id;
+        }
+        $cleanIds = array_values(array_unique($cleanIds));
+        sort($cleanIds, SORT_NUMERIC);
+
+        $owns = !$this->pdo->inTransaction();
+        $started = false;
+        try {
+            if ($owns) $this->pdo->beginTransaction(); else $this->pdo->exec('SAVEPOINT gighub_skills');
+            $started = true;
+            if (!$this->profiles->lockEligible($userId)) {
+                throw new FreelancerProfileException(['form' => 'Your profile is unavailable.'], 403);
+            }
+            if (count($this->skills->existingIds($cleanIds)) !== count($cleanIds)) {
+                throw new FreelancerProfileException(['skills' => 'Choose skills from the current catalogue.']);
+            }
+            $this->profiles->updateSkills($userId, $cleanIds);
+            if ($owns) $this->pdo->commit(); else $this->pdo->exec('RELEASE SAVEPOINT gighub_skills');
+        } catch (Throwable $error) {
+            if ($started && $this->pdo->inTransaction()) {
+                if ($owns) $this->pdo->rollBack();
+                else { $this->pdo->exec('ROLLBACK TO SAVEPOINT gighub_skills'); $this->pdo->exec('RELEASE SAVEPOINT gighub_skills'); }
+            }
+            if ($error instanceof FreelancerProfileException) throw $error;
+            throw new \RuntimeException('Skills are temporarily unavailable.');
+        }
+    }
 }

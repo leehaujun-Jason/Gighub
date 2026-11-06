@@ -1,12 +1,560 @@
-.browse-filters{margin-bottom:2rem}.browse-filters select{width:100%;box-sizing:border-box;border:1px solid #73808e;border-radius:.5rem;padding:.8rem;font:inherit;color:#182b35;background:#fff;margin-bottom:1.25rem}.browse-filters .job-two-columns{margin-top:1rem}.browse-filters fieldset{margin-top:1.5rem}.browse-warning{color:#693c08;background:#fff4df;border:1px solid #a57a38;border-radius:.5rem;padding:.75rem}.browse-empty{padding:1.5rem 0}.browse-filters .skill-option input{width:1.15rem;height:1.15rem}.browse-filters select[aria-invalid=true]{border:2px solid #a52b38}
-
 /* Public browsing presentation inside the shared shell. */
-.gh-shell .jobs-layout { width: 100%; max-width: 75rem; flex: 1; }
-.gh-shell .jobs-heading { padding: 1.5rem; background: var(--gh-header-background); border-radius: var(--gh-card-radius); }
-.gh-shell .browse-filters, .gh-shell .job-list .jobs-card { border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); box-shadow: 0 6px 20px #142c2510; }
-.gh-shell .browse-empty { padding: 2rem; background: var(--gh-surface); border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); }
-.gh-shell .job-pagination a { display: inline-flex; align-items: center; min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--gh-green); border-radius: var(--gh-control-radius); text-decoration: none; }
-.gh-shell .job-pagination a:hover { background: var(--gh-header-background); }
-.gh-shell .job-pagination a:active { background: var(--gh-green-pressed); color: white; }
-.gh-shell .jobs-layout [id], .gh-shell .jobs-layout { scroll-margin-top: 12rem; }
-.gh-shell .gh-button { width: auto; margin: 0; }
+.gh-shell .jobs-layout { width: 100%; max-width: 1040px; margin: 1.5rem auto 4rem; padding: 0 1.25rem; box-sizing: border-box; flex: 1; }
+.gh-shell .jobs-heading { padding: 1.5rem 1.75rem; background: var(--gh-header-background); border-radius: var(--gh-card-radius); margin-bottom: 1.5rem; border: 1px solid rgba(23, 79, 64, 0.15); }
+.gh-shell .jobs-heading .eyebrow { color: var(--gh-green); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 0.35rem; }
+.gh-shell .jobs-heading h1 { font-size: clamp(1.75rem, 3.5vw, 2.25rem); line-height: 1.2; color: var(--gh-text); margin: 0 0 0.5rem; font-weight: 700; }
+.gh-shell .jobs-heading p { font-size: 1.05rem; color: var(--gh-muted); margin: 0; line-height: 1.5; }
+
+/* --- Compact Toolbar --- */
+.gh-browse-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.gh-browse-form {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+.gh-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 0;
+}
+
+.gh-search-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--gh-muted);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gh-search-wrapper input[type="search"] {
+    width: 100%;
+    height: 2.75rem;
+    padding: 0.5rem 1rem 0.5rem 2.75rem;
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    color: var(--gh-text);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    margin: 0;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gh-search-wrapper input[type="search"]:focus {
+    outline: none;
+    border-color: var(--gh-green);
+    box-shadow: 0 0 0 3px rgba(23, 79, 64, 0.2);
+}
+
+.gh-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.gh-button-toolbar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0 1.15rem;
+    background: var(--gh-surface);
+    color: var(--gh-text);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+}
+
+.gh-button-toolbar:hover {
+    border-color: var(--gh-green);
+    color: var(--gh-green);
+    background: var(--gh-header-background);
+}
+
+.gh-button-toolbar:focus-visible {
+    outline: 2px solid var(--gh-green);
+    outline-offset: 2px;
+}
+
+.gh-button-toolbar.is-active {
+    border-color: var(--gh-green);
+    color: var(--gh-green);
+    background: rgba(23, 79, 64, 0.08);
+}
+
+.gh-toolbar-icon {
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+.gh-chevron-icon {
+    flex-shrink: 0;
+    stroke: currentColor;
+    transition: transform 0.2s ease;
+}
+
+.gh-button-toolbar[aria-expanded="true"] .gh-chevron-icon {
+    transform: rotate(180deg);
+}
+
+.gh-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gh-green);
+    margin-left: 0.15rem;
+}
+
+.gh-hidden {
+    display: none !important;
+}
+
+/* --- Sort Dropdown Menu --- */
+.gh-sort-wrapper {
+    position: relative;
+}
+
+.gh-sort-menu {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    min-width: 11.5rem;
+    max-width: 14rem;
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    z-index: 100;
+    padding: 0.4rem 0.35rem;
+    box-sizing: border-box;
+}
+
+.gh-sort-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.gh-sort-group-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gh-muted);
+    padding: 0.2rem 0.5rem 0.25rem;
+}
+
+.gh-sort-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    min-height: 1.85rem;
+    border-radius: var(--gh-control-radius);
+    font-size: 0.85rem;
+    color: var(--gh-text);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+
+.gh-sort-option:hover {
+    background: var(--gh-header-background);
+}
+
+.gh-sort-option input[type="radio"] {
+    accent-color: var(--gh-green);
+    width: 0.95rem;
+    height: 0.95rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.gh-sort-divider {
+    height: 1px;
+    background: var(--gh-border);
+    margin: 0.35rem 0;
+}
+
+/* --- Subheader Stats Bar --- */
+.gh-browse-stats-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding: 0 0.25rem;
+    font-size: 0.95rem;
+    color: var(--gh-muted);
+}
+
+.gh-browse-count {
+    font-weight: 600;
+    color: var(--gh-text);
+}
+
+.gh-browse-sort-label {
+    font-size: 0.875rem;
+}
+
+/* --- Browse Results & Cards --- */
+#browse-results {
+    transition: opacity 0.2s ease;
+}
+
+#browse-results.is-loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.gh-recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.gh-browse-card {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.gh-browse-card:hover {
+    border-color: var(--gh-green);
+    box-shadow: 0 4px 12px rgba(23, 79, 64, 0.08);
+}
+
+.browse-warning-tag {
+    display: inline-block;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.35rem;
+}
+
+/* --- Filter Modal Styles --- */
+.gh-modal-section {
+    margin-bottom: 1.25rem;
+}
+
+.gh-modal-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gh-text);
+    margin: 0 0 0.5rem;
+}
+
+.gh-modal-budget-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+    margin-bottom: 0.35rem;
+}
+
+.gh-modal-budget-grid label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gh-text);
+    margin-bottom: 0.35rem;
+}
+
+.gh-modal-budget-grid input {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    color: var(--gh-text);
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+.gh-modal-budget-grid input:focus {
+    outline: none;
+    border-color: var(--gh-green);
+    box-shadow: 0 0 0 2px rgba(23, 79, 64, 0.2);
+}
+
+.gh-modal-hint {
+    font-size: 0.8rem;
+    color: var(--gh-muted);
+    margin: 0.25rem 0 0;
+    line-height: 1.4;
+}
+
+.gh-modal-skills-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.25rem;
+}
+
+.gh-link-button {
+    background: transparent;
+    border: none;
+    padding: 0.35rem 0.5rem;
+    margin: 0;
+    width: auto;
+    font-size: 0.875rem;
+    color: var(--gh-muted);
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 600;
+    border-radius: var(--gh-control-radius);
+    transition: color 0.15s ease, background-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.gh-link-button:hover {
+    color: var(--gh-green);
+    background: var(--gh-header-background, #eaf1e8);
+}
+
+.gh-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    background: #fafbfa;
+    border-top: 1px solid rgba(119, 135, 123, 0.25);
+    box-sizing: border-box;
+}
+
+.gh-modal-footer-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.gh-modal-footer-actions .gh-button {
+    height: 2.5rem;
+    min-height: 2.5rem;
+    width: auto;
+    margin: 0;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+}
+
+/* --- Filter Modal Specific Layout Polish --- */
+#gh-filter-modal .gh-modal-header,
+#gh-guest-login-modal .gh-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(119, 135, 123, 0.25);
+    background: var(--gh-header-background, #eaf1e8);
+}
+
+#gh-filter-modal .gh-modal-title,
+#gh-guest-login-modal .gh-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gh-text);
+    margin: 0;
+    white-space: nowrap;
+}
+
+#gh-filter-modal .gh-modal-close,
+#gh-guest-login-modal .gh-modal-close {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    max-width: 2rem;
+    max-height: 2rem;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--gh-muted);
+    cursor: pointer;
+    border-radius: var(--gh-control-radius);
+    transition: color 0.15s ease, background-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+#gh-filter-modal .gh-modal-close:hover,
+#gh-guest-login-modal .gh-modal-close:hover {
+    color: var(--gh-text);
+    background: rgba(0, 0, 0, 0.08);
+}
+
+#gh-filter-modal .gh-modal-skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.4rem;
+    padding: 0.35rem;
+}
+
+#gh-filter-modal .gh-modal-skill-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    min-height: 2rem;
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    background: var(--gh-surface);
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.8125rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+#gh-filter-modal .gh-modal-skill-item:hover {
+    background: #f0f5ee;
+    border-color: var(--gh-green);
+}
+
+#gh-filter-modal .gh-modal-skill-item input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--gh-green);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* --- Guest Login Prompt Modal --- */
+.gh-modal-card--narrow {
+    max-width: 420px;
+    width: 100%;
+}
+
+.gh-guest-modal-msg {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--gh-text);
+    margin: 0.5rem 0;
+}
+
+#gh-guest-login-modal .gh-modal-footer {
+    justify-content: flex-end;
+}
+
+#gh-guest-login-modal .gh-modal-footer .gh-button {
+    height: 2.5rem;
+    min-height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.25rem;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+    color: var(--gh-text);
+    margin: 0.5rem 0;
+}
+
+/* --- Pagination --- */
+.gh-shell .job-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 2rem 0 1rem;
+}
+
+.gh-shell .job-pagination a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--gh-green);
+    border-radius: var(--gh-control-radius);
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--gh-green);
+    background: var(--gh-surface);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.gh-shell .job-pagination a:hover {
+    background: var(--gh-green);
+    color: #ffffff;
+}
+
+.gh-shell .job-pagination span {
+    font-weight: 600;
+    color: var(--gh-muted);
+}
+
+/* --- Responsive Media Queries --- */
+@media (max-width: 768px) {
+    .gh-browse-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gh-toolbar-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .gh-button-toolbar {
+        width: 100%;
+    }
+
+    .gh-sort-wrapper {
+        width: 100%;
+    }
+
+    .gh-sort-menu {
+        left: 0;
+        right: 0;
+        min-width: 100%;
+    }
+
+    .gh-modal-budget-grid {
+        grid-template-columns: 1fr;
+    }
+}

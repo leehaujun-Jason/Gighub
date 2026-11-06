@@ -34,6 +34,18 @@ class FreelancerProfileRepository
         foreach ($data['skills'] as $skillId) $q->execute([$userId,$skillId]);
     }
 
+    public function updateSkills(int $userId, array $skillIds): void
+    {
+        $q = $this->pdo->prepare('DELETE FROM user_skills WHERE freelancer_id = ?');
+        $q->execute([$userId]);
+        if ($skillIds !== []) {
+            $q = $this->pdo->prepare('INSERT INTO user_skills (freelancer_id, skill_id) VALUES (?, ?)');
+            foreach ($skillIds as $skillId) {
+                $q->execute([$userId, (int)$skillId]);
+            }
+        }
+    }
+
     public function reputation(int $freelancerId): array
     {
         if (!isset($this->pdo)) {

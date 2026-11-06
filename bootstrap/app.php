@@ -168,7 +168,15 @@ $reviewFactory=static function() use ($config): \GigHub\Services\ReviewService {
 $reviews=new \GigHub\Controllers\ReviewController(new AuthGuard($authenticationFactory,$authSession),$reviewFactory);
 $router->get('/jobs/review',static fn()=>$reviews->createForm($_GET));
 $router->post('/jobs/review',static fn()=>$reviews->store($_POST));
-$publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity);
+foreach (['Services/MatchingService','Repositories/JobMatchingRepository','Controllers/FreelancerWorkspaceController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$matchingFactory=static function() use ($config): array {
+    $pdo=(new Database($config['database']))->connection();
+    return [new \GigHub\Repositories\JobMatchingRepository($pdo),new \GigHub\Services\MatchingService()];
+};
+$freelancerWorkspace=new \GigHub\Controllers\FreelancerWorkspaceController(new AuthGuard($authenticationFactory,$authSession),$matchingFactory,$profileFactory);
+$publicJobs=new \GigHub\Controllers\PublicJobController($publicRepositoryFactory, null, $publicIdentity, $matchingFactory);
 $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));
 $router->get('/client/jobs',static fn()=>$clientJobs->index($_GET));
@@ -181,9 +189,10 @@ $router->post('/client/jobs/publish',static fn()=>$clientJobs->publish($_POST));
 $router->get('/login',static fn()=>$authentication->show());
 $router->post('/login',static fn()=>$authentication->login($_POST));
 $router->post('/logout',static fn()=>$authentication->logout($_POST));
-foreach (['client','freelancer','admin'] as $role) {
-    $router->get('/'.$role,static fn()=>$accountHome->show($role));
-}
+$router->get('/client',static fn()=>$accountHome->show('client'));
+$router->get('/freelancer',static fn()=>$freelancerWorkspace->index());
+$router->post('/freelancer/skills',static fn()=>$freelancerWorkspace->updateSkills($_POST));
+$router->get('/admin',static fn()=>$accountHome->show('admin'));
 $verificationFactory = static function () use ($config): EmailVerificationService {
     $pdo = (new Database($config['database']))->connection();
     return new EmailVerificationService($pdo, MailTransportFactory::create($config['mail'], $config['app']['environment']), $config['verification']['base_url']);
