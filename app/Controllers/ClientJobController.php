@@ -42,7 +42,9 @@ final class ClientJobController
                 if($job['status']!=='draft')return self::text(409,'Published jobs are read-only.');
                 $old=$job;$old['skills']=array_column($job['skills'],'id');return $this->form($service,$id,$old,[]);
             }
-            $notice=$_SESSION['job_posting_notice']??null;unset($_SESSION['job_posting_notice']);
+            $rawNotice = $_SESSION['job_posting_notice'] ?? null;
+            $notice = in_array($rawNotice, ['Your job has been saved.', 'Your job has been published.'], true) ? $rawNotice : null;
+            unset($_SESSION['job_posting_notice']);
             return $this->render('show',compact('job','notice'));
         }catch(JobPostingException $e){return self::text($e->status,$e->status===404?'Job not found.':'Job request unavailable.');}
         catch(Throwable){return self::unavailable();}

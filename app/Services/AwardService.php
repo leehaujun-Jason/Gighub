@@ -7,7 +7,11 @@ use Throwable;
 
 class AwardService
 {
-    public function __construct(private readonly PDO $pdo,private readonly BidRepository $bids) {}
+    public function __construct(
+        private readonly PDO $pdo,
+        private readonly BidRepository $bids,
+        private readonly ?\GigHub\Repositories\NotificationRepository $notifications = null
+    ) {}
     public function award(int $clientId,int $jobId,int $bidId): void
     {
         $owns=!$this->pdo->inTransaction(); $started=false;
@@ -27,6 +31,9 @@ class AwardService
             if ($bid===false || (int)$bid['freelancer_id']!==$freelancerId) throw new BidException(['form'=>'Bid not found.'],404);
             if ($bid['status']!=='pending') throw new BidException(['form'=>'Only pending bids can be awarded.'],409);
             if (!$this->bids->selectAward($jobId,$clientId,$bidId)) throw new BidException(['form'=>'This job is no longer available for selection.'],409);
+            if ($this->notifications !== null) {
+                $this->notifications->create($freelancerId, $jobId, 'award_selected', 'Congratulations! Your bid for "' . $job['title'] . '" has been selected. Work begins once funding is completed.');
+            }
             // Selection is not funding: all bid mirrors remain unchanged, as specified by the schema design.
             if ($owns) $this->pdo->commit(); else $this->pdo->exec('RELEASE SAVEPOINT gighub_award');
         } catch (Throwable $error) {

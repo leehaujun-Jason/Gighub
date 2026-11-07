@@ -65,7 +65,7 @@ final class Notification
             $addLegacy('success', (string)$_SESSION['milestone_notice']);
             unset($_SESSION['milestone_notice']);
         }
-        if (isset($_SESSION['job_posting_notice'])) {
+        if (isset($_SESSION['job_posting_notice']) && in_array($_SESSION['job_posting_notice'], ['Your job has been saved.', 'Your job has been published.'], true)) {
             $addLegacy('success', (string)$_SESSION['job_posting_notice']);
             unset($_SESSION['job_posting_notice']);
         }

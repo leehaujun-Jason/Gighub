@@ -32,6 +32,7 @@ require_once $root . '/app/Controllers/RegistrationController.php';
 require_once $root . '/app/Controllers/EmailVerificationController.php';
 require_once $root . '/app/Repositories/UserRepository.php';
 require_once $root . '/app/Repositories/VerificationTokenRepository.php';
+require_once $root . '/app/Repositories/NotificationRepository.php';
 foreach (['MailTransport', 'VerificationMail', 'InMemoryMailTransport', 'DisabledMailTransport', 'SmtpDiagnostics', 'PhpMailerTransport', 'MailTransportFactory'] as $class) {
     require_once $root . '/app/Mail/' . $class . '.php';
 }
@@ -88,7 +89,7 @@ foreach (['Repositories/BidRepository','Services/BidValidator','Services/BidExce
 }
 $bidFactory=static function() use ($config): \GigHub\Services\BidService {
     $pdo=(new Database($config['database']))->connection();
-    return new \GigHub\Services\BidService($pdo,new \GigHub\Repositories\BidRepository($pdo));
+    return new \GigHub\Services\BidService($pdo,new \GigHub\Repositories\BidRepository($pdo),new \GigHub\Repositories\NotificationRepository($pdo));
 };
 $bids=new \GigHub\Controllers\BidController(new AuthGuard($authenticationFactory,$authSession),$bidFactory);
 $router->get('/freelancer/bids',static fn()=>$bids->index($_GET));
@@ -102,7 +103,7 @@ require_once $root.'/app/Services/AwardService.php';
 require_once $root.'/app/Controllers/AwardController.php';
 $awardFactory=static function() use ($config): \GigHub\Services\AwardService {
     $pdo=(new Database($config['database']))->connection();
-    return new \GigHub\Services\AwardService($pdo,new \GigHub\Repositories\BidRepository($pdo));
+    return new \GigHub\Services\AwardService($pdo,new \GigHub\Repositories\BidRepository($pdo),new \GigHub\Repositories\NotificationRepository($pdo));
 };
 $awards=new \GigHub\Controllers\AwardController(new AuthGuard($authenticationFactory,$authSession),$awardFactory);
 $router->post('/client/jobs/award',static fn()=>$awards->award($_POST));
@@ -136,7 +137,7 @@ foreach (['Repositories/EscrowRepository','Services/EscrowException','Services/E
 }
 $escrowFactory=static function() use ($config): \GigHub\Services\EscrowService {
     $pdo=(new Database($config['database']))->connection();
-    return new \GigHub\Services\EscrowService($pdo,new \GigHub\Repositories\EscrowRepository($pdo));
+    return new \GigHub\Services\EscrowService($pdo,new \GigHub\Repositories\EscrowRepository($pdo),new \GigHub\Repositories\NotificationRepository($pdo));
 };
 $escrows=new \GigHub\Controllers\EscrowController(new AuthGuard($authenticationFactory,$authSession),$escrowFactory);
 $router->get('/client/jobs/fund',static fn()=>$escrows->preview($_GET));
@@ -147,7 +148,7 @@ foreach (['Repositories/SubmissionRepository','Services/SubmissionException','Se
 }
 $submissionFactory=static function() use ($config): \GigHub\Services\SubmissionService {
     $pdo=(new Database($config['database']))->connection();
-    return new \GigHub\Services\SubmissionService($pdo,new \GigHub\Repositories\SubmissionRepository($pdo));
+    return new \GigHub\Services\SubmissionService($pdo,new \GigHub\Repositories\SubmissionRepository($pdo),new \GigHub\Repositories\NotificationRepository($pdo));
 };
 $submissions=new \GigHub\Controllers\SubmissionController(new AuthGuard($authenticationFactory,$authSession),$submissionFactory);
 $router->get('/freelancer/milestones/submit',static fn()=>$submissions->createForm($_GET));
@@ -168,6 +169,27 @@ $reviewFactory=static function() use ($config): \GigHub\Services\ReviewService {
 $reviews=new \GigHub\Controllers\ReviewController(new AuthGuard($authenticationFactory,$authSession),$reviewFactory);
 $router->get('/jobs/review',static fn()=>$reviews->createForm($_GET));
 $router->post('/jobs/review',static fn()=>$reviews->store($_POST));
+foreach (['Repositories/NotificationRepository','Services/NotificationService','Controllers/NotificationController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$notificationFactory=static function() use ($config): array {
+    $pdo=(new Database($config['database']))->connection();
+    $repo=new \GigHub\Repositories\NotificationRepository($pdo);
+    $service=new \GigHub\Services\NotificationService($repo);
+    return [$repo,$service];
+};
+$notifications=new \GigHub\Controllers\NotificationController(new AuthGuard($authenticationFactory,$authSession),$notificationFactory);
+$router->get('/notifications',static fn()=>$notifications->index($_GET));
+$router->post('/notifications/read',static fn()=>$notifications->markRead($_POST));
+$router->post('/notifications/read-all',static fn()=>$notifications->markAllRead($_POST));
+$router->get('/notifications/count',static fn()=>$notifications->unreadCount());
+require_once $root.'/app/Repositories/ClientWorkspaceRepository.php';
+require_once $root.'/app/Controllers/ClientWorkspaceController.php';
+$clientWorkspaceFactory=static function() use ($config): \GigHub\Repositories\ClientWorkspaceRepository {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Repositories\ClientWorkspaceRepository($pdo);
+};
+$clientWorkspace=new \GigHub\Controllers\ClientWorkspaceController(new AuthGuard($authenticationFactory,$authSession),$clientWorkspaceFactory);
 foreach (['Services/MatchingService','Repositories/JobMatchingRepository','Controllers/FreelancerWorkspaceController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
 }
@@ -189,7 +211,7 @@ $router->post('/client/jobs/publish',static fn()=>$clientJobs->publish($_POST));
 $router->get('/login',static fn()=>$authentication->show());
 $router->post('/login',static fn()=>$authentication->login($_POST));
 $router->post('/logout',static fn()=>$authentication->logout($_POST));
-$router->get('/client',static fn()=>$accountHome->show('client'));
+$router->get('/client',static fn()=>$clientWorkspace->index());
 $router->get('/freelancer',static fn()=>$freelancerWorkspace->index());
 $router->post('/freelancer/skills',static fn()=>$freelancerWorkspace->updateSkills($_POST));
 $router->get('/admin',static fn()=>$accountHome->show('admin'));

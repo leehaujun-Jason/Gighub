@@ -7,7 +7,11 @@ use Throwable;
 
 class EscrowService
 {
-    public function __construct(private readonly PDO $pdo, private readonly EscrowRepository $escrows) {}
+    public function __construct(
+        private readonly PDO $pdo,
+        private readonly EscrowRepository $escrows,
+        private readonly ?\GigHub\Repositories\NotificationRepository $notifications = null
+    ) {}
 
     public function getFundingDetails(int $clientId, int $jobId): array
     {
@@ -143,6 +147,11 @@ class EscrowService
 
             // F. Reject all other pending bids on this job
             $this->escrows->rejectLosingBids($jobId, $bidId);
+
+            // G. Dispatch notification to winning freelancer
+            if ($this->notifications !== null) {
+                $this->notifications->create((int)$bid['freelancer_id'], $jobId, 'escrow_funded', 'Escrow of RM' . number_format((float)$amount, 2) . ' has been funded for "' . $job['title'] . '". You may now begin work.');
+            }
 
             if ($owns) {
                 $this->pdo->commit();

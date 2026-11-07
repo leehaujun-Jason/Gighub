@@ -7,7 +7,11 @@ use Throwable;
 
 class BidService
 {
-    public function __construct(private readonly PDO $pdo,private readonly BidRepository $bids) {}
+    public function __construct(
+        private readonly PDO $pdo,
+        private readonly BidRepository $bids,
+        private readonly ?\GigHub\Repositories\NotificationRepository $notifications = null
+    ) {}
     public function listing(int $freelancerId,int $page): array { return $this->bids->mine($freelancerId,$page); }
     private function assertJob(array|false $job,int $freelancerId,bool $lock=false): void
     {
@@ -64,8 +68,25 @@ class BidService
                 throw new BidException(['form'=>'You already have a bid for this job. Manage it from My Bids.'],409);
             } elseif ($bid!==false) {
                 if (!in_array($bid['status'],['pending','withdrawn'],true)) throw new BidException(['form'=>'This bid is locked.'],409);
-                $this->bids->update((int)$bid['id'],$freelancerId,$data,$bid['status']); $id=(int)$bid['id'];
-            } else { $id=$this->bids->insert($jobId,$freelancerId,$data); }
+                $isResubmit = $bid['status'] === 'withdrawn';
+                $isMeaningful = bccomp(sprintf('%.2f', (float)$bid['amount']), sprintf('%.2f', (float)$data['amount']), 2) !== 0
+                    || (int)$bid['delivery_days'] !== (int)$data['delivery_days']
+                    || trim((string)$bid['cover_letter']) !== trim((string)$data['cover_letter']);
+                $this->bids->update((int)$bid['id'],$freelancerId,$data,$bid['status']);
+                $id=(int)$bid['id'];
+                if ($this->notifications !== null) {
+                    if ($isResubmit) {
+                        $this->notifications->create((int)$job['client_id'], $jobId, 'bid_received', 'Resubmitted bid of RM' . number_format((float)$data['amount'], 2) . ' received for "' . $job['title'] . '".');
+                    } elseif ($isMeaningful) {
+                        $this->notifications->create((int)$job['client_id'], $jobId, 'bid_received', 'Updated bid of RM' . number_format((float)$data['amount'], 2) . ' received for "' . $job['title'] . '".');
+                    }
+                }
+            } else {
+                $id = $this->bids->insert($jobId, $freelancerId, $data);
+                if ($this->notifications !== null) {
+                    $this->notifications->create((int)$job['client_id'], $jobId, 'bid_received', 'New bid of RM' . number_format((float)$data['amount'], 2) . ' received for "' . $job['title'] . '".');
+                }
+            }
             if ($owns) $this->pdo->commit(); else $this->pdo->exec('RELEASE SAVEPOINT gighub_bid');
             return $id;
         } catch (Throwable $error) {

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= $errors!==[]?'Error: ':'' ?><?= $id===null?'Post a job':'Edit draft' ?> · GigHub</title><link rel="stylesheet" href="assets/registration.css?v=4"><link rel="stylesheet" href="assets/jobs.css"><script src="assets/jobs.js" defer></script><?php require dirname(__DIR__, 2) . '/partials/page-shell.php'; ?></head>
 <body class="gh-shell gh-integrated"><?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>
-<main id="main-content" tabindex="-1" class="jobs-layout"><div class="jobs-heading"><p class="eyebrow">BUILD SOMETHING GREAT</p><h1><?= $id===null?'Post a job':'Edit your draft' ?></h1><p>Tell freelancers what you need, your advertised budget and when the work is due.</p></div>
+<main id="main-content" tabindex="-1" class="jobs-layout"><div class="jobs-page-header"><div class="jobs-page-header-title"><h1><?= $id===null?'Post a Job':'Edit Your Draft' ?></h1><p><?= $id===null?'Describe your project and find the right freelancer.':'Update your draft details before publishing.' ?></p></div></div>
 <section class="card jobs-card" aria-label="Job details">
 <?php if($errors!==[]): ?><div class="error-summary" id="job-errors" role="alert" tabindex="-1"><h2>Check your job details</h2><ul><?php foreach($errors as $field=>$message): ?><li><?php if($field!=='form'): ?><a href="#<?= $escape($field) ?>"><?= $escape($message) ?></a><?php else: ?><?= $escape($message) ?><?php endif; ?></li><?php endforeach; ?></ul></div><?php endif; ?>
 <form method="post" action="?route=<?= $id===null?'/client/jobs/create':'/client/jobs/update' ?>">

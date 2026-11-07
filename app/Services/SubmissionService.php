@@ -10,7 +10,8 @@ class SubmissionService
 {
     public function __construct(
         protected readonly PDO $pdo,
-        protected readonly SubmissionRepository $submissions
+        protected readonly SubmissionRepository $submissions,
+        protected readonly ?\GigHub\Repositories\NotificationRepository $notifications = null
     ) {}
 
     public function getSubmissionContext(int $freelancerId, int $jobId, int $milestoneId): array
@@ -126,6 +127,11 @@ class SubmissionService
 
             // Step 5: Update Milestone Status to 'submitted'
             $this->submissions->updateMilestoneStatus($jobId, $milestoneId, 'submitted');
+
+            // Step 6: Dispatch notification to client
+            if ($this->notifications !== null) {
+                $this->notifications->create((int)$job['client_id'], $jobId, 'submission_received', 'Work submitted for milestone "' . $milestone['title'] . '" on "' . $job['title'] . '".');
+            }
 
             if ($ownTx) {
                 $this->pdo->commit();
@@ -250,6 +256,11 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Milestone status could not be updated.'], 409);
             }
 
+            // Dispatch notification to freelancer
+            if ($this->notifications !== null) {
+                $this->notifications->create((int)$submission['freelancer_id'], $jobId, 'milestone_approved', 'Milestone "' . $milestone['title'] . '" on "' . $job['title'] . '" has been approved!');
+            }
+
             if ($ownTx) {
                 $this->pdo->commit();
             } else {
@@ -340,6 +351,11 @@ class SubmissionService
             $msUpdated = $this->submissions->requestMilestoneRevisionStatus($jobId, $milestoneId);
             if ($msUpdated !== 1) {
                 throw new SubmissionException(['form' => 'Milestone status could not be updated.'], 409);
+            }
+
+            // Dispatch notification to freelancer
+            if ($this->notifications !== null) {
+                $this->notifications->create((int)$submission['freelancer_id'], $jobId, 'revision_requested', 'Revisions requested for milestone "' . $milestone['title'] . '" on "' . $job['title'] . '".');
             }
 
             if ($ownTx) {
@@ -472,6 +488,11 @@ class SubmissionService
             $jobUpdated = $this->submissions->updateJobStatus($jobId, 'under_review', 'in_progress');
             if ($jobUpdated !== 1) {
                 throw new SubmissionException(['form' => 'Job status could not be updated to under review.'], 409);
+            }
+
+            // Step 7: Dispatch notification to client
+            if ($this->notifications !== null) {
+                $this->notifications->create((int)$job['client_id'], $jobId, 'submission_received', 'Final project deliverables submitted for "' . $job['title'] . '".');
             }
 
             if ($ownTx) {
@@ -640,6 +661,11 @@ class SubmissionService
             $jobUpdated = $this->submissions->updateJobStatus($jobId, 'in_progress', 'under_review');
             if ($jobUpdated !== 1) {
                 throw new SubmissionException(['form' => 'Job status could not be reverted to in progress.'], 409);
+            }
+
+            // Dispatch notification to freelancer
+            if ($this->notifications !== null) {
+                $this->notifications->create((int)$submission['freelancer_id'], $jobId, 'revision_requested', 'Revisions requested for final deliverables on "' . $job['title'] . '".');
             }
 
             // Milestone approvals remain intact

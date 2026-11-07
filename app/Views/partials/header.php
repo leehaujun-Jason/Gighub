@@ -21,6 +21,36 @@ if ($navigationUser === null) {
     };
     $navigationLinks[] = $workspace;
 }
+
+$currentRoute = isset($_GET['route']) && is_string($_GET['route']) ? trim($_GET['route']) : '/';
+if ($currentRoute === '') {
+    $currentRoute = '/';
+}
+$activeNavRoute = null;
+foreach ($navigationLinks as [$route, $label]) {
+    if ($currentRoute === $route) {
+        $activeNavRoute = $route;
+        break;
+    }
+}
+if ($activeNavRoute === null) {
+    $availableRoutes = array_column($navigationLinks, 0);
+    $parentCandidate = null;
+    if (str_starts_with($currentRoute, '/client/jobs/')) {
+        $parentCandidate = '/client/jobs';
+    } elseif (str_starts_with($currentRoute, '/freelancer/bids/')) {
+        $parentCandidate = '/freelancer/bids';
+    } elseif (str_starts_with($currentRoute, '/jobs/')) {
+        $parentCandidate = '/jobs';
+    } elseif (str_starts_with($currentRoute, '/client/wallet/')) {
+        $parentCandidate = '/client/wallet';
+    } elseif (str_starts_with($currentRoute, '/freelancer/wallet/')) {
+        $parentCandidate = '/freelancer/wallet';
+    }
+    if ($parentCandidate !== null && in_array($parentCandidate, $availableRoutes, true)) {
+        $activeNavRoute = $parentCandidate;
+    }
+}
 ?>
 <a class="gh-skip-link" href="#main-content">Skip to main content</a>
 <header class="gh-header">
@@ -37,7 +67,21 @@ if ($navigationUser === null) {
         </details>
         <?php if ($navigationUser !== null): ?>
             <?php $accountName = trim($navigationUser['display_name']); $initial = $accountName === '' ? '?' : mb_strtoupper(mb_substr($accountName, 0, 1, 'UTF-8'), 'UTF-8'); ?>
-            <details class="gh-account-menu">
+            <div class="gh-header-actions">
+                <?php
+                $unreadBadgeCount = isset($unreadNotificationCount) && is_int($unreadNotificationCount) ? $unreadNotificationCount : null;
+                $hasUnread = $unreadBadgeCount !== null && $unreadBadgeCount > 0;
+                $bellLabel = $hasUnread ? 'Notifications (' . $unreadBadgeCount . ' unread)' : 'Notifications';
+                $badgeText = $hasUnread ? ($unreadBadgeCount > 99 ? '99+' : (string)$unreadBadgeCount) : '';
+                ?>
+                <a class="gh-bell-btn" href="?route=/notifications" aria-label="<?= $escape($bellLabel) ?>" id="gh-bell-btn">
+                    <svg class="gh-bell-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="gh-bell-badge" id="gh-bell-badge" aria-hidden="true" style="<?= $hasUnread ? '' : 'display:none;' ?>"><?= $escape($badgeText) ?></span>
+                </a>
+                <details class="gh-account-menu">
                 <summary aria-label="Account menu"><span class="gh-avatar" aria-hidden="true"><?= $escape($initial) ?></span></summary>
                 <div class="gh-account-panel">
                     <div class="gh-account-header">
@@ -46,39 +90,24 @@ if ($navigationUser === null) {
                     </div>
                     <hr class="gh-account-divider">
                     <?php if ($navigationUser['role'] === 'freelancer'): ?>
-                        <a class="gh-account-item" href="?route=/freelancer/profile">
-                            <svg class="gh-account-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            <span>My Profile</span>
-                        </a>
-                        <a class="gh-account-item" href="?route=/freelancer/wallet">
-                            <svg class="gh-account-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path><path d="M16 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
-                            <span>My Wallet</span>
-                        </a>
+                        <a class="gh-account-item gh-account-workspace" href="?route=/freelancer">My Workspace</a>
+                        <a class="gh-account-item gh-account-profile" href="?route=/freelancer/profile">My Profile</a>
+                        <a class="gh-account-item gh-account-wallet" href="?route=/freelancer/wallet">My Wallet</a>
                     <?php elseif ($navigationUser['role'] === 'client'): ?>
-                        <a class="gh-account-item" href="?route=/client/jobs">
-                            <svg class="gh-account-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                            <span>My Jobs</span>
-                        </a>
-                        <a class="gh-account-item" href="?route=/client/wallet">
-                            <svg class="gh-account-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path><path d="M16 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
-                            <span>My Wallet</span>
-                        </a>
+                        <a class="gh-account-item gh-account-workspace" href="?route=/client">My Workspace</a>
+                        <a class="gh-account-item gh-account-jobs" href="?route=/client/jobs">My Jobs</a>
+                        <a class="gh-account-item gh-account-wallet" href="?route=/client/wallet">My Wallet</a>
                     <?php elseif ($navigationUser['role'] === 'admin'): ?>
-                        <a class="gh-account-item" href="?route=/admin">
-                            <svg class="gh-account-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                            <span>Admin Workspace</span>
-                        </a>
+                        <a class="gh-account-item gh-account-admin" href="?route=/admin">Admin Workspace</a>
                     <?php endif; ?>
                     <hr class="gh-account-divider">
                     <form method="post" action="?route=/logout" class="gh-logout">
                         <input type="hidden" name="csrf_token" value="<?= $escape($logoutToken) ?>">
-                        <button type="submit" class="gh-account-item gh-account-signout">
-                            <svg class="gh-account-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            <span>Sign out</span>
-                        </button>
+                        <button type="submit" class="gh-account-item gh-account-signout">Sign out</button>
                     </form>
                 </div>
             </details>
+            </div>
         <?php endif; ?>
     </div>
 </header>
