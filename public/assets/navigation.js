@@ -30,31 +30,55 @@
             }
         });
 
-        // Notification Unread Count Poller
+        // Header Badges Poller (Notifications & Messages)
         const bellBtn = document.getElementById('gh-bell-btn');
         const bellBadge = document.getElementById('gh-bell-badge');
+        const msgBtn = document.getElementById('gh-messages-btn');
+        const msgBadge = document.getElementById('gh-messages-badge');
 
-        if (bellBtn && bellBadge) {
-            let isPolling = false;
-            let lastCount = -1;
+        if (bellBtn || msgBtn) {
+            let isPollingNotifs = false;
+            let isPollingMsgs = false;
+            let lastNotifCount = -1;
+            let lastMsgCount = -1;
 
-            const updateBadge = (count) => {
-                if (count === lastCount) return;
-                lastCount = count;
+            const updateNotifBadge = (count) => {
+                if (!bellBadge || !bellBtn) return;
+                if (count === lastNotifCount) return;
+                lastNotifCount = count;
                 if (count > 0) {
                     bellBadge.textContent = count > 99 ? '99+' : String(count);
                     bellBadge.style.display = 'inline-block';
+                    bellBadge.classList.add('gh-badge-active');
                     bellBtn.setAttribute('aria-label', 'Notifications (' + count + ' unread)');
                 } else {
                     bellBadge.style.display = 'none';
+                    bellBadge.classList.remove('gh-badge-active');
                     bellBadge.textContent = '';
                     bellBtn.setAttribute('aria-label', 'Notifications');
                 }
             };
 
-            const fetchCount = async () => {
-                if (isPolling || document.visibilityState !== 'visible') return;
-                isPolling = true;
+            const updateMsgBadge = (count) => {
+                if (!msgBadge || !msgBtn) return;
+                if (count === lastMsgCount) return;
+                lastMsgCount = count;
+                if (count > 0) {
+                    msgBadge.textContent = count > 99 ? '99+' : String(count);
+                    msgBadge.style.display = 'inline-block';
+                    msgBadge.classList.add('gh-badge-active');
+                    msgBtn.setAttribute('aria-label', 'Messages (' + count + ' unread)');
+                } else {
+                    msgBadge.style.display = 'none';
+                    msgBadge.classList.remove('gh-badge-active');
+                    msgBadge.textContent = '';
+                    msgBtn.setAttribute('aria-label', 'Messages');
+                }
+            };
+
+            const fetchNotifCount = async () => {
+                if (!bellBadge || isPollingNotifs || document.visibilityState !== 'visible') return;
+                isPollingNotifs = true;
                 try {
                     const res = await fetch('?route=/notifications/count', {
                         headers: { 'Accept': 'application/json' },
@@ -63,27 +87,59 @@
                     if (res.ok) {
                         const data = await res.json();
                         if (typeof data.unread_count === 'number') {
-                            updateBadge(data.unread_count);
+                            updateNotifBadge(data.unread_count);
                         }
                     }
                 } catch {
                     // Fail silently on network errors
                 } finally {
-                    isPolling = false;
+                    isPollingNotifs = false;
                 }
             };
 
-            // Initial async check on page load
-            fetchCount();
+            const fetchMsgCount = async () => {
+                if (!msgBadge || isPollingMsgs || document.visibilityState !== 'visible') return;
+                isPollingMsgs = true;
+                try {
+                    const res = await fetch('?route=/messages/count', {
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store'
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (typeof data.count === 'number') {
+                            updateMsgBadge(data.count);
+                        }
+                    }
+                } catch {
+                    // Fail silently on network errors
+                } finally {
+                    isPollingMsgs = false;
+                }
+            };
 
-            // Periodic 60-second polling
-            setInterval(fetchCount, 60000);
+            const pollAll = () => {
+                fetchNotifCount();
+                fetchMsgCount();
+            };
+
+            // Initial check on page load
+            pollAll();
+
+            // Unified 60-second polling cycle
+            setInterval(pollAll, 60000);
 
             // Re-fetch immediately when user switches back to this tab
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
-                    fetchCount();
+                    pollAll();
                 }
+            });
+
+            // Listen for read events dispatched by message thread to update immediately
+            window.addEventListener('gh:messages-read', () => {
+                lastMsgCount = -1;
+                fetchMsgCount();
             });
         }
     });

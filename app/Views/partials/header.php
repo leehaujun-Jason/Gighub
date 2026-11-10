@@ -79,7 +79,13 @@ if ($activeNavRoute === null) {
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                     </svg>
-                    <span class="gh-bell-badge" id="gh-bell-badge" aria-hidden="true" style="<?= $hasUnread ? '' : 'display:none;' ?>"><?= $escape($badgeText) ?></span>
+                    <span class="gh-bell-badge<?= $hasUnread ? ' gh-badge-active' : '' ?>" id="gh-bell-badge" aria-hidden="true" style="<?= $hasUnread ? 'display:inline-block;' : 'display:none;' ?>"><?= $escape($badgeText) ?></span>
+                </a>
+                <a class="gh-bell-btn gh-messages-btn" href="?route=/messages" aria-label="Messages" id="gh-messages-btn">
+                    <svg class="gh-messages-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="gh-bell-badge gh-messages-badge" id="gh-messages-badge" aria-hidden="true" style="display:none;"></span>
                 </a>
                 <details class="gh-account-menu">
                 <summary aria-label="Account menu"><span class="gh-avatar" aria-hidden="true"><?= $escape($initial) ?></span></summary>
@@ -92,10 +98,12 @@ if ($activeNavRoute === null) {
                     <?php if ($navigationUser['role'] === 'freelancer'): ?>
                         <a class="gh-account-item gh-account-workspace" href="?route=/freelancer">My Workspace</a>
                         <a class="gh-account-item gh-account-profile" href="?route=/freelancer/profile">My Profile</a>
+                        <a class="gh-account-item gh-account-messages" href="?route=/messages">Messages</a>
                         <a class="gh-account-item gh-account-wallet" href="?route=/freelancer/wallet">My Wallet</a>
                     <?php elseif ($navigationUser['role'] === 'client'): ?>
                         <a class="gh-account-item gh-account-workspace" href="?route=/client">My Workspace</a>
                         <a class="gh-account-item gh-account-jobs" href="?route=/client/jobs">My Jobs</a>
+                        <a class="gh-account-item gh-account-messages" href="?route=/messages">Messages</a>
                         <a class="gh-account-item gh-account-wallet" href="?route=/client/wallet">My Wallet</a>
                     <?php elseif ($navigationUser['role'] === 'admin'): ?>
                         <a class="gh-account-item gh-account-admin" href="?route=/admin">Admin Workspace</a>

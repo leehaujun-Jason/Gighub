@@ -9,7 +9,10 @@ html { scrollbar-gutter: stable; }
 .gh-bell-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; color: var(--gh-text); text-decoration: none; border: 1px solid var(--gh-border); background: var(--gh-surface, #ffffff); transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; box-sizing: border-box; }
 .gh-bell-btn:hover { background: var(--gh-header-background, #eaf1e8); color: var(--gh-green); border-color: var(--gh-green); }
 .gh-bell-btn:focus-visible { outline: 2px solid var(--gh-green); outline-offset: 2px; }
-.gh-bell-badge { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #ffffff; font-size: 0.6875rem; font-weight: 700; line-height: 18px; text-align: center; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.gh-bell-badge { display: none; position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #ffffff; font-size: 0.6875rem; font-weight: 700; line-height: 18px; text-align: center; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.gh-bell-badge.gh-badge-active { display: inline-block; }
+.gh-messages-btn { position: relative; }
+.gh-messages-icon { display: block; color: currentColor; }
 .gh-account-menu { position: relative; }
 .gh-account-menu > summary { cursor: pointer; list-style: none; border-radius: 50%; outline: none; display: inline-flex; align-items: center; justify-content: center; }
 .gh-account-menu > summary::-webkit-details-marker { display: none; }

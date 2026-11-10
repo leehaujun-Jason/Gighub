@@ -30,13 +30,17 @@
 <h2><a href="?route=/freelancers/show&amp;id=<?= (int)$row['freelancer_id'] ?>"><?= $escape($row['display_name']) ?></a></h2>
 <dl class="gh-bid-meta"><div><dt>Proposed amount</dt><dd>RM<?= $escape($row['amount']) ?></dd></div><div><dt>Estimated delivery</dt><dd><?= (int)$row['delivery_days'] ?> days</dd></div><div><dt>Submitted (UTC)</dt><dd><?= $escape(substr($row['created_at'],0,10)) ?></dd></div></dl>
 <h3>Proposal</h3><div class="gh-bid-proposal"><?= $escape($row['cover_letter']) ?></div>
+<div class="gh-bid-actions">
 <?php if ($job['status']==='open' && $job['awarded_bid_id']===null && $row['status']==='pending' && (int)($row['bidder_eligible']??0)===1): ?>
-<form method="post" action="?route=/client/jobs/award" class="gh-bid-actions">
+<form method="post" action="?route=/client/jobs/award" style="display:inline;">
 <input type="hidden" name="csrf_token" value="<?= $escape(\GigHub\Core\Csrf::token('bid_award')) ?>">
 <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>"><input type="hidden" name="bid_id" value="<?= (int)$row['id'] ?>">
 <button class="gh-button gh-button-primary" type="submit" aria-label="Award bid from <?= $escape($row['display_name']) ?>">Award bid</button>
 </form>
-<?php elseif ($selected): ?><p>Selected for this job. Awaiting funding; no payment has been made.</p>
+<?php endif; ?>
+<a class="gh-button gh-button-secondary" href="?route=/messages/thread&amp;bid_id=<?= (int)$row['id'] ?>">Message Freelancer</a>
+</div>
+<?php if ($selected): ?><p>Selected for this job. Awaiting funding; no payment has been made.</p>
 <?php elseif ($job['status']==='awarded' && $row['status']==='pending'): ?><p>Another proposal has been selected. This bid remains pending and read-only until funding.</p>
 <?php endif; ?>
 </article><?php endforeach; ?>

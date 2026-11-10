@@ -183,6 +183,22 @@ $router->get('/notifications',static fn()=>$notifications->index($_GET));
 $router->post('/notifications/read',static fn()=>$notifications->markRead($_POST));
 $router->post('/notifications/read-all',static fn()=>$notifications->markAllRead($_POST));
 $router->get('/notifications/count',static fn()=>$notifications->unreadCount());
+foreach (['Repositories/MessageRepository','Services/MessageService','Controllers/MessageController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$messageFactory=static function() use ($config): array {
+    $pdo=(new Database($config['database']))->connection();
+    $repo=new \GigHub\Repositories\MessageRepository($pdo);
+    $service=new \GigHub\Services\MessageService();
+    return [$repo,$service];
+};
+$messages=new \GigHub\Controllers\MessageController(new AuthGuard($authenticationFactory,$authSession),$messageFactory);
+$router->get('/messages',static fn()=>$messages->inbox());
+$router->get('/messages/thread',static fn()=>$messages->thread($_GET));
+$router->post('/messages/send',static fn()=>$messages->send($_POST));
+$router->get('/messages/poll',static fn()=>$messages->poll($_GET));
+$router->post('/messages/read',static fn()=>$messages->read($_POST));
+$router->get('/messages/count',static fn()=>$messages->unreadCount());
 require_once $root.'/app/Repositories/ClientWorkspaceRepository.php';
 require_once $root.'/app/Controllers/ClientWorkspaceController.php';
 $clientWorkspaceFactory=static function() use ($config): \GigHub\Repositories\ClientWorkspaceRepository {
