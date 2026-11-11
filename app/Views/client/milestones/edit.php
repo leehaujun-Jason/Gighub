@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Edit Milestone · GigHub</title>
     <?php require dirname(__DIR__, 2) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/milestones.css?v=1">
+    <link rel="stylesheet" href="assets/milestones.css?v=<?= $assetVersion('milestones.css') ?>">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>

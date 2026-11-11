@@ -375,6 +375,21 @@ $flView = $service->listForFreelancer(116, 2);
 check($flView['is_locked'] === true, 'freelancer view is locked');
 check($flView['is_client'] === false, 'freelancer view is not client');
 
+// Terminal or dispute statuses ('cancelled', 'disputed', 'closed_disputed') allow viewing but block mutations
+foreach (['cancelled', 'disputed', 'closed_disputed'] as $status) {
+    $repo->jobRow['status'] = $status;
+    $termView = $service->listForJob(6, 2);
+    check($termView['job']['status'] === $status, "job in status $status can be listed by client");
+    check($termView['is_locked'] === true, "job in status $status is locked for client");
+
+    $flTermView = $service->listForFreelancer(116, 2);
+    check($flTermView['job']['status'] === $status, "job in status $status can be listed by freelancer");
+    check($flTermView['is_locked'] === true, "job in status $status is locked for freelancer");
+
+    denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 409, "job in status $status cannot create milestone");
+}
+$repo->jobRow['status'] = 'in_progress';
+
 // Ineligible or non-awarded freelancer rejected
 $repo->freelancerEligible = false;
 denied(fn() => $service->listForFreelancer(116, 2), 403, 'ineligible freelancer cannot view milestones');
@@ -524,6 +539,7 @@ check($clientRender['status'] === 200, 'client milestone view renders 200 OK wit
 check(str_contains($clientRender['body'], 'gh-review-panel'), 'client review panel rendered');
 check(str_contains($clientRender['body'], 'gh-sub-card'), 'submission history card rendered');
 check(str_contains($clientRender['body'], 'Attempt #1'), 'attempt number rendered in history');
+check(preg_match('/<link rel="stylesheet" href="assets\/milestones\.css\?v=[a-f0-9]{12}">/', $clientRender['body']) === 1, 'client milestone view includes milestones.css with sha256 hash cache-buster');
 
 // Test Freelancer Workspace Rendering (GET /freelancer/jobs/milestones)
 $users->row = ['id' => 116, 'role' => 'freelancer', 'display_name' => 'Alice Freelancer', 'status' => 'active', 'email_verified_at' => '2026-11-04 00:00:00'];
@@ -532,5 +548,19 @@ $flRender = $controller->freelancerIndex(['job_id' => 2]);
 check($flRender['status'] === 200, 'freelancer milestone view renders 200 OK with strict error handler');
 check(str_contains($flRender['body'], 'gh-sub-card'), 'freelancer view renders submission history card');
 check(str_contains($flRender['body'], 'Attempt #1'), 'freelancer view shows attempt #1');
+check(preg_match('/<link rel="stylesheet" href="assets\/milestones\.css\?v=[a-f0-9]{12}">/', $flRender['body']) === 1, 'freelancer milestone view includes milestones.css with sha256 hash cache-buster');
+
+// Test Cancelled Contract Workspace Rendering for both Client and Freelancer
+$repo->jobRow['status'] = 'cancelled';
+$users->row = ['id' => 6, 'role' => 'client', 'display_name' => 'Test Client', 'status' => 'active', 'email_verified_at' => '2026-11-04 00:00:00'];
+$session->establish(6);
+$clientCancelRender = $controller->index(['job_id' => 2]);
+check($clientCancelRender['status'] === 200, 'client milestone view renders 200 OK for cancelled job');
+
+$users->row = ['id' => 116, 'role' => 'freelancer', 'display_name' => 'Alice Freelancer', 'status' => 'active', 'email_verified_at' => '2026-11-04 00:00:00'];
+$session->establish(116);
+$flCancelRender = $controller->freelancerIndex(['job_id' => 2]);
+check($flCancelRender['status'] === 200, 'freelancer milestone view renders 200 OK for cancelled job');
+$repo->jobRow['status'] = 'in_progress';
 
 echo "PASS: {$count} milestone offline checks; no database connections.\n";

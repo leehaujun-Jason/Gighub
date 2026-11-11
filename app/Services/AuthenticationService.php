@@ -27,7 +27,7 @@ final class AuthenticationService
     {
         try {
             $row=$this->users->findAuthIdentity($id);
-            return self::eligible($row)?['id'=>(int)$row['id'],'display_name'=>$row['display_name'],'role'=>$row['role']]:null;
+            return self::eligible($row)?['id'=>(int)$row['id'],'display_name'=>$row['display_name'],'role'=>$row['role'],'status'=>$row['status']]:null;
         } catch(Throwable) { throw new RuntimeException('Sign-in is temporarily unavailable.'); }
     }
 

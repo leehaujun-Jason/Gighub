@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Chat with <?= $escape($counterpartName) ?> · GigHub</title>
     <?php require dirname(__DIR__) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/messages.css?v=2">
+    <link rel="stylesheet" href="assets/messages.css?v=<?= $assetVersion('messages.css') ?>">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__) . '/partials/header.php'; ?>
@@ -120,6 +120,6 @@
 </main>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
-<script src="assets/messages.js?v=2" defer></script>
+<script src="assets/messages.js?v=<?= $assetVersion('messages.js') ?>" defer></script>
 </body>
 </html>

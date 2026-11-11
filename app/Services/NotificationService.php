@@ -84,6 +84,18 @@ class NotificationService
                 ? '?route=/freelancer/profile'
                 : ($userRole === 'client' ? '?route=/client/jobs' : null),
 
+            'cancellation_requested', 'cancellation_responded', 'job_cancelled' => $jobId !== null && $userRole === 'freelancer'
+                ? '?route=/freelancer/jobs/milestones&job_id=' . $jobId
+                : ($jobId !== null && $userRole === 'client'
+                    ? '?route=/client/jobs/milestones&job_id=' . $jobId
+                    : ($userRole === 'freelancer' ? '?route=/freelancer' : '?route=/client/jobs')),
+
+            'dispute_opened', 'dispute_resolved' => $jobId !== null && $userRole === 'freelancer'
+                ? '?route=/freelancer/jobs/milestones&job_id=' . $jobId
+                : ($jobId !== null && $userRole === 'client'
+                    ? '?route=/client/jobs/milestones&job_id=' . $jobId
+                    : ($userRole === 'freelancer' ? '?route=/freelancer/wallet' : '?route=/client/wallet')),
+
             default => null,
         };
     }
@@ -102,6 +114,10 @@ class NotificationService
             'milestone_approved' => 'View Milestones',
             'payment_released', 'payment_refunded' => 'View Wallet',
             'review_received' => 'View Feedback',
+            'cancellation_requested' => 'Review Request',
+            'cancellation_responded', 'job_cancelled' => 'View Contract',
+            'dispute_opened' => 'View Dispute',
+            'dispute_resolved' => 'View Resolution',
             default => 'View Details',
         };
     }

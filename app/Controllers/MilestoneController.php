@@ -13,7 +13,8 @@ class MilestoneController
 {
     public function __construct(
         private readonly AuthGuard $guard,
-        private readonly mixed $serviceFactory
+        private readonly mixed $serviceFactory,
+        private readonly mixed $disputeFactory = null
     ) {}
 
     public function index(array $query): array
@@ -30,6 +31,15 @@ class MilestoneController
             return self::text($e->status, $e->errors['form'] ?? 'Milestones could not be loaded.');
         } catch (Throwable) {
             return self::text(503, 'Milestones service is temporarily unavailable. Please try again later.');
+        }
+
+        $disputeContext = null;
+        if ($this->disputeFactory !== null) {
+            try {
+                $disputeContext = ($this->disputeFactory)()->getJobDisputeContext((int)$access['user']['id'], $jobId);
+            } catch (Throwable) {
+                $disputeContext = null;
+            }
         }
 
         $notice = $_SESSION['milestone_notice'] ?? null;
@@ -86,6 +96,15 @@ class MilestoneController
             return self::text($e->status, $e->errors['form'] ?? 'Milestones could not be loaded.');
         } catch (Throwable) {
             return self::text(503, 'Milestones service is temporarily unavailable. Please try again later.');
+        }
+
+        $disputeContext = null;
+        if ($this->disputeFactory !== null) {
+            try {
+                $disputeContext = ($this->disputeFactory)()->getJobDisputeContext((int)$access['user']['id'], $jobId);
+            } catch (Throwable) {
+                $disputeContext = null;
+            }
         }
 
         $notice = null;

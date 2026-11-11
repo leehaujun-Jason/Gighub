@@ -585,6 +585,9 @@ $assert($inboxSarah['status'] === 200, 'Inbox renders successfully with active c
 $assert(str_contains($inboxSarah['body'], 'Alex Wong'), 'Inbox card displays counterpart display name');
 $assert(str_contains($inboxSarah['body'], 'Web App UI Refactoring'), 'Inbox card displays associated job title');
 $assert(str_contains($inboxSarah['body'], 'Open Chat'), 'Inbox card contains Open Chat button');
+$assert(preg_match('/<link rel="stylesheet" href="assets\/messages\.css\?v=[a-f0-9]{12}">/', $inboxSarah['body']) === 1, 'Inbox view includes messages.css with sha256 hash cache-buster');
+$assert(preg_match('/<link rel="stylesheet" href="assets\/messages\.css\?v=[a-f0-9]{12}">/', $sarahThread['body']) === 1, 'Thread view includes messages.css with sha256 hash cache-buster');
+$assert(str_contains(file_get_contents(dirname(__DIR__) . '/public/assets/messages.css'), 'width: 100%;'), 'messages.css enforces width: 100% on layout containers to prevent narrow fit-content collapse');
 
 // -------------------------------------------------------------------------
 // Summary

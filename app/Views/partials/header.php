@@ -46,6 +46,8 @@ if ($activeNavRoute === null) {
         $parentCandidate = '/client/wallet';
     } elseif (str_starts_with($currentRoute, '/freelancer/wallet/')) {
         $parentCandidate = '/freelancer/wallet';
+    } elseif (str_starts_with($currentRoute, '/admin/')) {
+        $parentCandidate = '/admin';
     }
     if ($parentCandidate !== null && in_array($parentCandidate, $availableRoutes, true)) {
         $activeNavRoute = $parentCandidate;

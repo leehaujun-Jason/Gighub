@@ -1,0 +1,1006 @@
+/* GigHub Module 21: Admin Dispute Mediation Styling */
+
+.gh-admin-layout {
+    width: 100%;
+    max-width: 1140px;
+    margin: 2rem auto 4rem;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+}
+
+.gh-admin-eyebrow {
+    color: var(--gh-green, #174f40);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 0.35rem;
+}
+
+.gh-admin-title {
+    font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+    color: var(--gh-text, #111827);
+    margin: 0 0 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.gh-admin-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--gh-border, #e5e7eb);
+    padding-bottom: 0.5rem;
+}
+
+.gh-admin-tab {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--gh-muted, #52685e);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.gh-admin-tab:hover {
+    background: #f3f4f6;
+    color: var(--gh-text, #111827);
+}
+
+.gh-admin-tab.active {
+    background: #111827;
+    color: #ffffff;
+}
+
+.gh-admin-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.gh-admin-tab.active .gh-admin-badge {
+    background: #ffffff;
+    color: #111827;
+}
+
+.gh-admin-card {
+    background: #ffffff;
+    border: 1px solid var(--gh-border, #e5e7eb);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* --- Admin Dispute Queue Table --- */
+.gh-admin-table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    border: 1px solid var(--gh-border, #e5e7eb);
+    background: #ffffff;
+}
+
+.gh-admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    text-align: left;
+    min-width: 820px;
+}
+
+.gh-admin-table th {
+    background: #f9fafb;
+    padding: 0.85rem 1rem;
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.gh-admin-table td {
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+    color: #1f2937;
+}
+
+.gh-admin-table tbody tr:hover td {
+    background: #f9fafb;
+}
+
+.gh-admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.gh-col-id {
+    width: 60px;
+    white-space: nowrap;
+}
+
+.gh-dispute-id {
+    font-weight: 700;
+    color: #4b5563;
+    font-variant-numeric: tabular-nums;
+}
+
+.gh-col-job {
+    min-width: 190px;
+    max-width: 260px;
+}
+
+.gh-job-title-clamp {
+    font-weight: 600;
+    color: #111827;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+.gh-job-subtext {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.2rem;
+}
+
+.gh-col-parties {
+    min-width: 210px;
+}
+
+.gh-party-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.gh-party-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    line-height: 1.3;
+}
+
+.gh-party-role {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6b7280;
+    width: 68px;
+    flex-shrink: 0;
+}
+
+.gh-party-name {
+    font-weight: 600;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gh-col-raiser {
+    min-width: 110px;
+    white-space: nowrap;
+}
+
+.gh-raiser-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.825rem;
+    font-weight: 500;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+}
+
+.gh-col-escrow {
+    min-width: 110px;
+    white-space: nowrap;
+}
+
+.gh-escrow-amount {
+    font-weight: 700;
+    color: #059669;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.gh-col-status {
+    min-width: 90px;
+    white-space: nowrap;
+}
+
+.gh-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+}
+
+.gh-status-open {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.gh-status-resolved {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.gh-status-pill--lg {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.gh-col-date {
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+.gh-date-text {
+    font-size: 0.825rem;
+    color: #6b7280;
+    font-variant-numeric: tabular-nums;
+}
+
+.gh-col-action {
+    width: 130px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.gh-btn-review {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0.35rem 0.85rem;
+    background: #2563eb;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid #1d4ed8;
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.gh-btn-review:hover {
+    background: #1d4ed8;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+}
+
+.gh-btn-review:active {
+    background: #1e40af;
+    transform: translateY(1px);
+}
+
+.gh-btn-review:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+/* Empty Queue State */
+.gh-admin-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #6b7280;
+}
+
+.gh-admin-empty-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.gh-admin-empty-title {
+    font-size: 1.15rem;
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.gh-admin-empty-desc {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #6b7280;
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Dossier Layout & Details --- */
+.gh-back-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+}
+
+.gh-back-link {
+    color: #2563eb !important;
+    text-decoration: underline !important;
+    font-weight: 500;
+}
+
+.gh-back-link:hover {
+    color: #1d4ed8 !important;
+}
+
+.gh-nav-sep {
+    color: #9ca3af;
+}
+
+.gh-nav-current {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.gh-dossier-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--gh-border, #e5e7eb);
+}
+
+.gh-dossier-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.925rem;
+    margin-top: 0.35rem;
+}
+
+.gh-meta-dot {
+    color: #d1d5db;
+}
+
+.gh-meta-escrow {
+    color: #059669;
+    font-weight: 700;
+}
+
+.gh-adjudication-record {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 5px solid #2563eb;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.gh-adjudication-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.gh-adjudication-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #1e40af;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.gh-adjudication-date {
+    font-size: 0.85rem;
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.gh-adjudication-decision {
+    font-size: 1.05rem;
+    color: #1e3a8a;
+    margin-bottom: 0.75rem;
+}
+
+.gh-adjudication-decision strong {
+    color: #1e40af;
+}
+
+.gh-adjudication-note-box {
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.gh-note-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.05em;
+}
+
+.gh-note-content {
+    margin: 0;
+    white-space: pre-wrap;
+    color: #1e293b;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.gh-adjudication-meta {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.gh-dossier-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .gh-dossier-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.gh-dossier-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    color: var(--gh-text, #111827);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* D1 Contract Parties Card */
+.gh-dossier-parties {
+    background: #ffffff;
+    border: 1px solid var(--gh-border, #e5e7eb);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.gh-dossier-parties-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.gh-party-block {
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.gh-party-block-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.gh-party-block-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.gh-party-block-email {
+    font-size: 0.85rem;
+    color: #4b5563;
+    word-break: break-all;
+}
+
+.gh-party-block-id {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.15rem;
+}
+
+.gh-escrow-block {
+    padding-top: 0.5rem;
+}
+
+.gh-escrow-block-amount {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #059669;
+    font-variant-numeric: tabular-nums;
+    margin: 0.2rem 0 0.35rem;
+}
+
+.gh-escrow-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.gh-escrow-locked {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.gh-escrow-refunded {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.gh-escrow-released {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+/* D2 Evidence Statements */
+.gh-statement-box {
+    border-radius: 8px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.gh-statement-grievance {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+}
+
+.gh-statement-response {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.gh-statement-pending {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.gh-statement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.gh-statement-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.gh-statement-grievance .gh-statement-title {
+    color: #92400e;
+}
+
+.gh-statement-response .gh-statement-title {
+    color: #166534;
+}
+
+.gh-statement-pending .gh-statement-title {
+    color: #6b7280;
+}
+
+.gh-statement-time {
+    font-size: 0.8rem;
+    color: #78350f;
+}
+
+.gh-statement-response .gh-statement-time {
+    color: #15803d;
+}
+
+.gh-statement-body {
+    margin: 0;
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #1f2937;
+}
+
+.gh-cancellation-callout {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    font-size: 0.875rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+.gh-cancellation-callout strong {
+    color: #0f172a;
+}
+
+/* D2 Milestone Timeline */
+.gh-evidence-timeline {
+    border-left: 2px solid #e5e7eb;
+    padding-left: 1.25rem;
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.gh-evidence-item {
+    position: relative;
+}
+
+.gh-evidence-item::before {
+    content: '';
+    position: absolute;
+    left: -1.6rem;
+    top: 0.35rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #6b7280;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px #d1d5db;
+}
+
+.gh-milestone-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #111827;
+}
+
+.gh-milestone-pill {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    text-transform: capitalize;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+
+.gh-milestone-pill-approved {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.gh-milestone-pill-submitted {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.gh-submission-card {
+    margin-top: 0.5rem;
+    padding: 0.85rem 1rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.gh-deliverable-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    background: #eff6ff;
+    color: #2563eb !important;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    width: fit-content;
+}
+
+.gh-deliverable-btn:hover {
+    background: #dbeafe;
+    color: #1d4ed8 !important;
+}
+
+.gh-feedback-callout {
+    padding: 0.5rem 0.75rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #991b1b;
+    font-size: 0.85rem;
+}
+
+/* D2 Chat Transcript */
+.gh-transcript-disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    font-size: 0.825rem;
+    color: #166534;
+    margin-bottom: 0.85rem;
+    line-height: 1.4;
+}
+
+.gh-chat-transcript {
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.gh-transcript-msg {
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    max-width: 85%;
+    word-break: break-word;
+    line-height: 1.45;
+}
+
+.gh-transcript-client {
+    align-self: flex-start;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.gh-transcript-freelancer {
+    align-self: flex-end;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.gh-transcript-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.gh-role-tag {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+}
+
+.gh-role-tag-client {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.gh-role-tag-freelancer {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* D3 Binding Adjudication Box */
+.gh-resolution-box {
+    background: #ffffff;
+    border: 2px solid #2563eb;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
+}
+
+.gh-resolution-box-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 0 0 0.5rem;
+}
+
+.gh-adjudication-notice {
+    font-size: 0.85rem;
+    color: #4b5563;
+    line-height: 1.45;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.65rem 0.85rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.gh-radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: #ffffff;
+    margin-bottom: 0.75rem;
+}
+
+.gh-radio-card:hover {
+    border-color: #93c5fd;
+    background: #f8fafc;
+}
+
+.gh-radio-card:has(input[type="radio"]:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #2563eb;
+}
+
+.gh-radio-card input[type="radio"] {
+    margin-top: 0.2rem;
+    accent-color: #2563eb;
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+}
+
+.gh-radio-card-content {
+    flex: 1;
+}
+
+.gh-radio-card-title {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.2rem;
+}
+
+.gh-radio-card-desc {
+    display: block;
+    font-size: 0.825rem;
+    color: #4b5563;
+    line-height: 1.35;
+}
+
+.gh-form-field {
+    margin: 1rem 0;
+}
+
+.gh-field-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.gh-char-guidance {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #6b7280;
+}
+
+.gh-field-hint {
+    margin: 0 0 0.4rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.35;
+}
+
+.gh-dossier-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: #111827;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    resize: vertical;
+}
+
+.gh-dossier-textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.gh-btn-binding-decision {
+    width: 100%;
+    min-height: 44px;
+    background: #1d4ed8;
+    color: #ffffff;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gh-btn-binding-decision:hover {
+    background: #1e40af;
+}
+
+.gh-btn-binding-decision:active {
+    background: #172554;
+    transform: translateY(1px);
+}
+
+.gh-btn-binding-decision:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.gh-btn-binding-decision:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}

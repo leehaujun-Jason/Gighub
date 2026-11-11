@@ -5,6 +5,8 @@
 .gh-bid-form{display:grid;gap:1.5rem}.gh-bid-form label{display:block;font-weight:600;margin-bottom:.5rem}.gh-bid-form p{color:var(--gh-muted)}
 .gh-bid-form textarea{resize:vertical;min-height:12rem}.gh-bid-form .gh-control{max-width:100%}
 .gh-bid-actions{display:flex;align-items:center;flex-wrap:wrap;gap:1rem;margin-top:1rem}
+.gh-bid-readonly-note{display:inline-flex;align-items:center;gap:.4rem;margin:.85rem 0 0;font-size:.875rem;color:var(--gh-muted,#52685e);font-weight:500;line-height:1.4}
+.gh-bid-lock-icon{font-size:.95rem;line-height:1}
 .gh-bid-meta{display:flex;gap:1.5rem;flex-wrap:wrap}.gh-bid-meta dt{color:var(--gh-muted);font-size:.9rem}.gh-bid-meta dd{margin:0;font-weight:600}
 .gh-bid-proposal{white-space:pre-wrap;margin-block:1rem;line-height:1.75}.gh-bid-status{font-weight:700;color:var(--gh-green)}
 .gh-bids-notice{background:var(--gh-header-background);border-left:4px solid var(--gh-green);padding:1rem}

@@ -128,3 +128,468 @@
 .gh-milestone-meta{display:grid;gap:.5rem}
 .gh-settlement-meta-grid,.gh-release-meta-grid{display:grid;gap:.5rem}
 }
+
+/* --- Module 21: Contract Resolution, Cancellation & Dispute Styling --- */
+.gh-dispute-banner {
+    margin-bottom: 2rem;
+}
+
+.gh-resolution-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.15rem;
+    padding: 1.35rem 1.5rem;
+    border-radius: var(--gh-card-radius);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.gh-resolution-alert--warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 6px solid #d97706;
+}
+
+.gh-resolution-alert--info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 6px solid #2563eb;
+}
+
+.gh-resolution-alert--neutral {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-left: 6px solid #6b7280;
+}
+
+/* Subtle Blue Informational Card for Declined Cancellation */
+.gh-shell .gh-resolution-alert--declined,
+.gh-resolution-alert--declined {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: var(--gh-card-radius);
+    padding: 1.15rem 1.35rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.06);
+}
+
+.gh-resolution-icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+}
+
+.gh-declined-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e40af;
+}
+
+.gh-declined-desc {
+    margin: 0;
+    color: #1e3a8a;
+    font-size: 0.925rem;
+    line-height: 1.5;
+}
+
+.gh-resolution-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.gh-resolution-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.gh-resolution-title {
+    margin: 0 0 0.4rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.gh-resolution-alert--warning .gh-resolution-title { color: #92400e; }
+.gh-resolution-alert--info .gh-resolution-title { color: #1e40af; }
+.gh-resolution-alert--neutral .gh-resolution-title { color: var(--gh-text); }
+
+.gh-resolution-desc {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--gh-text);
+}
+
+.gh-resolution-statement-box {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--gh-control-radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.925rem;
+}
+
+.gh-statement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.gh-statement-author {
+    font-weight: 700;
+    color: var(--gh-text);
+}
+
+.gh-statement-time {
+    font-size: 0.8125rem;
+    color: var(--gh-muted);
+}
+
+.gh-statement-body {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--gh-text);
+}
+
+/* Standalone / Structured Dispute Action Card (Subtle Amber) */
+.gh-shell .gh-dispute-action-card,
+.gh-dispute-action-card {
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+    border-radius: var(--gh-card-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(217, 119, 6, 0.08);
+}
+
+.gh-resolution-grid .gh-dispute-action-card {
+    margin-bottom: 0;
+}
+
+.gh-dispute-action-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+}
+
+.gh-dispute-icon-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.gh-dispute-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.gh-dispute-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.35rem;
+}
+
+.gh-dispute-subtitle {
+    font-size: 0.875rem;
+    color: #4b5563;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.gh-dispute-subtitle strong {
+    color: #111827;
+}
+
+/* Resolution Options Grid */
+.gh-resolution-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .gh-resolution-grid.gh-resolution-grid--two-col {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .gh-resolution-grid:not(.gh-resolution-grid--two-col):not(:has(> :only-child)) {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.gh-resolution-grid > :only-child {
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.gh-resolution-card {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-card-radius);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.gh-resolution-card--cancel {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.gh-resolution-card--dispute {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+}
+
+.gh-resolution-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gh-resolution-card--cancel .gh-resolution-card-title { color: var(--gh-text); }
+.gh-resolution-card--dispute .gh-resolution-card-title { color: #111827; }
+
+.gh-resolution-card-desc {
+    font-size: 0.875rem;
+    color: var(--gh-muted);
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
+}
+
+.gh-resolution-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    flex: 1;
+}
+
+.gh-resolution-label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.875rem;
+    margin-bottom: 0.4rem;
+    color: #111827;
+}
+
+.gh-resolution-hint {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--gh-muted);
+}
+
+.gh-shell .gh-dispute-textarea,
+.gh-shell .gh-resolution-textarea,
+.gh-dispute-textarea,
+.gh-resolution-textarea {
+    width: 100% !important;
+    min-height: 105px;
+    box-sizing: border-box;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    background: #ffffff;
+    color: #111827;
+    resize: vertical;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.gh-dispute-textarea:focus,
+.gh-resolution-textarea:focus {
+    outline: none;
+    border-color: var(--gh-green);
+    box-shadow: 0 0 0 3px rgba(23, 79, 64, 0.2);
+}
+
+.gh-char-counter {
+    display: flex;
+    justify-content: flex-end;
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.35rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.gh-resolution-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.gh-btn-accept {
+    min-height: 44px;
+    padding: 0.6rem 1.25rem;
+    font-weight: 700;
+    background: #059669;
+    color: #ffffff;
+    border: 1px solid #047857;
+    border-radius: var(--gh-control-radius);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+    font-size: 0.95rem;
+}
+.gh-btn-accept:hover { background: #047857; }
+.gh-btn-accept:active { transform: translateY(1px); }
+
+.gh-btn-decline {
+    min-height: 44px;
+    padding: 0.6rem 1.25rem;
+    font-weight: 600;
+    background: var(--gh-surface);
+    color: var(--gh-text);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-size: 0.95rem;
+}
+.gh-btn-decline:hover { background: #f3f4f6; border-color: #9ca3af; }
+
+/* Primary Submit Button for Dispute Escalation — Styled consistently with GigHub buttons */
+.gh-shell .gh-btn-dispute-submit,
+.gh-shell .gh-btn-danger-dispute,
+.gh-btn-dispute-submit,
+.gh-btn-danger-dispute {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 650;
+    color: #ffffff !important;
+    background: var(--gh-green, #174f40) !important;
+    border: 1px solid var(--gh-green, #174f40) !important;
+    border-radius: var(--gh-control-radius);
+    cursor: pointer;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.gh-shell .gh-btn-dispute-submit:hover,
+.gh-shell .gh-btn-danger-dispute:hover,
+.gh-btn-dispute-submit:hover,
+.gh-btn-danger-dispute:hover {
+    background: var(--gh-green-hover, #103d31) !important;
+    border-color: var(--gh-green-hover, #103d31) !important;
+    color: #ffffff !important;
+}
+
+.gh-shell .gh-btn-dispute-submit:active,
+.gh-shell .gh-btn-danger-dispute:active,
+.gh-btn-dispute-submit:active,
+.gh-btn-danger-dispute:active {
+    background: var(--gh-green-pressed, #0b3027) !important;
+    transform: translateY(1px);
+}
+
+.gh-shell .gh-btn-dispute-submit:focus-visible,
+.gh-shell .gh-btn-danger-dispute:focus-visible,
+.gh-btn-dispute-submit:focus-visible,
+.gh-btn-danger-dispute:focus-visible {
+    outline: 3px solid var(--gh-green);
+    outline-offset: 2px;
+}
+
+/* Secondary Cancel Button */
+.gh-shell .gh-btn-dispute-cancel,
+.gh-btn-dispute-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151 !important;
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: var(--gh-control-radius);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.gh-shell .gh-btn-dispute-cancel:hover,
+.gh-btn-dispute-cancel:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+    color: #111827 !important;
+}
+
+.gh-shell .gh-btn-dispute-cancel:focus-visible,
+.gh-btn-dispute-cancel:focus-visible {
+    outline: 2px solid var(--gh-green);
+    outline-offset: 2px;
+}
+
+.gh-btn-cancel-req {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
+    font-weight: 650;
+    background: var(--gh-green, #174f40);
+    color: #ffffff;
+    border: 1px solid var(--gh-green, #174f40);
+    border-radius: var(--gh-control-radius);
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.95rem;
+}
+.gh-btn-cancel-req:hover { background: var(--gh-green-hover, #103d31); }
+
+.gh-btn-dispute-response {
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
+    font-weight: 650;
+    background: var(--gh-green, #174f40);
+    color: #ffffff;
+    border: 1px solid var(--gh-green, #174f40);
+    border-radius: var(--gh-control-radius);
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.95rem;
+}
+.gh-btn-dispute-response:hover { background: var(--gh-green-hover, #103d31); }

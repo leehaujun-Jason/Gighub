@@ -118,6 +118,19 @@ $wallets=new \GigHub\Controllers\WalletController(new AuthGuard($authenticationF
 $router->get('/client/wallet',static fn()=>$wallets->show($_GET));
 $router->get('/freelancer/wallet',static fn()=>$wallets->showFreelancer($_GET));
 $router->post('/client/wallet/claim-demo-credit',static fn()=>$wallets->claimDemoCredit($_POST));
+foreach (['Repositories/DisputeRepository','Services/DisputeException','Services/DisputeService','Controllers/DisputeController','Controllers/AdminDisputeController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$disputeFactory=static function() use ($config): \GigHub\Services\DisputeService {
+    $pdo=(new Database($config['database']))->connection();
+    return new \GigHub\Services\DisputeService($pdo,new \GigHub\Repositories\DisputeRepository($pdo));
+};
+$disputes=new \GigHub\Controllers\DisputeController(new AuthGuard($authenticationFactory,$authSession),$disputeFactory);
+$adminDisputes=new \GigHub\Controllers\AdminDisputeController(new AuthGuard($authenticationFactory,$authSession),$disputeFactory);
+$router->post('/jobs/cancellation',static fn()=>$disputes->requestCancellation($_POST));
+$router->post('/jobs/cancellation/respond',static fn()=>$disputes->respondCancellation($_POST));
+$router->post('/jobs/dispute',static fn()=>$disputes->raiseDispute($_POST));
+$router->post('/jobs/dispute/respond',static fn()=>$disputes->submitDisputeResponse($_POST));
 foreach (['Repositories/MilestoneRepository','Services/MilestoneValidator','Services/MilestoneException','Services/MilestoneService','Controllers/MilestoneController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
 }
@@ -125,7 +138,7 @@ $milestoneFactory=static function() use ($config): \GigHub\Services\MilestoneSer
     $pdo=(new Database($config['database']))->connection();
     return new \GigHub\Services\MilestoneService($pdo,new \GigHub\Repositories\MilestoneRepository($pdo));
 };
-$milestones=new \GigHub\Controllers\MilestoneController(new AuthGuard($authenticationFactory,$authSession),$milestoneFactory);
+$milestones=new \GigHub\Controllers\MilestoneController(new AuthGuard($authenticationFactory,$authSession),$milestoneFactory,$disputeFactory);
 $router->get('/client/jobs/milestones',static fn()=>$milestones->index($_GET));
 $router->get('/freelancer/jobs/milestones',static fn()=>$milestones->freelancerIndex($_GET));
 $router->post('/client/jobs/milestones/create',static fn()=>$milestones->create($_POST));
@@ -230,7 +243,10 @@ $router->post('/logout',static fn()=>$authentication->logout($_POST));
 $router->get('/client',static fn()=>$clientWorkspace->index());
 $router->get('/freelancer',static fn()=>$freelancerWorkspace->index());
 $router->post('/freelancer/skills',static fn()=>$freelancerWorkspace->updateSkills($_POST));
-$router->get('/admin',static fn()=>$accountHome->show('admin'));
+$router->get('/admin',static fn()=>$adminDisputes->index($_GET));
+$router->get('/admin/disputes',static fn()=>$adminDisputes->index($_GET));
+$router->get('/admin/disputes/show',static fn()=>$adminDisputes->show($_GET));
+$router->post('/admin/disputes/resolve',static fn()=>$adminDisputes->resolve($_POST));
 $verificationFactory = static function () use ($config): EmailVerificationService {
     $pdo = (new Database($config['database']))->connection();
     return new EmailVerificationService($pdo, MailTransportFactory::create($config['mail'], $config['app']['environment']), $config['verification']['base_url']);

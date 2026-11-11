@@ -235,6 +235,36 @@ $assert($freelancerPaymentRoute === '?route=/freelancer/wallet', 'payment_releas
 $freelancerReviewRoute = NotificationService::getDestinationUrl(['type' => 'review_received', 'job_id' => 10], 'freelancer');
 $assert($freelancerReviewRoute === '?route=/freelancer/profile', 'review_received routes freelancer to profile');
 
+// Module 21 Destination Routing tests
+$flCancelReqRoute = NotificationService::getDestinationUrl(['type' => 'cancellation_requested', 'job_id' => 18], 'freelancer');
+$assert($flCancelReqRoute === '?route=/freelancer/jobs/milestones&job_id=18', 'cancellation_requested routes freelancer to freelancer milestones');
+
+$clientCancelReqRoute = NotificationService::getDestinationUrl(['type' => 'cancellation_requested', 'job_id' => 18], 'client');
+$assert($clientCancelReqRoute === '?route=/client/jobs/milestones&job_id=18', 'cancellation_requested routes client to client milestones');
+
+$flCancelRespRoute = NotificationService::getDestinationUrl(['type' => 'cancellation_responded', 'job_id' => 18], 'freelancer');
+$assert($flCancelRespRoute === '?route=/freelancer/jobs/milestones&job_id=18', 'cancellation_responded routes freelancer to milestones');
+
+$flJobCancelRoute = NotificationService::getDestinationUrl(['type' => 'job_cancelled', 'job_id' => 19], 'freelancer');
+$assert($flJobCancelRoute === '?route=/freelancer/jobs/milestones&job_id=19', 'job_cancelled routes freelancer to milestones');
+
+$flDisputeOpenRoute = NotificationService::getDestinationUrl(['type' => 'dispute_opened', 'job_id' => 20], 'freelancer');
+$assert($flDisputeOpenRoute === '?route=/freelancer/jobs/milestones&job_id=20', 'dispute_opened routes freelancer to milestones');
+
+$clientDisputeOpenRoute = NotificationService::getDestinationUrl(['type' => 'dispute_opened', 'job_id' => 20], 'client');
+$assert($clientDisputeOpenRoute === '?route=/client/jobs/milestones&job_id=20', 'dispute_opened routes client to milestones');
+
+$flDisputeResolveRoute = NotificationService::getDestinationUrl(['type' => 'dispute_resolved', 'job_id' => 21], 'freelancer');
+$assert($flDisputeResolveRoute === '?route=/freelancer/jobs/milestones&job_id=21', 'dispute_resolved routes freelancer to milestones');
+
+$clientDisputeResolveRoute = NotificationService::getDestinationUrl(['type' => 'dispute_resolved', 'job_id' => 20], 'client');
+$assert($clientDisputeResolveRoute === '?route=/client/jobs/milestones&job_id=20', 'dispute_resolved routes client to milestones');
+
+$assert(NotificationService::getActionLabel('cancellation_requested') === 'Review Request', 'cancellation_requested action label is Review Request');
+$assert(NotificationService::getActionLabel('cancellation_responded') === 'View Contract', 'cancellation_responded action label is View Contract');
+$assert(NotificationService::getActionLabel('dispute_opened') === 'View Dispute', 'dispute_opened action label is View Dispute');
+$assert(NotificationService::getActionLabel('dispute_resolved') === 'View Resolution', 'dispute_resolved action label is View Resolution');
+
 // Relative Time tests
 $nowUtc = gmdate('Y-m-d H:i:s');
 $assert(NotificationService::formatRelativeTime($nowUtc) === 'Just now', 'formatRelativeTime handles recent time as Just now');

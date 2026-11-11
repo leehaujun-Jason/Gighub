@@ -20,7 +20,7 @@ class MilestoneService
         if (!$this->milestones->eligibleClient($clientId)) {
             throw new MilestoneException(['form' => 'Your account cannot access milestones.'], 403);
         }
-        $allowedStatuses = ['awarded', 'in_progress', 'under_review', 'completed', 'disputed', 'closed_disputed'];
+        $allowedStatuses = ['awarded', 'in_progress', 'under_review', 'completed', 'disputed', 'closed_disputed', 'cancelled'];
         if (!in_array($job['status'], $allowedStatuses, true) || $job['awarded_bid_id'] === null) {
             throw new MilestoneException(['form' => 'Milestones are only available for awarded or in-progress jobs.'], 409);
         }
@@ -56,7 +56,7 @@ class MilestoneService
             throw new MilestoneException(['form' => 'Job not found or you are not the awarded freelancer.'], 404);
         }
 
-        $allowedStatuses = ['awarded', 'in_progress', 'under_review', 'completed', 'disputed', 'closed_disputed'];
+        $allowedStatuses = ['awarded', 'in_progress', 'under_review', 'completed', 'disputed', 'closed_disputed', 'cancelled'];
         if (!in_array($job['status'], $allowedStatuses, true)) {
             throw new MilestoneException(['form' => 'Milestones are not available for this job yet.'], 409);
         }

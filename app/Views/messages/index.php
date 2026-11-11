@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Messages · GigHub</title>
     <?php require dirname(__DIR__) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/messages.css?v=1">
+    <link rel="stylesheet" href="assets/messages.css?v=<?= $assetVersion('messages.css') ?>">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__) . '/partials/header.php'; ?>

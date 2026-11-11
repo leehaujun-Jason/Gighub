@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Job Milestones · GigHub</title>
     <?php require dirname(__DIR__, 2) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/milestones.css?v=2">
-    <link rel="stylesheet" href="assets/reviews.css?v=1">
+    <link rel="stylesheet" href="assets/milestones.css?v=<?= $assetVersion('milestones.css') ?>">
+    <link rel="stylesheet" href="assets/reviews.css?v=<?= $assetVersion('reviews.css') ?>">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>
@@ -38,10 +38,15 @@
     $finalReviewToken = $finalReviewToken ?? '';
     $finalReviewErrors = $finalReviewErrors ?? [];
     $finalReviewOld = $finalReviewOld ?? [];
+    $disputeContext = $disputeContext ?? null;
+    $isContractDisputed = in_array($job['status'] ?? '', ['disputed', 'closed_disputed', 'cancelled'], true);
 ?>
 <main id="main-content" tabindex="-1" class="gh-milestones-layout">
     <p class="gh-milestones-eyebrow"><?= $isClient ? 'CLIENT WORKSPACE' : 'FREELANCER WORKSPACE' ?></p>
     <h1>Milestones for <?= $escape($job['title']) ?></h1>
+
+    <?php require dirname(__DIR__, 2) . '/partials/notifications.php'; ?>
+    <?php require dirname(__DIR__, 2) . '/partials/dispute-banner.php'; ?>
 
     <?php if ($isLocked): ?>
         <nav class="gh-back-nav" aria-label="Milestone workspace navigation">
@@ -245,6 +250,7 @@
                                 </div>
                             </div>
 
+                            <?php if ($job['status'] === 'under_review'): ?>
                             <div class="gh-review-actions-grid">
                                 <!-- Approve Final Deliverable Card -->
                                 <div class="gh-review-card gh-review-card--approve">
@@ -309,6 +315,11 @@
                                     </form>
                                 </div>
                             </div>
+                            <?php else: ?>
+                            <div style="padding: 0.75rem 1rem; background: var(--gh-surface-alt, #f8fafc); border: 1px solid var(--gh-border, #e2e8f0); border-radius: 4px; font-size: 0.875rem; color: var(--gh-muted, #64748b); margin-top: 1rem;">
+                                <em>Final deliverable review actions are unavailable while the contract is <?= $escape($job['status']) ?>.</em>
+                            </div>
+                            <?php endif; ?>
                         </section>
                     <?php elseif ($latestFinalSub['status'] === 'revisions_requested'): ?>
                         <div style="padding: 1rem 1.25rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 4px;">
@@ -379,7 +390,7 @@
                                     </div>
                                 <?php endif; ?>
                             </div>
-                        <?php else: ?>
+                        <?php elseif ($job['status'] === 'under_review'): ?>
                             <div style="padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 4px; margin-bottom: 1.25rem;">
                                 <strong style="color: #166534; font-size: 1.05rem;">✓ Final Project Deliverable Approved</strong>
                                 <p style="margin: 0.5rem 0 0; color: #166534; font-size: 0.95rem;">All milestones and final deliverables have been accepted. The project is ready for final escrow settlement.</p>
@@ -425,6 +436,11 @@
                                     </form>
                                 </div>
                             </section>
+                        <?php elseif (in_array($job['status'], ['disputed', 'cancelled', 'closed_disputed'], true)): ?>
+                            <div style="padding: 1rem 1.25rem; background: var(--gh-surface-alt, #f8fafc); border: 1px solid var(--gh-border, #e2e8f0); border-radius: 4px; margin-bottom: 1.25rem;">
+                                <strong style="font-size: 0.95rem;">Final Deliverables Approved</strong>
+                                <p style="margin: 0.35rem 0 0; font-size: 0.875rem; color: var(--gh-muted, #64748b);">Escrow release actions are frozen because the contract is currently <?= $escape($job['status']) ?>.</p>
+                            </div>
                         <?php endif; ?>
                     <?php endif; ?>
                 </div>
@@ -543,6 +559,7 @@
                                         Review the submission notes and deliverable link below. You can approve this milestone checkpoint or request revisions with written feedback.
                                     </p>
 
+                                    <?php if ($job['status'] === 'in_progress'): ?>
                                     <div class="gh-review-actions-grid">
                                         <!-- Approve Milestone Card -->
                                         <div class="gh-review-card gh-review-card--approve">
@@ -606,6 +623,11 @@
                                             </form>
                                         </div>
                                     </div>
+                                    <?php else: ?>
+                                    <div style="padding: 0.75rem 1rem; background: var(--gh-surface-alt, #f8fafc); border: 1px solid var(--gh-border, #e2e8f0); border-radius: 4px; font-size: 0.875rem; color: var(--gh-muted, #64748b); margin-top: 1rem;">
+                                        <em>Milestone review actions are unavailable while the contract is <?= $escape($job['status']) ?>.</em>
+                                    </div>
+                                    <?php endif; ?>
                                 </section>
                             <?php endif; ?>
                         <?php elseif ($m['status'] === 'revisions_requested'): ?>
