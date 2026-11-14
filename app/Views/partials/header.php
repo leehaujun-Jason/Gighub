@@ -68,7 +68,7 @@ if ($activeNavRoute === null) {
             </nav>
         </details>
         <?php if ($navigationUser !== null): ?>
-            <?php $accountName = trim($navigationUser['display_name']); $initial = $accountName === '' ? '?' : mb_strtoupper(mb_substr($accountName, 0, 1, 'UTF-8'), 'UTF-8'); ?>
+            <?php $accountName = trim($navigationUser['display_name']); ?>
             <div class="gh-header-actions">
                 <?php
                 $unreadBadgeCount = isset($unreadNotificationCount) && is_int($unreadNotificationCount) ? $unreadNotificationCount : null;
@@ -90,7 +90,7 @@ if ($activeNavRoute === null) {
                     <span class="gh-bell-badge gh-messages-badge" id="gh-messages-badge" aria-hidden="true" style="display:none;"></span>
                 </a>
                 <details class="gh-account-menu">
-                <summary aria-label="Account menu"><span class="gh-avatar" aria-hidden="true"><?= $escape($initial) ?></span></summary>
+                <summary aria-label="Account menu"><?php $avatarUser = $navigationUser; require __DIR__ . '/avatar.php'; ?></summary>
                 <div class="gh-account-panel">
                     <div class="gh-account-header">
                         <div class="gh-account-name-header"><?= $escape($navigationUser['display_name']) ?></div>
@@ -103,6 +103,7 @@ if ($activeNavRoute === null) {
                         <a class="gh-account-item gh-account-messages" href="?route=/messages">Messages</a>
                         <a class="gh-account-item gh-account-wallet" href="?route=/freelancer/wallet">My Wallet</a>
                     <?php elseif ($navigationUser['role'] === 'client'): ?>
+                        <a class="gh-account-item gh-account-profile" href="?route=/client/profile">My Profile</a>
                         <a class="gh-account-item gh-account-workspace" href="?route=/client">My Workspace</a>
                         <a class="gh-account-item gh-account-jobs" href="?route=/client/jobs">My Jobs</a>
                         <a class="gh-account-item gh-account-messages" href="?route=/messages">Messages</a>

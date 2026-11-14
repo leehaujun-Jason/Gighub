@@ -9,13 +9,14 @@ use GigHub\Services\FreelancerProfileService;
 use GigHub\Core\Csrf;
 $checks=0;
 function check(bool $ok,string $message): void { global $checks; if (!$ok) throw new RuntimeException('FAIL: '.$message); ++$checks; }
-check(Validator::validate([])['errors']===[],'empty optional profile');
-check(Validator::validate(['headline'=>str_repeat('界',150)])['errors']===[],'150 Unicode characters');
+check(isset(Validator::validate([])['errors']['skills']),'empty skills rejected');
+check(Validator::validate(['headline'=>str_repeat('界',150),'skills'=>['1']])['errors']===[],'150 Unicode characters');
 check(isset(Validator::validate(['headline'=>str_repeat('界',151)])['errors']['headline']),'headline limit');
-check(Validator::validate(['bio'=>str_repeat('🌍',10000)])['errors']===[],'Unicode bio TEXT capacity');
+check(Validator::validate(['bio'=>str_repeat('🌍',10000),'skills'=>['1']])['errors']===[],'Unicode bio TEXT capacity');
 check(isset(Validator::validate(['bio'=>str_repeat('a',10001)])['errors']['bio']),'bio limit');
 foreach ([['headline'=>[]],['bio'=>"\xff"],['bio'=>"a\0b"],['skills'=>'1'],['skills'=>[[]]],['skills'=>['0']],['skills'=>['4294967296']],['skills'=>['1 OR 1=1']],['skills'=>[true]]] as $input) check(Validator::validate($input)['errors']!==[],'reject malformed input');
-check(Validator::validate(['headline'=>'  PHP developer  ','skills'=>['2',1,'2']])['data']===['headline'=>'PHP developer','bio'=>'','skills'=>[1,2]],'normalization and skill set');
+check(Validator::validate(['headline'=>'  PHP developer  ','skills'=>['2',1]])['data']===['headline'=>'PHP developer','bio'=>'','skills'=>[1,2]],'normalization and skill set');
+check(isset(Validator::validate(['skills'=>['1',1]])['errors']['skills']),'duplicate skills rejected');
 
 class ProfileTestPDO extends PDO {
     public bool $active=false; public array $events=[];
@@ -42,7 +43,7 @@ $skills=new class extends GigHub\Repositories\SkillRepository {
     public function existingIds(array $ids): array { return array_values(array_intersect($ids,[1,2])); }
 };
 $service=new FreelancerProfileService($pdo,$repo,$skills);
-$service->save(7,['headline'=>'Headline','skills'=>['1','1',2],'user_id'=>999]);
+$service->save(7,['headline'=>'Headline','skills'=>['1',2],'user_id'=>999]);
 check($repo->writes[0][0]===7 && $repo->locked===[7],'session-derived owner used despite forged ID');
 check($repo->writes[0][1]['skills']===[1,2] && $pdo->events===['begin','commit'],'atomic normalized save');
 try { $service->save(7,['skills'=>[99]]); check(false,'unknown skill accepted'); } catch (FreelancerProfileException $e) { check(isset($e->errors['skills']) && end($pdo->events)==='rollback','unknown catalogue ID rollback'); }

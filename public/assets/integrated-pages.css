@@ -20,3 +20,49 @@
 .gh-integrated .intro { padding-top: 1rem; }
 @media (max-width: 850px) { .gh-integrated .registration-layout { grid-template-columns: minmax(0,1fr); gap: 1.5rem; } }
 @media (max-width: 600px) { .gh-integrated .registration-layout, .gh-integrated .login-layout, .gh-integrated .verification-layout { padding: 1.25rem .75rem; margin: 0 auto; } .gh-integrated .intro h1 { font-size: 2rem; } .gh-integrated .card { padding: 1.25rem; } }
+.gh-shell .gh-marketplace-heading {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -.025em;
+    margin-block: 0 .5rem;
+    overflow-wrap: anywhere;
+}
+.gh-marketplace-document { overflow-wrap: anywhere; }
+.gh-marketplace-document a { display: inline-block; padding: .35rem .5rem; }
+.marketplace-file-row { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; overflow-wrap: anywhere; }
+.gh-shell .marketplace-file-row button.marketplace-file-remove {
+    display: inline-grid;
+    place-items: center;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--gh-error);
+    border-radius: 50%;
+    background: var(--gh-surface);
+    color: var(--gh-error);
+    line-height: 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.marketplace-file-remove::before {
+    content: "";
+    display: block;
+    width: .75rem;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+}
+.gh-shell .marketplace-file-row button.marketplace-file-remove:is(:hover, [aria-pressed="true"]) {
+    background: var(--gh-error);
+    color: var(--gh-surface);
+}
+.marketplace-file-remove:focus-visible {
+    outline: 3px solid var(--gh-green);
+    outline-offset: 2px;
+}
+.gh-bids-layout .gh-marketplace-document { margin-block: .75rem; padding: .5rem .75rem; border: 1px solid var(--gh-border); border-radius: var(--gh-control-radius); }

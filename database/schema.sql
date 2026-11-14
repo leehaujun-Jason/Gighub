@@ -13,6 +13,8 @@ CREATE TABLE users (
     role ENUM('client','freelancer','admin') NOT NULL,
     status ENUM('pending_verification','active','suspended') NOT NULL DEFAULT 'pending_verification',
     email_verified_at DATETIME NULL DEFAULT NULL,
+    onboarding_pending TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    avatar_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -33,9 +35,58 @@ CREATE TABLE freelancer_profiles (
     CONSTRAINT fk_freelancer_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE freelancer_education (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    freelancer_id INT UNSIGNED NOT NULL,
+    institution VARCHAR(150) NOT NULL,
+    qualification VARCHAR(150) NOT NULL,
+    field_of_study VARCHAR(150) NULL,
+    start_year SMALLINT UNSIGNED NULL,
+    end_year SMALLINT UNSIGNED NULL,
+    KEY ix_education_owner (freelancer_id, start_year, id),
+    CONSTRAINT fk_education_profile FOREIGN KEY (freelancer_id) REFERENCES freelancer_profiles(user_id) ON DELETE RESTRICT,
+    CONSTRAINT ck_education_years CHECK (end_year >= start_year)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE freelancer_employment (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    freelancer_id INT UNSIGNED NOT NULL,
+    job_title VARCHAR(150) NOT NULL,
+    company VARCHAR(150) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NULL,
+    current_job TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    description TEXT NULL,
+    KEY ix_employment_owner (freelancer_id, start_date, id),
+    CONSTRAINT fk_employment_profile FOREIGN KEY (freelancer_id) REFERENCES freelancer_profiles(user_id) ON DELETE RESTRICT,
+    CONSTRAINT ck_employment_dates CHECK ((end_date IS NULL OR end_date >= start_date) AND current_job IN (0,1) AND (current_job = 0 OR end_date IS NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE freelancer_languages (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    freelancer_id INT UNSIGNED NOT NULL,
+    language VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    proficiency ENUM('Basic','Conversational','Fluent','Native') NOT NULL,
+    UNIQUE KEY uq_freelancer_language (freelancer_id, language),
+    CONSTRAINT fk_language_profile FOREIGN KEY (freelancer_id) REFERENCES freelancer_profiles(user_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE freelancer_portfolio (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    freelancer_id INT UNSIGNED NOT NULL,
+    project_title VARCHAR(150) NOT NULL,
+    project_url VARCHAR(2048) NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    KEY ix_portfolio_owner (freelancer_id, id),
+    CONSTRAINT fk_portfolio_entry_profile FOREIGN KEY (freelancer_id) REFERENCES freelancer_profiles(user_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE client_profiles (
     user_id INT UNSIGNED NOT NULL,
     company_name VARCHAR(100) NULL DEFAULT NULL,
+    account_type ENUM('individual','company') NULL DEFAULT NULL,
+    state VARCHAR(50) NULL DEFAULT NULL,
+    city VARCHAR(100) NULL DEFAULT NULL,
     bio TEXT NULL,
     PRIMARY KEY (user_id),
     CONSTRAINT fk_client_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
@@ -56,6 +107,17 @@ CREATE TABLE email_verification_tokens (
     CONSTRAINT ck_email_token_hash CHECK (token_hash REGEXP '^[0-9a-f]{64}$'),
     CONSTRAINT ck_email_token_expiry CHECK (expires_at > created_at),
     CONSTRAINT ck_email_token_consumed CHECK (used_at IS NULL OR revoked_at IS NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE password_reset_tokens (
+    token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    issued_at DATETIME NOT NULL,
+    expires_at DATETIME NOT NULL,
+    PRIMARY KEY (token_hash),
+    KEY ix_password_resets_user_issued (user_id, issued_at),
+    CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) REFERENCES users (id)
+        ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE skills (
@@ -119,7 +181,20 @@ CREATE TABLE job_skills (
     CONSTRAINT fk_job_skill_skill FOREIGN KEY (skill_id) REFERENCES skills (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE job_requirement_documents (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    job_id INT UNSIGNED NOT NULL,
+    storage_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    display_name VARCHAR(255) NOT NULL,
+    size_bytes INT UNSIGNED NOT NULL,
+    UNIQUE KEY uq_job_requirement_storage (storage_key),
+    KEY ix_job_requirement_job (job_id, id),
+    CONSTRAINT fk_job_requirement_job FOREIGN KEY (job_id) REFERENCES jobs (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE bids (
+    proposal_document_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    proposal_document_name VARCHAR(255) NULL,
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     job_id INT UNSIGNED NOT NULL,
     freelancer_id INT UNSIGNED NOT NULL,
@@ -314,19 +389,48 @@ CREATE TABLE chat_messages (
     sender_id INT UNSIGNED NOT NULL,
     body TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    attachment_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    attachment_name VARCHAR(255) NULL,
+    attachment_image TINYINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     KEY ix_chat_bid_id (bid_id, id),
     KEY ix_chat_sender (sender_id),
     CONSTRAINT fk_chat_bid FOREIGN KEY (bid_id) REFERENCES bids (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
     CONSTRAINT fk_chat_sender FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT ck_chat_body CHECK (CHAR_LENGTH(TRIM(body)) > 0)
+    CONSTRAINT ck_chat_content CHECK (
+        (attachment_key IS NULL AND attachment_name IS NULL AND attachment_image = 0 AND CHAR_LENGTH(TRIM(body)) > 0)
+        OR (attachment_key IS NOT NULL AND attachment_name IS NOT NULL AND attachment_image IN (0,1))
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE chat_message_attachments (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    message_id INT UNSIGNED NOT NULL,
+    attachment_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    attachment_name VARCHAR(255) NOT NULL,
+    attachment_image TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    KEY ix_chat_attachment_message (message_id, id),
+    CONSTRAINT fk_chat_attachment_message FOREIGN KEY (message_id) REFERENCES chat_messages (id) ON DELETE RESTRICT,
+    CONSTRAINT ck_chat_attachment_image CHECK (attachment_image IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE chat_read_watermarks (
+    bid_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    last_read_message_id INT UNSIGNED NOT NULL DEFAULT 0,
+    read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (bid_id, user_id),
+    KEY ix_watermark_user (user_id),
+    CONSTRAINT fk_watermark_bid FOREIGN KEY (bid_id) REFERENCES bids (id) ON DELETE CASCADE,
+    CONSTRAINT fk_watermark_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE notifications (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     recipient_id INT UNSIGNED NOT NULL,
     job_id INT UNSIGNED NULL DEFAULT NULL,
-    type ENUM('bid_received','award_selected','award_cancelled','escrow_funded','submission_received','revision_requested','milestone_approved','payment_released','payment_refunded','dispute_opened','dispute_resolved','cancellation_requested','cancellation_responded','job_cancelled','review_received') NOT NULL,
+    type ENUM('bid_received','award_selected','award_cancelled','escrow_funded','submission_received','revision_requested','milestone_approved','payment_released','payment_refunded','dispute_opened','dispute_resolved','cancellation_requested','cancellation_responded','job_cancelled','review_received','bid_not_selected') NOT NULL,
     message VARCHAR(500) NOT NULL,
     read_at DATETIME NULL DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

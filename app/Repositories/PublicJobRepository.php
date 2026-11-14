@@ -69,6 +69,10 @@ class PublicJobRepository
         $q->bindValue(1,$id,PDO::PARAM_INT);$q->execute();$row=$q->fetch();
         return $row===false?false:$this->withSkills([$row])[0];
     }
+    public function documents(int $id): array
+    {
+        return \GigHub\Services\MarketplaceDocuments::jobs($this->pdo,$id);
+    }
 
     private function withSkills(array $rows): array
     {

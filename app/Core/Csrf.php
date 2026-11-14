@@ -28,7 +28,7 @@ final class Csrf
 
     private static function key(string $purpose): string
     {
-        if (!in_array($purpose, ['registration','verification','login','logout','job_posting','freelancer_profile','bidding','bid_award','wallet_credit','job_milestone','escrow_fund','escrow_release','work_submission','milestone_review','final_submission','final_review','job_review','notification_action','message_action','cancellation_action','dispute_action','admin_decision'], true)) {
+        if (!in_array($purpose, ['registration','verification','profile_onboarding','client_profile','avatar','password_reset_request','password_reset_confirm','login','logout','job_posting','freelancer_profile','professional_details','bidding','bid_award','wallet_credit','job_milestone','escrow_fund','escrow_release','work_submission','milestone_review','final_submission','final_review','job_review','notification_action','message_action','cancellation_action','dispute_action','admin_decision'], true)) {
             throw new \InvalidArgumentException('Unknown form purpose.');
         }
         return $purpose . '_csrf';

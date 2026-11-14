@@ -7,12 +7,15 @@ class JobRepository
     public function __construct(protected readonly PDO $pdo) {}
     public function listOwned(int $clientId,int $page): array
     {
-        $q=$this->pdo->prepare('SELECT id,title,budget,deadline,status,created_at FROM jobs WHERE client_id=? ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?');
+        $q=$this->pdo->prepare('SELECT j.id,title,budget,deadline,status,created_at,awarded_bid_id,awarded_at,
+            EXISTS(SELECT 1 FROM bids b WHERE b.job_id=j.id) AS has_bids,
+            EXISTS(SELECT 1 FROM milestones m WHERE m.job_id=j.id) AS has_milestones
+            FROM jobs j WHERE client_id=? ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?');
         $q->bindValue(1,$clientId,PDO::PARAM_INT);$q->bindValue(2,($page-1)*20,PDO::PARAM_INT);$q->execute();return $q->fetchAll();
     }
     public function findOwned(int $id,int $clientId,bool $lock=false): array|false
     {
-        $q=$this->pdo->prepare('SELECT id,client_id,title,description,budget,deadline,status FROM jobs WHERE id=? AND client_id=?'.($lock?' FOR UPDATE':''));
+        $q=$this->pdo->prepare('SELECT id,client_id,title,description,budget,deadline,status,awarded_bid_id,awarded_at FROM jobs WHERE id=? AND client_id=?'.($lock?' FOR UPDATE':''));
         $q->execute([$id,$clientId]);return $q->fetch();
     }
     public function skillsFor(int $id): array
@@ -31,8 +34,31 @@ class JobRepository
     }
     public function updateDraft(int $id,int $clientId,array $data,string $status): void
     {
-        $q=$this->pdo->prepare("UPDATE jobs SET title=?,description=?,budget=?,deadline=?,status=? WHERE id=? AND client_id=? AND status='draft'");
+        $q=$this->pdo->prepare("UPDATE jobs SET title=?,description=?,budget=?,deadline=?,status=? WHERE id=? AND client_id=? AND status IN ('draft','open') AND awarded_bid_id IS NULL");
         $q->execute([$data['title'],$data['description'],$data['budget'],$data['deadline'],$status,$id,$clientId]);
+    }
+    public function hasBids(int $id): bool
+    {
+        $q = $this->pdo->prepare('SELECT id FROM bids WHERE job_id=? LIMIT 1 FOR UPDATE');
+        $q->execute([$id]);
+        return $q->fetchColumn() !== false;
+    }
+
+    public function removeBeforeAward(int $id, int $clientId): void
+    {
+        if ($this->hasBids($id)) {
+            $q = $this->pdo->prepare("UPDATE jobs SET status='cancelled', closed_at=UTC_TIMESTAMP() WHERE id=? AND client_id=?");
+            $q->execute([$id, $clientId]);
+            $q = $this->pdo->prepare("INSERT INTO notifications (recipient_id,job_id,type,message)
+                SELECT DISTINCT freelancer_id,job_id,'job_cancelled','The client closed this job before awarding it.' FROM bids WHERE job_id=?");
+            $q->execute([$id]);
+            return;
+        }
+        $this->replaceSkills($id, []);
+        $q=$this->pdo->prepare('DELETE FROM job_requirement_documents WHERE job_id=?');
+        $q->execute([$id]);
+        $q = $this->pdo->prepare('DELETE FROM jobs WHERE id=? AND client_id=?');
+        $q->execute([$id, $clientId]);
     }
     public function replaceSkills(int $id,array $ids): void
     {

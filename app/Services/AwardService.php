@@ -34,7 +34,18 @@ class AwardService
             if ($this->notifications !== null) {
                 $this->notifications->create($freelancerId, $jobId, 'award_selected', 'Congratulations! Your bid for "' . $job['title'] . '" has been selected. Work begins once funding is completed.');
             }
-            // Selection is not funding: all bid mirrors remain unchanged, as specified by the schema design.
+            $accept = $this->pdo->prepare("UPDATE bids SET status='accepted' WHERE id=? AND job_id=? AND status='pending'");
+            $accept->execute([$bidId, $jobId]);
+            if ($accept->rowCount() !== 1) throw new BidException(['form'=>'This bid is no longer available.'],409);
+            if ($this->notifications !== null) {
+                $losers = $this->pdo->prepare("SELECT DISTINCT freelancer_id FROM bids WHERE job_id=? AND id<>? AND status='pending'");
+                $losers->execute([$jobId, $bidId]);
+                foreach ($losers->fetchAll(PDO::FETCH_COLUMN) as $recipient) {
+                    $this->notifications->create((int)$recipient, $jobId, 'bid_not_selected', 'Another proposal was selected for "' . $job['title'] . '".');
+                }
+            }
+            $reject = $this->pdo->prepare("UPDATE bids SET status='rejected' WHERE job_id=? AND id<>? AND status='pending'");
+            $reject->execute([$jobId, $bidId]);
             if ($owns) $this->pdo->commit(); else $this->pdo->exec('RELEASE SAVEPOINT gighub_award');
         } catch (Throwable $error) {
             if ($started && $this->pdo->inTransaction()) {

@@ -23,15 +23,15 @@ class UserRepository
 
     public function findAuthIdentity(int $id): array|false
     {
-        $query=$this->pdo->prepare('SELECT id,display_name,role,status,email_verified_at FROM users WHERE id=? LIMIT 1');
+        $query=$this->pdo->prepare('SELECT id,display_name,role,status,email_verified_at,password_hash,onboarding_pending,avatar_key FROM users WHERE id=? LIMIT 1');
         $query->execute([$id]);return $query->fetch();
     }
 
     public function insertUser(array $data, string $hash): int
     {
         $query = $this->pdo->prepare(
-            "INSERT INTO users (email, password_hash, display_name, role, status, email_verified_at) "
-            . "VALUES (?, ?, ?, ?, 'pending_verification', NULL)"
+            "INSERT INTO users (email, password_hash, display_name, role, status, email_verified_at, onboarding_pending) "
+            . "VALUES (?, ?, ?, ?, 'pending_verification', NULL, 1)"
         );
         $query->execute([$data['email'], $hash, $data['display_name'], $data['role']]);
         return (int) $this->pdo->lastInsertId();

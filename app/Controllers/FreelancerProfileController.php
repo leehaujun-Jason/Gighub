@@ -11,7 +11,7 @@ use Throwable;
 
 final class FreelancerProfileController
 {
-    public function __construct(private readonly AuthGuard $guard,private readonly Closure $serviceFactory,private readonly ?PublicIdentity $identity=null) {}
+    public function __construct(private readonly AuthGuard $guard,private readonly Closure $serviceFactory,private readonly ?PublicIdentity $identity=null, private readonly ?Closure $detailsFactory=null) {}
     public function own(bool $edit=false): array
     {
         $access=$this->guard->check('freelancer'); if (!isset($access['user'])) return $access;
@@ -52,6 +52,14 @@ final class FreelancerProfileController
     }
     private function render(string $view,array $data,int $status=200): array
     {
+        $professionalDetails = [];
+        if ($this->detailsFactory !== null) {
+            $repository = ($this->detailsFactory)();
+            $id = (int) ($data['profile']['id'] ?? $data['navigationUser']['id']);
+            foreach (array_keys(\GigHub\Services\ProfessionalDetails::SECTIONS) as $section) {
+                $professionalDetails[$section] = $repository->list($id, $section);
+            }
+        }
         extract($data,EXTR_SKIP);
         $escape=static fn(string $v):string=>htmlspecialchars($v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
         ob_start(); try { require dirname(__DIR__).'/Views/freelancer-profile/'.$view.'.php'; $body=ob_get_contents(); } finally { ob_end_clean(); }

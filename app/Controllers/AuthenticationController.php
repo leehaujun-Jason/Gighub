@@ -18,6 +18,7 @@ final class AuthenticationController
         if($this->session->userId()!==null) {
             $access=(new AuthGuard($this->serviceFactory,$this->session))->check();
             if(isset($access['user'])) { return self::redirect(AuthSession::route($access['user']['role'])); }
+            if(($access['location'] ?? null)==='?route=/profile/setup') { return $access; }
             if($access['status']===503) { return $access; }
         }
         return $this->form();
@@ -36,8 +37,8 @@ final class AuthenticationController
         try {
             $user=($this->serviceFactory)()->authenticate($data['email'],$data['password']);
             if($user===null) { LoginThrottle::failure();return $this->form($email,['form'=>'Please check your email address and password, then try again.'],422); }
-            $this->session->establish($user['id']);
-            return self::redirect(AuthSession::route($user['role']));
+            $this->session->establish($user['id'], $user['credential_stamp'] ?? null);
+            return self::redirect(($user['onboarding_pending'] ?? false) ? '/profile/setup' : AuthSession::route($user['role']));
         } catch(RuntimeException) { return $this->form($email,['form'=>'Sign-in is temporarily unavailable. Please try again later.'],503); }
     }
     public function logout(array $input): array

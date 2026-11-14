@@ -33,7 +33,7 @@ class EscrowService
         }
 
         $bid = $this->escrows->awardedBid($jobId, (int)$job['awarded_bid_id']);
-        if ($bid === false || $bid['status'] !== 'pending') {
+        if ($bid === false || !in_array($bid['status'], ['pending', 'accepted'], true)) {
             throw new EscrowException(['form' => 'Awarded bid is not available for funding.'], 409);
         }
 
@@ -94,8 +94,8 @@ class EscrowService
             if ($bid === false) {
                 throw new EscrowException(['form' => 'Awarded bid not found.'], 404);
             }
-            if ($bid['status'] !== 'pending') {
-                throw new EscrowException(['form' => 'Awarded bid is no longer pending.'], 409);
+            if (!in_array($bid['status'], ['pending', 'accepted'], true)) {
+                throw new EscrowException(['form' => 'Awarded bid is no longer eligible for funding.'], 409);
             }
             $amount = number_format((float)$bid['amount'], 2, '.', '');
             if (bccomp($amount, '0.00', 2) <= 0) {
@@ -141,7 +141,7 @@ class EscrowService
             }
 
             // E. Transition winning bid status to accepted
-            if (!$this->escrows->acceptWinningBid($jobId, $bidId)) {
+            if ($bid['status'] === 'pending' && !$this->escrows->acceptWinningBid($jobId, $bidId)) {
                 throw new EscrowException(['form' => 'Failed to accept winning bid.'], 409);
             }
 

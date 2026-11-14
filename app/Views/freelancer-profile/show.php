@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $escape($profile['display_name']) ?> · Freelancer Profile · GigHub</title>
     <?php require dirname(__DIR__) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/profile.css?v=1">
+    <link rel="stylesheet" href="assets/profile.css?v=5">
     <link rel="stylesheet" href="assets/reviews.css?v=1">
 </head>
 <body class="gh-shell">
@@ -18,6 +18,7 @@
 
 <main id="main-content" tabindex="-1" class="gh-profile-layout">
     <div class="gh-profile-heading">
+        <div class="gh-profile-avatar"><?php $avatarUser = $profile; require dirname(__DIR__) . '/partials/avatar.php'; ?></div>
         <div>
             <p class="gh-profile-eyebrow">FREELANCER PROFILE</p>
             <h1><?= $escape($profile['display_name']) ?></h1>
@@ -98,6 +99,7 @@
             </div>
         <?php endif; ?>
     </section>
+<?php require __DIR__ . '/details.php'; ?>
 </main>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

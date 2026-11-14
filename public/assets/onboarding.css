@@ -1,0 +1,47 @@
+.onboarding-layout {
+    max-width: 60rem;
+    margin-inline: auto;
+    padding: clamp(1rem, 4vw, 3rem);
+}
+.onboarding-layout h1 { margin-block-start: 0; }
+.onboarding-skills, #selected-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gh-space-1);
+}
+.onboarding-skill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gh-space-1);
+    margin: 0;
+    padding: var(--gh-space-1);
+}
+.onboarding-layout .onboarding-skill input {
+    width: auto;
+    min-height: 0;
+}
+#selected-skills {
+    list-style: none;
+    padding: 0;
+}
+.onboarding-layout button.onboarding-chip {
+    display: inline-flex;
+    width: auto;
+    margin: 0;
+    padding: var(--gh-space-1) var(--gh-space-small);
+    background: var(--gh-header-background);
+    color: var(--gh-green);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-card-radius);
+}
+.onboarding-layout button.onboarding-chip:hover {
+    background: var(--gh-green);
+    color: var(--gh-surface);
+}
+.onboarding-layout button:disabled { opacity: .65; cursor: not-allowed; }
+
+.client-profile-layout { max-width: 48rem; }
+.client-profile-layout { overflow-wrap: anywhere; }
+.client-profile-details dt { font-weight: 650; }
+.client-profile-details dd { margin: 0 0 var(--gh-space-2); }
+.onboarding-layout textarea { max-width: 70ch; }

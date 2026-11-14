@@ -49,7 +49,7 @@ class BidService
     public function withdraw(int $freelancerId,int $bidId): void { $this->write($freelancerId,$bidId,[],[],true); }
     private function write(int $freelancerId,?int $bidId,array $input,array $data,bool $withdraw): int
     {
-        $owns=!$this->pdo->inTransaction(); $started=false;
+        $owns=!$this->pdo->inTransaction(); $started=false; $stored=null; $committing=false;
         try {
             // Discover parent without taking a child lock; lock order is job -> users -> bid.
             $prior=$bidId===null?false:$this->bids->owned($bidId,$freelancerId);
@@ -87,11 +87,20 @@ class BidService
                     $this->notifications->create((int)$job['client_id'], $jobId, 'bid_received', 'New bid of RM' . number_format((float)$data['amount'], 2) . ' received for "' . $job['title'] . '".');
                 }
             }
+            $file=$input['_proposal']??null;
+            if (!$withdraw && $file !== null && ($file['error']??null)!==UPLOAD_ERR_NO_FILE) {
+                try { $stored=MarketplaceDocuments::storage()->store($file); }
+                catch (\InvalidArgumentException $error) { throw new BidException(['form'=>$error->getMessage()]); }
+                $q=$this->pdo->prepare('UPDATE bids SET proposal_document_key=?,proposal_document_name=? WHERE id=? AND freelancer_id=?');
+                $q->execute([$stored['key'],$stored['name'],$id,$freelancerId]);
+            }
+            $committing=true;
             if ($owns) $this->pdo->commit(); else $this->pdo->exec('RELEASE SAVEPOINT gighub_bid');
             return $id;
         } catch (Throwable $error) {
             if ($started && $this->pdo->inTransaction()) {
                 if ($owns) $this->pdo->rollBack(); else { $this->pdo->exec('ROLLBACK TO SAVEPOINT gighub_bid'); $this->pdo->exec('RELEASE SAVEPOINT gighub_bid'); }
+                if (!$committing && $stored!==null) MarketplaceDocuments::storage()->remove($stored['key']);
             }
             if ($error instanceof BidException) throw $error;
             if ($error instanceof \PDOException && (int)($error->errorInfo[1]??0)===1062) throw new BidException(['form'=>'You already have a bid for this job. Manage it from My Bids.'],409);

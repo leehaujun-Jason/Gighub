@@ -14,12 +14,21 @@ final class RegistrationController
 {
     public function __construct(private readonly Closure $serviceFactory, private readonly ?Closure $verificationFactory = null) {}
 
-    public function show(): array { return $this->form(); }
+    public function show(?string $role = null): array { return $this->form(role: $role); }
 
-    public function submit(array $input): array
+    public function submit(array $input, ?string $role = null): array
     {
+        $old = RegistrationValidator::oldValues($input);
+        $formRole = $role ?? ($old['role'] !== '' ? $old['role'] : null);
         if (!Csrf::valid($input['csrf_token'] ?? null)) {
-            return $this->form(RegistrationValidator::oldValues($input), ['form' => 'Your form session could not be verified. Your details are kept; enter your password again and retry.'], 403);
+            return $this->form($old, ['form' => 'Your form session could not be verified. Please try again.'], 403, $formRole);
+        }
+        if ($role !== null) {
+            if (array_key_exists('role', $input) && $input['role'] !== $role) {
+                return $this->form($old, ['form' => 'The submitted account role does not match this form.'], 422, $role);
+            }
+            $input = array_intersect_key($input, array_flip(['display_name', 'email', 'password', 'password_confirmation']));
+            $input['role'] = $role;
         }
         $validation = RegistrationValidator::validate($input);
         // Password fields are never included in returned HTML or session state.
@@ -27,21 +36,21 @@ final class RegistrationController
         if (($input['intent'] ?? '') === 'update_role') {
             // No-JavaScript role switch: validate role, render only, never persist.
             $errors = isset($validation['errors']['role']) ? ['role' => $validation['errors']['role']] : [];
-            return $this->form($old, $errors, $errors === [] ? 200 : 422);
+            return $this->form($old, $errors, $errors === [] ? 200 : 422, $formRole);
         }
-        if ($validation['errors'] !== []) { return $this->form($old, $validation['errors'], 422); }
+        if ($validation['errors'] !== []) { return $this->form($old, $validation['errors'], 422, $formRole); }
         $attempt = RegistrationThrottle::consume();
         if (!$attempt['allowed']) {
             $minutes = (int) ceil($attempt['retry_after'] / 60);
-            return $this->form($old, ['form' => 'Too many registration attempts. Try again in about ' . $minutes . ' minute' . ($minutes === 1 ? '' : 's') . '.'], 429)
+            return $this->form($old, ['form' => 'Too many registration attempts. Try again in about ' . $minutes . ' minute' . ($minutes === 1 ? '' : 's') . '.'], 429, $formRole)
                 + ['retry_after' => $attempt['retry_after']];
         }
         try {
             $committed = ($this->serviceFactory)()->register($validation['data']);
         } catch (RegistrationValidationException $error) {
-            return $this->form($old, $error->errors, 422);
+            return $this->form($old, $error->errors, 422, $formRole);
         } catch (RuntimeException $error) {
-            return $this->form($old, ['form' => 'Registration is temporarily unavailable. Please try again.'], 503);
+            return $this->form($old, ['form' => 'Registration is temporarily unavailable. Please try again.'], 503, $formRole);
         }
         if ($this->verificationFactory !== null) {
             $deliveryStatus = 'unavailable';
@@ -68,11 +77,12 @@ final class RegistrationController
         return ['status' => 200, 'type' => 'text/html; charset=UTF-8', 'body' => $body];
     }
 
-    private function form(array $old = [], array $errors = [], int $status = 200): array
+    private function form(array $old = [], array $errors = [], int $status = 200, ?string $role = null): array
     {
         $token = Csrf::token();
         $escape = static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        ob_start(); require dirname(__DIR__) . '/Views/register.php'; $body = ob_get_clean();
+        $view = $role === null ? 'register-role.php' : 'register.php';
+        ob_start(); require dirname(__DIR__) . '/Views/' . $view; $body = ob_get_clean();
         return ['status' => $status, 'type' => 'text/html; charset=UTF-8', 'body' => $body];
     }
 }

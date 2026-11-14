@@ -1,27 +1,5 @@
 'use strict';
 
-const role = document.getElementById('role');
-const optionalProfile = document.getElementById('optional-profile');
-const clientProfile = document.getElementById('client-profile');
-const companyName = document.getElementById('company_name');
-const fallback = document.getElementById('role-update');
-
-if (role && optionalProfile && clientProfile && companyName && fallback) {
-    const updateRole = () => {
-        const validRole = role.value === 'client' || role.value === 'freelancer';
-        optionalProfile.hidden = !validRole;
-        optionalProfile.disabled = !validRole;
-        clientProfile.hidden = role.value !== 'client';
-        clientProfile.disabled = role.value !== 'client';
-        if (role.value !== 'client') companyName.value = '';
-    };
-    role.addEventListener('change', updateRole);
-    updateRole();
-    fallback.type = 'button';
-    fallback.disabled = true;
-    fallback.hidden = true;
-}
-
 const form = document.getElementById('registration-form');
 const password = document.getElementById('password');
 const confirmation = document.getElementById('password_confirmation');
@@ -99,6 +77,7 @@ for (const button of document.querySelectorAll('[data-password-toggle]')) {
         field.type = show ? 'text' : 'password';
         const label = (show ? 'Hide' : 'Show') + (field.id === 'password' ? ' password' : ' password confirmation');
         button.setAttribute('aria-label', label);
+        button.setAttribute('aria-pressed', String(show));
         button.setAttribute('data-visible', String(show));
     });
     button.hidden = false;

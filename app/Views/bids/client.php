@@ -26,10 +26,12 @@
 <?php if ($bids===[]): ?><section class="gh-bid-card"><h2>No bids <?= $page>1?'on this page':'yet' ?></h2><p>Freelancer proposals will appear here when submitted.</p></section><?php endif; ?>
 <?php foreach ($bids as $row): ?>
 <?php $selected=$job['status']==='awarded' && $job['awarded_bid_id']!==null && (int)$job['awarded_bid_id']===(int)$row['id']; ?>
-<article class="gh-bid-card"><p class="gh-bid-status"><?= $selected?'Selected — awaiting funding':$escape(ucfirst($row['status'])) ?></p>
+<?php $notSelected = $row['status'] === 'rejected' || ($row['status'] === 'pending' && $job['awarded_bid_id'] !== null && !$selected && (int)$job['awarded_bid_id'] !== (int)$row['id']); ?>
+<article class="gh-bid-card"><p class="gh-bid-status"><?= $selected ? 'Selected — awaiting funding' : ($notSelected ? 'Not Selected' : $escape(ucfirst($row['status']))) ?></p>
 <h2><a href="?route=/freelancers/show&amp;id=<?= (int)$row['freelancer_id'] ?>"><?= $escape($row['display_name']) ?></a></h2>
 <dl class="gh-bid-meta"><div><dt>Proposed amount</dt><dd>RM<?= $escape($row['amount']) ?></dd></div><div><dt>Estimated delivery</dt><dd><?= (int)$row['delivery_days'] ?> days</dd></div><div><dt>Submitted (UTC)</dt><dd><?= $escape(substr($row['created_at'],0,10)) ?></dd></div></dl>
 <h3>Proposal</h3><div class="gh-bid-proposal"><?= $escape($row['cover_letter']) ?></div>
+<?php require dirname(__DIR__).'/partials/proposal-document.php'; ?>
 <div class="gh-bid-actions">
 <?php if ($job['status']==='open' && $job['awarded_bid_id']===null && $row['status']==='pending' && (int)($row['bidder_eligible']??0)===1): ?>
 <form method="post" action="?route=/client/jobs/award" style="display:inline;">
@@ -41,7 +43,7 @@
 <a class="gh-button gh-button-secondary" href="?route=/messages/thread&amp;bid_id=<?= (int)$row['id'] ?>">Message Freelancer</a>
 </div>
 <?php if ($selected): ?><p>Selected for this job. Awaiting funding; no payment has been made.</p>
-<?php elseif ($job['status']==='awarded' && $row['status']==='pending'): ?><p>Another proposal has been selected. This bid remains pending and read-only until funding.</p>
+<?php elseif ($notSelected): ?><p>Another proposal was selected for this job.</p>
 <?php endif; ?>
 </article><?php endforeach; ?>
 <?php if ($page>1 || $hasNext): ?><nav class="gh-bid-actions" aria-label="Job bid pages"><?php if ($page>1): ?><a href="?route=/client/jobs/bids&amp;id=<?= (int)$job['id'] ?>&amp;page=<?= $page-1 ?>">Previous</a><?php endif; ?><span>Page <?= $page ?></span><?php if ($hasNext): ?><a href="?route=/client/jobs/bids&amp;id=<?= (int)$job['id'] ?>&amp;page=<?= $page+1 ?>">Next</a><?php endif; ?></nav><?php endif; ?>

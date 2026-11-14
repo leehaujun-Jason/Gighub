@@ -9,7 +9,7 @@ class FreelancerProfileRepository
     public function find(int $userId): array|false
     {
         // Deliberate public projection; never select email, portfolio or authentication fields.
-        $q=$this->pdo->prepare("SELECT u.id,u.display_name,p.headline,p.bio FROM users u JOIN freelancer_profiles p ON p.user_id=u.id WHERE u.id=? AND u.role='freelancer' AND u.status='active' AND u.email_verified_at IS NOT NULL");
+        $q=$this->pdo->prepare("SELECT u.id,u.display_name,p.headline,p.bio,u.avatar_key FROM users u JOIN freelancer_profiles p ON p.user_id=u.id WHERE u.id=? AND u.role='freelancer' AND u.status='active' AND u.email_verified_at IS NOT NULL");
         $q->execute([$userId]); return $q->fetch(PDO::FETCH_ASSOC);
     }
     public function skills(int $userId): array

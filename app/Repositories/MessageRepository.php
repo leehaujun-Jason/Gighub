@@ -49,6 +49,8 @@ class MessageRepository
                     cm.bid_id,
                     cm.sender_id,
                     cm.body,
+                    cm.attachment_name,
+                    cm.attachment_image,
                     cm.created_at,
                     u.display_name AS sender_name
                 FROM chat_messages cm
@@ -61,7 +63,7 @@ class MessageRepository
         $q->bindValue(1, $bidId, PDO::PARAM_INT);
         $q->bindValue(2, $limit, PDO::PARAM_INT);
         $q->execute();
-        return $q->fetchAll(PDO::FETCH_ASSOC);
+        return $this->withAttachments($q->fetchAll(PDO::FETCH_ASSOC));
     }
 
     /**
@@ -74,6 +76,8 @@ class MessageRepository
                     cm.bid_id,
                     cm.sender_id,
                     cm.body,
+                    cm.attachment_name,
+                    cm.attachment_image,
                     cm.created_at,
                     u.display_name AS sender_name
                 FROM chat_messages cm
@@ -87,7 +91,7 @@ class MessageRepository
         $q->bindValue(2, $sinceId, PDO::PARAM_INT);
         $q->bindValue(3, $limit, PDO::PARAM_INT);
         $q->execute();
-        return $q->fetchAll(PDO::FETCH_ASSOC);
+        return $this->withAttachments($q->fetchAll(PDO::FETCH_ASSOC));
     }
 
     /**
@@ -99,6 +103,73 @@ class MessageRepository
         $q = $this->pdo->prepare($sql);
         $q->execute([$bidId, $senderId, $body]);
         return (int)$this->pdo->lastInsertId();
+    }
+
+    public function createWithAttachment(int $bidId, int $senderId, string $body, array $attachment): int
+    {
+        $query = $this->pdo->prepare('INSERT INTO chat_messages
+            (bid_id, sender_id, body, created_at, attachment_key, attachment_name, attachment_image)
+            VALUES (?, ?, ?, UTC_TIMESTAMP(), ?, ?, ?)');
+        $query->execute([$bidId, $senderId, $body, $attachment['key'], $attachment['name'], (int)$attachment['image']]);
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    private function withAttachments(array $messages): array
+    {
+        if (!$messages) return [];
+        $ids = array_column($messages, 'id');
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $q = $this->pdo->prepare("SELECT id,message_id,attachment_name,attachment_image FROM chat_message_attachments WHERE message_id IN ($marks) ORDER BY id");
+        $q->execute($ids);
+        $extras = [];
+        foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $extras[$row['message_id']][] = ['id'=>(int)$row['id'], 'name'=>$row['attachment_name'], 'image'=>(bool)$row['attachment_image']];
+        }
+        foreach ($messages as &$message) {
+            $first = $message['attachment_name'] === null ? [] : [['id'=>null, 'name'=>$message['attachment_name'], 'image'=>(bool)$message['attachment_image']]];
+            $message['attachments'] = array_merge($first, $extras[$message['id']] ?? []);
+        }
+        return $messages;
+    }
+
+    public function createWithAttachments(int $bidId, int $senderId, string $body, array $files): array
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $first = array_shift($files);
+            $id = $this->createWithAttachment($bidId, $senderId, $body, $first);
+            $items = [['id'=>null, 'name'=>$first['name'], 'image'=>$first['image']]];
+            $q = $this->pdo->prepare('INSERT INTO chat_message_attachments (message_id,attachment_key,attachment_name,attachment_image) VALUES (?,?,?,?)');
+            foreach ($files as $file) {
+                $q->execute([$id,$file['key'],$file['name'],(int)$file['image']]);
+                $items[] = ['id'=>(int)$this->pdo->lastInsertId(), 'name'=>$file['name'], 'image'=>$file['image']];
+            }
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+        // A failed commit acknowledgement can leave the outcome unknown.
+        try {
+            if (!$this->pdo->commit()) throw new \RuntimeException();
+        } catch (\Throwable $error) {
+            throw new \RuntimeException('Message commit unconfirmed.', 0, $error);
+        }
+        return [$id, $items];
+    }
+
+    public function findAttachment(int $bidId, int $messageId, ?int $attachmentId = null): array|false
+    {
+        if ($attachmentId !== null) {
+            $query = $this->pdo->prepare('SELECT a.attachment_key,a.attachment_name,a.attachment_image
+                FROM chat_message_attachments a JOIN chat_messages m ON m.id=a.message_id
+                WHERE m.bid_id=? AND m.id=? AND a.id=?');
+            $query->execute([$bidId,$messageId,$attachmentId]);
+            return $query->fetch(PDO::FETCH_ASSOC);
+        }
+        $query = $this->pdo->prepare('SELECT attachment_key, attachment_name, attachment_image
+            FROM chat_messages WHERE bid_id = ? AND id = ? AND attachment_key IS NOT NULL');
+        $query->execute([$bidId, $messageId]);
+        return $query->fetch(PDO::FETCH_ASSOC);
     }
 
     /**

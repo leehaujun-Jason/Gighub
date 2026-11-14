@@ -2,7 +2,7 @@
 /* Scoped compact page header for jobs views */
 .jobs-page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.25rem; margin-bottom: 2rem; flex-wrap: wrap; background: transparent; padding: 0; }
 .jobs-page-header-title { flex: 1 1 18rem; min-width: 0; }
-.jobs-page-header-title h1 { font-size: clamp(1.75rem, 3.5vw, 2.25rem); font-weight: 800; color: var(--gh-text, #172b28); letter-spacing: -0.03em; line-height: 1.2; margin: 0 0 0.4rem 0; }
+.jobs-page-header-title h1 { font-family: var(--gh-font-family); font-size: clamp(2.1rem, 5vw, 3.8rem); font-weight: 700; color: var(--gh-text, #172b28); letter-spacing: -.04em; line-height: 1.2; margin: .67em 0; }
 .jobs-page-header-title p { font-size: 0.95rem; color: var(--gh-muted, #52685e); margin: 0; line-height: 1.5; max-width: 38rem; }
 .jobs-page-header-actions { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
 .jobs-page-header-actions .gh-button { margin: 0; white-space: nowrap; }
@@ -13,4 +13,40 @@
     .jobs-page-header { flex-direction: column; align-items: stretch; gap: 1rem; margin-bottom: 1.5rem; }
     .jobs-page-header-actions { width: 100%; }
     .jobs-page-header-actions .gh-button { width: 100%; justify-content: center; }
+}
+.jobs-managed { display: flex; align-items: center; justify-content: space-between; gap: var(--gh-space-small); }
+.jobs-managed > div:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.jobs-managed .jobs-management { display: flex; align-items: center; flex: none; flex-wrap: nowrap; }
+.jobs-managed .jobs-management .gh-detail-icon { margin: 0; color: var(--gh-surface); flex: none; }
+.jobs-managed summary.gh-detail-icon { display: inline-flex; align-items: center; justify-content: center; }
+.jobs-original-links a { display: inline-block; }
+.jobs-original-links a + a { margin-inline-start: var(--gh-space-small); }
+.jobs-owned-list .jobs-page-header { align-items: center; gap: .75rem 1rem; }
+.jobs-owned-list .jobs-page-header h1 { margin: 0; }
+.jobs-owned-description { flex-basis: 100%; margin: 0; color: var(--gh-muted); }
+.jobs-owned-list .jobs-original-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+.jobs-owned-list .jobs-original-links a + a { margin-inline-start: 0; }
+.gh-shell .jobs-owned-list .jobs-management .gh-detail-icon {
+    background: var(--gh-surface);
+    color: var(--job-action-color);
+    border-color: currentColor;
+}
+.jobs-owned-list .gh-detail-edit { --job-action-color: #a34b0a; }
+.jobs-owned-list .gh-detail-delete { --job-action-color: var(--gh-error); }
+.gh-shell .jobs-owned-list .jobs-management .gh-detail-icon:hover {
+    background: var(--gh-background);
+}
+.jobs-managed summary.gh-detail-icon { list-style: none; }
+.jobs-managed summary.gh-detail-icon::-webkit-details-marker { display: none; }
+.jobs-managed details[open] { max-width: 9rem; overflow-wrap: anywhere; }
+.jobs-managed .jobs-confirm-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.jobs-managed .jobs-confirm-actions button.gh-button { width: auto; margin: 0; }
+.jobs-managed .jobs-confirm-actions [hidden] { display: none; }
+.jobs-managed .jobs-confirm-delete { background: var(--gh-error); border-color: var(--gh-error); }
+.jobs-managed .jobs-confirm-delete:hover { background: #84231d; }
+.jobs-layout form[action*="/client/jobs/update"] .job-actions button[type="submit"]:hover:not(:disabled) {
+    background: #286b57; color: white;
+}
+.jobs-layout form[action*="/client/jobs/update"] .job-actions button[type="submit"] {
+    transition: background-color .15s ease, color .15s ease;
 }

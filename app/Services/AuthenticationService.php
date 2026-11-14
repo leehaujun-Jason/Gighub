@@ -19,7 +19,9 @@ final class AuthenticationService
             $valid=password_verify($password,$row===false?self::DUMMY_HASH:$row['password_hash']);
             if(!$valid||!self::eligible($row)) { return null; }
             // Re-read current eligibility after the expensive password verification.
-            return $this->identity((int)$row['id']);
+            $user = $this->identity((int)$row['id']);
+            return $user !== null && (!isset($user['credential_stamp'])
+                || hash_equals($user['credential_stamp'], hash('sha256', $row['password_hash']))) ? $user : null;
         } catch(Throwable) { throw new RuntimeException('Sign-in is temporarily unavailable.'); }
     }
 
@@ -27,7 +29,13 @@ final class AuthenticationService
     {
         try {
             $row=$this->users->findAuthIdentity($id);
-            return self::eligible($row)?['id'=>(int)$row['id'],'display_name'=>$row['display_name'],'role'=>$row['role'],'status'=>$row['status']]:null;
+            if (!self::eligible($row)) { return null; }
+            return [
+                'id' => (int) $row['id'], 'display_name' => $row['display_name'],
+                'role' => $row['role'], 'status' => $row['status'],
+                'avatar_key' => $row['avatar_key'] ?? null,
+                'onboarding_pending' => $row['role'] !== 'admin' && (int) ($row['onboarding_pending'] ?? 0) === 1,
+            ] + (isset($row['password_hash']) ? ['credential_stamp' => hash('sha256', $row['password_hash'])] : []);
         } catch(Throwable) { throw new RuntimeException('Sign-in is temporarily unavailable.'); }
     }
 

@@ -115,11 +115,11 @@ class MessageService
     /**
      * Validate message text content.
      */
-    public static function validateBody(string $rawBody): array
+    public static function validateBody(string $rawBody, bool $hasAttachment = false): array
     {
         $body = trim($rawBody);
 
-        if ($body === '') {
+        if ($body === '' && !$hasAttachment) {
             return [
                 'valid' => false,
                 'body' => '',
@@ -157,7 +157,7 @@ class MessageService
      * - 60-second duplicate message prevention
      * - 10 messages per minute maximum per sender/bid
      */
-    public static function checkRateLimit(int $bidId, int $senderId, string $body, MessageRepository $repo): ?string
+    public static function checkRateLimit(int $bidId, int $senderId, string $body, MessageRepository $repo, bool $hasAttachment = false): ?string
     {
         $last = $repo->getLastMessageBySender($bidId, $senderId);
         if ($last !== null) {
@@ -169,7 +169,7 @@ class MessageService
                 return 'Please wait a moment before sending another message.';
             }
 
-            if ($diff < 60 && $last['body'] === $body) {
+            if (!$hasAttachment && $diff < 60 && $last['body'] === $body) {
                 return 'Duplicate message detected. Please do not submit the same message repeatedly.';
             }
         }

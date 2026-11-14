@@ -64,7 +64,9 @@ final class PublicJobController
         if(!is_string($id)||!preg_match('/\A[1-9][0-9]{0,9}\z/D',$id)||(int)$id>4294967295)return self::notFound();
         try {
             [$repository]=($this->repositoryFactory)();$job=$repository->find((int)$id);
-            return $job===false?self::notFound():$this->render('show',compact('job'));
+            if ($job===false) return self::notFound();
+            $job['documents']=$repository->documents((int)$id);
+            return $this->render('show',compact('job'));
         }catch(Throwable){return self::unavailable();}
     }
     private function render(string $view,array $data,int $status=200): array

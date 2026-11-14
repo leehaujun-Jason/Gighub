@@ -8,6 +8,7 @@ use GigHub\Core\AuthGuard;
 use GigHub\Core\Csrf;
 use GigHub\Core\Notification;
 use GigHub\Services\MessageService;
+use GigHub\Services\ChatAttachmentStorage;
 use Throwable;
 
 final class MessageController
@@ -146,7 +147,7 @@ final class MessageController
     /**
      * Send a new message in a conversation.
      */
-    public function send(array $post = []): array
+    public function send(array $post = [], ?array $file = null, ?array $uploads = null): array
     {
         $access = $this->guard->check();
         if (!isset($access['user'])) {
@@ -205,7 +206,17 @@ final class MessageController
             }
 
             // Validate message content
-            $validation = MessageService::validateBody((string)($post['body'] ?? ''));
+            $files = $file !== null && ($file['error'] ?? null) !== UPLOAD_ERR_NO_FILE ? [$file] : [];
+            if ($uploads !== null) {
+                if (!is_array($uploads['error'] ?? null) || count($files) + count($uploads['error']) > 5) {
+                    return self::json(422, ['error' => 'Choose at most five attachments.']);
+                }
+                foreach ($uploads['error'] as $index => $error) {
+                    $files[] = ['error'=>$error, 'name'=>$uploads['name'][$index] ?? null, 'tmp_name'=>$uploads['tmp_name'][$index] ?? null];
+                }
+            }
+            $hasAttachment = $files !== [];
+            $validation = MessageService::validateBody((string)($post['body'] ?? ''), $hasAttachment);
             if (!$validation['valid']) {
                 if ($isAjax) {
                     return self::json(400, ['error' => $validation['error']]);
@@ -215,7 +226,7 @@ final class MessageController
             }
 
             // Check rate limiting and anti-spam
-            $rateLimitError = MessageService::checkRateLimit($bidId, $userId, $validation['body'], $repo);
+            $rateLimitError = MessageService::checkRateLimit($bidId, $userId, $validation['body'], $repo, $hasAttachment);
             if ($rateLimitError !== null) {
                 if ($isAjax) {
                     return self::json(429, ['error' => $rateLimitError]);
@@ -225,10 +236,39 @@ final class MessageController
             }
 
             // Insert message
-            $newId = $repo->createMessage($bidId, $userId, $validation['body']);
+            $attachments = [];
+            if ($hasAttachment) {
+                $storage = new ChatAttachmentStorage();
+                try {
+                    foreach ($files as $file) $attachments[] = $storage->store($file);
+                } catch (Throwable $error) {
+                    foreach ($attachments as $item) $storage->remove($item['key']);
+                    if (!$error instanceof \InvalidArgumentException) throw $error;
+                    if ($isAjax) {
+                        return self::json(422, ['error' => $error->getMessage()]);
+                    }
+                    Notification::error($error->getMessage());
+                    return self::redirect('/messages/thread&bid_id=' . $bidId);
+                }
+                try {
+                    [$newId, $attachments] = $repo->createWithAttachments($bidId, $userId, $validation['body'], $attachments);
+                } catch (Throwable $error) {
+                    // A lost database connection can leave the INSERT outcome unknown.
+                    if ($error instanceof \PDOException && !in_array((int)($error->errorInfo[1] ?? 0), [2006, 2013, 2055, 0], true)) {
+                        foreach ($attachments as $item) $storage->remove($item['key']);
+                    }
+                    throw $error;
+                }
+            } else {
+                $newId = $repo->createMessage($bidId, $userId, $validation['body']);
+            }
 
             // Update sender's read watermark immediately to include their own message
-            $repo->updateWatermark($bidId, $userId, $newId);
+            try {
+                $repo->updateWatermark($bidId, $userId, $newId);
+            } catch (Throwable) {
+                error_log('[GigHub] Message saved but sender watermark update failed.');
+            }
 
             if ($isAjax) {
                 $nowUtc = gmdate('Y-m-d H:i:s');
@@ -240,6 +280,7 @@ final class MessageController
                         'sender_id' => $userId,
                         'sender_name' => $user['display_name'],
                         'body' => $validation['body'],
+                        'attachments' => $attachments,
                         'created_at' => $nowUtc,
                         'formatted_time' => MessageService::formatMalaysiaTime($nowUtc),
                         'is_me' => true,
@@ -305,6 +346,7 @@ final class MessageController
                     'sender_id' => (int)$m['sender_id'],
                     'sender_name' => (string)$m['sender_name'],
                     'body' => (string)$m['body'],
+                    'attachments' => $m['attachments'],
                     'created_at' => (string)$m['created_at'],
                     'formatted_time' => MessageService::formatMalaysiaTime((string)$m['created_at']),
                     'is_me' => (int)$m['sender_id'] === $userId,
@@ -324,6 +366,43 @@ final class MessageController
     /**
      * Acknowledge reading messages up to $messageId.
      */
+    public function attachment(array $query): array
+    {
+        $access = $this->guard->check();
+        if (!isset($access['user'])) {
+            return $access;
+        }
+        $bidId = filter_var($query['bid_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $messageId = filter_var($query['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $missing = self::text(404, 'Attachment not found.');
+        if (!$bidId || !$messageId) {
+            return $missing;
+        }
+        try {
+            [$repo] = ($this->factory)();
+            $context = $repo->getConversationContext($bidId);
+            $user = $access['user'];
+            if ($context === null || !MessageService::canAccessConversation($context, (int)$user['id'], $user['role'])) {
+                return $missing;
+            }
+            $attachmentId = filter_var($query['attachment_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if (array_key_exists('attachment_id', $query) && !$attachmentId) return $missing;
+            $file = $repo->findAttachment($bidId, $messageId, $attachmentId ?: null);
+            if ($file === false || ($bytes = (new ChatAttachmentStorage())->read($file['attachment_key'])) === false) {
+                return $missing;
+            }
+            $image = (bool)$file['attachment_image'];
+            return [
+                'status' => 200,
+                'type' => $image ? 'image/webp' : 'application/octet-stream',
+                'body' => $bytes,
+                'content_disposition' => $image ? 'inline' : "attachment; filename*=UTF-8''" . rawurlencode($file['attachment_name']),
+            ];
+        } catch (Throwable) {
+            return $missing;
+        }
+    }
+
     public function read(array $post = []): array
     {
         $access = $this->guard->check();

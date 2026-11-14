@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 return [
+    'avatar_storage' => 'C:/MariaDB_Recovery/GigHub_Clean_Test/private/profile-photos',
     'app' => ['environment' => 'local'],
     // Public, explicit URL only. Never infer verification links from HTTP Host.
     'verification' => ['base_url' => 'http://localhost/GigHub/public/'],

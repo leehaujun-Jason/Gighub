@@ -14,8 +14,86 @@
     const form = document.getElementById('gh-message-form');
     const textarea = document.getElementById('gh-message-input');
     const sendBtn = document.getElementById('gh-send-btn');
-    const charCounter = document.getElementById('gh-char-counter');
     const emptyNotice = document.getElementById('gh-thread-empty');
+    const dialog = document.getElementById('gh-chat-dialog');
+    const closeLink = dialog?.querySelector('.gh-chat-close');
+    let openPanel = null;
+    let pickerActive = false;
+    let suppressCancelUntil = 0;
+    const closePanel = (restore = false) => {
+        if (!openPanel) return;
+        const {button, panel} = openPanel;
+        openPanel = null;
+        panel.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        if (restore) button.focus();
+    };
+    if (dialog && closeLink && typeof dialog.showModal === 'function') {
+        dialog.removeAttribute('open');
+        dialog.showModal();
+        const maximize = document.getElementById('gh-chat-maximize');
+        maximize.hidden = false;
+        maximize.onclick = () => {
+            const expanded = dialog.classList.toggle('gh-chat-maximized');
+            maximize.setAttribute('aria-pressed', String(expanded));
+            maximize.setAttribute('aria-label', expanded ? 'Restore dialog size' : 'Maximize conversation');
+        };
+        dialog.addEventListener('cancel', (event) => {
+            event.preventDefault();
+            if (pickerActive || performance.now() < suppressCancelUntil) return;
+            if (openPanel) {
+                closePanel(true);
+                return;
+            }
+            window.location.assign(closeLink.href);
+        });
+    }
+    const imageDialog = document.getElementById('gh-image-dialog');
+    if (imageDialog && typeof imageDialog.showModal === 'function') {
+        const image = imageDialog.querySelector('img');
+        let trigger;
+        container.addEventListener('click', (event) => {
+            const link = event.target.closest('[data-image-preview]');
+            if (!link) return;
+            event.preventDefault();
+            trigger = link;
+            image.src = link.href;
+            image.alt = link.querySelector('img').alt;
+            imageDialog.showModal();
+        });
+        imageDialog.querySelector('button').onclick = () => imageDialog.close();
+        imageDialog.addEventListener('click', (event) => {
+            if (event.target === imageDialog) imageDialog.close();
+        });
+        imageDialog.addEventListener('close', () => {
+            image.removeAttribute('src');
+            trigger?.focus({preventScroll: true});
+        });
+    }
+
+    const renderLinks = (bubble, text) => {
+        bubble.replaceChildren();
+        let offset = 0;
+        for (const match of text.matchAll(/(?<![\w:/])https?:\/\/[^\s<>"']+/giu)) {
+            const candidate = match[0].replace(/[.,!?;:)\]]+$/u, '');
+            try {
+                const url = new URL(candidate);
+                if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) continue;
+                bubble.append(document.createTextNode(text.slice(offset, match.index)));
+                const link = document.createElement('a');
+                link.href = url.href;
+                link.textContent = candidate;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                bubble.append(link);
+                offset = match.index + candidate.length;
+            } catch (_) {
+                // Leave malformed URLs as ordinary text.
+            }
+        }
+        bubble.append(document.createTextNode(text.slice(offset)));
+    };
+    container.querySelectorAll('.gh-message-text').forEach((body) => renderLinks(body, body.textContent));
 
     const bidId = parseInt(container.getAttribute('data-bid-id'), 10);
     const csrfToken = container.getAttribute('data-csrf') || '';
@@ -27,58 +105,164 @@
     let pollTimer = null;
     let isPolling = false;
     let isSubmitting = false;
-
-    // Scroll container to bottom
-    const scrollToBottom = () => {
-        container.scrollTop = container.scrollHeight;
+    const picker = document.getElementById('gh-attachment-input');
+    const tools = document.querySelector('.gh-composer-popovers');
+    const preview = document.getElementById('gh-attachment-preview');
+    const errorNotice = document.getElementById('gh-message-error');
+    const pending = [];
+    let mode = 'image';
+    const showError = (message = '') => {
+        errorNotice.textContent = message;
+        errorNotice.hidden = !message;
     };
+    const scrollToBottom = () => { container.scrollTop = container.scrollHeight; };
     scrollToBottom();
 
-    // Character counter with Unicode code point support
-    const updateCharCount = () => {
-        if (!textarea || !charCounter) return;
-        const count = [...textarea.value].length;
-        const remaining = MAX_CHARS - count;
-        charCounter.textContent = `${remaining.toLocaleString()} characters remaining`;
-        if (remaining < 0) {
-            charCounter.style.color = '#dc2626';
-        } else {
-            charCounter.style.color = '#64748b';
-        }
+    const updateComposer = () => {
+        if (!textarea) return;
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        sendBtn.disabled = isSubmitting || (!textarea.value.trim() && !pending.length)
+            || [...textarea.value].length > MAX_CHARS;
+    };
+    const clearAttachment = () => {
+        for (const item of pending.splice(0)) if (item.url) URL.revokeObjectURL(item.url);
+        preview.replaceChildren();
+        picker.value = '';
     };
 
-    if (textarea && charCounter) {
-        textarea.addEventListener('input', updateCharCount);
-        updateCharCount();
-
-        // Submit on Enter (without Shift)
-        textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (form && !isSubmitting && textarea.value.trim().length > 0) {
-                    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    if (tools && picker) {
+        tools.hidden = false;
+        for (const button of tools.querySelectorAll('[aria-controls]')) {
+            button.onclick = () => {
+                const wasOpen = openPanel?.button === button;
+                closePanel();
+                if (wasOpen) return;
+                const panel = document.getElementById(button.getAttribute('aria-controls'));
+                panel.hidden = false;
+                openPanel = {button, panel};
+                button.setAttribute('aria-expanded', 'true');
+                panel.querySelector('button').focus();
+            };
+        }
+        document.addEventListener('pointerdown', (event) => {
+            if (openPanel && !tools.contains(event.target)) closePanel();
+        });
+        const finishPicker = () => {
+            if (!pickerActive) return;
+            pickerActive = false;
+            suppressCancelUntil = performance.now() + 250;
+            textarea.focus();
+        };
+        picker.addEventListener('cancel', finishPicker);
+        window.addEventListener('focus', () => {
+            if (pickerActive) setTimeout(finishPicker, 250);
+        });
+        const allowed = {image: '.jpg,.jpeg,.png,.webp', file: '.pdf,.docx,.xlsx,.txt,.csv'};
+        tools.querySelectorAll('[data-attachment]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (isSubmitting) return;
+                mode = button.dataset.attachment;
+                picker.accept = allowed[mode];
+                picker.value = '';
+                closePanel();
+                pickerActive = true;
+                picker.click();
+            });
+        });
+        picker.addEventListener('change', () => {
+            finishPicker();
+            if (isSubmitting) return;
+            showError();
+            for (const file of picker.files) {
+                const extension = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowed[mode].split(',').includes(extension) || !file.size || file.size > (mode === 'image' ? 5 : 10) * 1024 * 1024) {
+                    showError('Choose a supported image up to 5 MB or document up to 10 MB.');
+                    continue;
                 }
+                if (pending.some(({file: other}) => other.name === file.name && other.size === file.size && other.lastModified === file.lastModified)) continue;
+                if (pending.length >= 5) {
+                    showError('Choose at most five attachments.');
+                    break;
+                }
+                const item = {file, url: mode === 'image' ? URL.createObjectURL(file) : null};
+                pending.push(item);
+                const card = document.createElement('div');
+                card.className = 'gh-chat-preview';
+                if (item.url) {
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.alt = '';
+                    card.append(img);
+                }
+                if (!item.url) card.append(document.createTextNode('📄 ' + file.name));
+                else card.classList.add('gh-chat-preview-image');
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.textContent = '×';
+                remove.setAttribute('aria-label', 'Remove ' + file.name);
+                const trigger = tools.querySelector('[aria-controls="gh-files-menu"]');
+                remove.onclick = () => {
+                    if (isSubmitting) return;
+                    if (item.url) URL.revokeObjectURL(item.url);
+                    pending.splice(pending.indexOf(item), 1);
+                    card.remove();
+                    trigger.focus();
+                    updateComposer();
+                };
+                card.append(remove);
+                preview.append(card);
+            }
+            picker.value = '';
+            updateComposer();
+        });
+        window.addEventListener('pagehide', (event) => { if (!event.persisted) clearAttachment(); });
+    }
+
+    if (textarea) {
+        let accepted = textarea.value;
+        textarea.addEventListener('input', (event) => {
+            if (event.isComposing) return;
+            if ([...textarea.value].length > MAX_CHARS) {
+                textarea.value = accepted;
+                showError('Messages can contain up to 5,000 characters.');
+            } else {
+                accepted = textarea.value;
+            }
+            updateComposer();
+        });
+        textarea.addEventListener('compositionend', () => textarea.dispatchEvent(new Event('input')));
+        textarea.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                event.preventDefault();
+                if (!sendBtn.disabled) form.requestSubmit();
             }
         });
+        updateComposer();
     }
 
     // Quick Emojis
     const emojiBtns = document.querySelectorAll('.gh-emoji-btn');
     emojiBtns.forEach((btn) => {
         btn.addEventListener('click', () => {
-            if (!textarea) return;
+            if (!textarea || isSubmitting) return;
             const emoji = btn.getAttribute('data-emoji') || btn.textContent.trim();
             const start = textarea.selectionStart ?? textarea.value.length;
             const end = textarea.selectionEnd ?? textarea.value.length;
             const before = textarea.value.substring(0, start);
             const after = textarea.value.substring(end);
 
+            if ([...(before + emoji + after)].length > MAX_CHARS) {
+                showError('Messages can contain up to 5,000 characters.');
+                return;
+            }
+            closePanel();
             textarea.value = before + emoji + after;
             const newCursor = start + emoji.length;
             textarea.selectionStart = newCursor;
             textarea.selectionEnd = newCursor;
             textarea.focus();
-            updateCharCount();
+            textarea.dispatchEvent(new Event('input'));
         });
     });
 
@@ -93,7 +277,7 @@
         const bubble = row.querySelector('.gh-message-bubble');
         if (!bubble) return;
 
-        const textToCopy = bubble.textContent;
+        const textToCopy = bubble.querySelector('.gh-message-text')?.textContent ?? '';
         try {
             if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                 await navigator.clipboard.writeText(textToCopy);
@@ -163,13 +347,40 @@
 
         const bubble = document.createElement('div');
         bubble.className = 'gh-message-bubble';
-        bubble.textContent = msg.body;
+        const body = document.createElement('span');
+        body.className = 'gh-message-text';
+        renderLinks(body, msg.body);
+        bubble.append(body);
+        const imageGrid = document.createElement('div');
+        imageGrid.className = 'gh-chat-image-grid';
+        const documents = document.createElement('div');
+        documents.className = 'gh-chat-document-list';
+        for (const item of msg.attachments ?? []) {
+            const url = '?route=/messages/attachment&bid_id=' + bidId + '&id=' + Number(msg.id) + (item.id === null ? '' : '&attachment_id=' + Number(item.id));
+            const link = document.createElement('a');
+            link.className = 'gh-chat-attachment';
+            link.href = url;
+            if (item.image) {
+                link.dataset.imagePreview = '';
+                const image = document.createElement('img');
+                image.src = url;
+                image.alt = 'Open image: ' + item.name;
+                link.append(image);
+            } else {
+                link.download = '';
+                link.textContent = '📄 ' + item.name;
+            }
+            (item.image ? imageGrid : documents).append(link);
+        }
+        bubble.append(imageGrid, documents);
 
         row.appendChild(meta);
         row.appendChild(bubble);
         container.appendChild(row);
 
-        scrollToBottom();
+        if (!document.getElementById('gh-image-dialog')?.open) {
+            scrollToBottom();
+        }
     };
 
     // Acknowledge read state for incoming messages
@@ -292,50 +503,53 @@
             e.preventDefault();
 
             const text = textarea.value.trim();
-            if (!text || isSubmitting) {
+            if ((!text && !pending.length) || isSubmitting || [...textarea.value].length > MAX_CHARS) {
                 return;
             }
 
             isSubmitting = true;
             sendBtn.disabled = true;
-            sendBtn.textContent = 'Sending...';
+            textarea.readOnly = true;
+            showError();
 
-            const formData = new URLSearchParams();
+            const formData = new FormData();
             formData.append('csrf_token', csrfToken);
             formData.append('bid_id', bidId);
             formData.append('body', text);
+            for (const {file} of pending) formData.append('attachments[]', file);
 
             try {
                 const res = await fetch('?route=/messages/send', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json'
                     },
-                    body: formData.toString()
+                    body: formData
                 });
 
+                if (res.status === 413) {
+                    showError('This upload exceeds the server request size limit.');
+                    return;
+                }
                 const data = await res.json();
 
                 if (res.status === 201 && data.success && data.message) {
                     textarea.value = '';
-                    updateCharCount();
+                    clearAttachment();
+                    textarea.dispatchEvent(new Event('input'));
                     appendMessage(data.message);
-                    if (data.message.id) {
-                        lastMessageId = Math.max(lastMessageId, data.message.id);
-                    }
                     textarea.focus();
                 } else {
                     const errorMsg = (data && data.error) ? data.error : 'Could not send message. Please try again.';
-                    alert(errorMsg);
+                    showError(errorMsg);
                 }
             } catch (_) {
-                alert('A network error occurred while sending your message. Please try again.');
+                showError('Could not confirm delivery. Check the conversation before retrying.');
             } finally {
                 isSubmitting = false;
-                sendBtn.disabled = false;
-                sendBtn.textContent = 'Send Message';
+                textarea.readOnly = false;
+                textarea.dispatchEvent(new Event('input'));
             }
         });
     }

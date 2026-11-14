@@ -46,13 +46,14 @@ button:not(.gh-header *):hover { background: #103d31; }
 .password-fields { display: flex; flex-direction: column; }
 .password-input { position: relative; min-width: 0; }
 .password-input input { padding-right: 54px; min-height: 48px; }
-.password-toggle { position: absolute; right: 2px; top: 2px; display: inline-flex; justify-content: center; width: 44px; height: 44px; min-height: 44px; margin: 0; padding: 10px; border-radius: 5px; background: transparent; color: #145e4e; }
-.password-toggle:hover { background: #eef4ed; color: #082f27; }
+.password-input .password-toggle { position: absolute; inset-inline-end: 3px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; padding: 10px; border-radius: 50%; background: transparent; color: var(--gh-green); }
+.password-input .password-toggle:hover { background: var(--gh-header-background); color: var(--gh-green-hover); }
 .password-toggle:focus-visible { outline-offset: -3px; }
 .password-toggle svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .eye-slash { display: none; }
 .password-toggle[data-visible="true"] .eye-slash { display: block; }
-.password-feedback { min-height: 2.8em; margin-top: 8px; }
+.password-feedback { margin-top: var(--gh-space-1); }
+.password-feedback:empty { margin-top: 0; }
 .password-feedback[data-state="error"] { color: #96261d; }
 .password-feedback[data-state="success"] { color: #286e52; }
 .error-summary { padding: 16px; border: 1px solid #c99189; border-radius: 8px; background: #fff4f1; margin-top: 22px; font-size: .88rem; }
@@ -66,3 +67,43 @@ footer { text-align: center; padding: 20px; font-size: .85rem; color: #5c6d62; }
 .completion h1 { font-size: 2.4rem; }
 @media (max-width: 850px) { .registration-layout { grid-template-columns: 1fr; gap: 28px; padding: 12px 20px 36px; } .intro { padding-top: 0; } .intro h1 { font-size: 2.3rem; margin: 14px 0; } .intro .notice { margin-top: 18px; } .site-header { padding: 20px; } .card { padding: 24px; } .completion { margin: 20px; } }
 @media (max-width: 480px) { .two-columns { grid-template-columns: 1fr; gap: 0; } .site-header > a:last-child { font-size: .8rem; } }
+
+.registration-role-layout {
+    max-width: 52rem;
+    margin-inline: auto;
+    padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
+}
+.registration-role-layout h1 { margin: 0 0 var(--gh-space-3); }
+.registration-role-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--gh-space-2);
+    margin-block-end: var(--gh-space-3);
+}
+.registration-role-options .registration-role-card {
+    display: grid;
+    align-content: start;
+    gap: var(--gh-space-1);
+    padding: var(--gh-space-3);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-card-radius);
+    background: var(--gh-surface);
+    color: var(--gh-text);
+    text-decoration: none;
+}
+.registration-role-options .registration-role-card:hover,
+.registration-role-options .registration-role-card:focus-visible {
+    border-color: var(--gh-green);
+    background: var(--gh-header-background);
+}
+.registration-role-card strong { font-size: 1.25rem; }
+.registration-role-card span { color: var(--gh-muted); }
+.registration-role-card svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    fill: none;
+    stroke: var(--gh-green);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}

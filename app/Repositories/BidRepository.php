@@ -20,7 +20,7 @@ class BidRepository
     }
     public function owned(int $id,int $freelancerId,bool $lock=false): array|false
     {
-        $q=$this->pdo->prepare('SELECT id,job_id,freelancer_id,amount,delivery_days,cover_letter,status FROM bids WHERE id=? AND freelancer_id=?'.($lock?' FOR UPDATE':''));
+        $q=$this->pdo->prepare('SELECT id,job_id,freelancer_id,amount,delivery_days,cover_letter,status,proposal_document_name FROM bids WHERE id=? AND freelancer_id=?'.($lock?' FOR UPDATE':''));
         $q->execute([$id,$freelancerId]); return $q->fetch(PDO::FETCH_ASSOC);
     }
     public function forJob(int $jobId,int $freelancerId,bool $lock=false): array|false
@@ -49,7 +49,7 @@ class BidRepository
     }
     public function mine(int $freelancerId,int $page): array
     {
-        $q=$this->pdo->prepare('SELECT b.id,b.job_id,b.amount,b.delivery_days,b.cover_letter,b.status,b.created_at,j.title,j.status AS job_status,j.awarded_bid_id FROM bids b JOIN jobs j ON j.id=b.job_id WHERE b.freelancer_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?');
+        $q=$this->pdo->prepare('SELECT b.id,b.job_id,b.amount,b.delivery_days,b.cover_letter,b.proposal_document_name,b.status,b.created_at,j.title,j.status AS job_status,j.awarded_bid_id FROM bids b JOIN jobs j ON j.id=b.job_id WHERE b.freelancer_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?');
         $q->bindValue(1,$freelancerId,PDO::PARAM_INT); $q->bindValue(2,($page-1)*20,PDO::PARAM_INT); $q->execute(); return $q->fetchAll(PDO::FETCH_ASSOC);
     }
     public function clientBids(int $jobId,int $clientId,int $page): array

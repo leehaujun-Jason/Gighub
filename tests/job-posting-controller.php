@@ -60,7 +60,7 @@ $home=static function(string $role)use($root):string{$user=['role'=>$role,'displ
 $html=$home('client');$check(str_contains($html,'Manage your job drafts and published projects, or post a new job.')&&!str_contains($html,'workspace will be developed'),'accurate Client home copy');
 $check(str_contains($html,'?route=/client/jobs')&&str_contains($html,'action="?route=/logout"'),'Client navigation and logout retained');
 $check(str_contains($home('freelancer'),'Build your professional profile and explore available jobs.')&&str_contains($home('freelancer'),'?route=/freelancer/profile')&&str_contains($home('freelancer'),'?route=/freelancer/bids'),'Freelancer profile and bidding navigation');
-$check(str_contains($home('admin'),'Your admin workspace will be developed in a later module.'),'Admin copy unaffected');
+$check(str_contains($home('admin'),'Access administrative tools and dispute mediation in the Admin Dispute Queue.')&&str_contains($home('admin'),'?route=/admin'),'Admin copy unaffected');
 $service->failure=['title'=>'Use a longer title.'];$token=GigHub\Core\Csrf::token('job_posting');
 $response=$c->store(['csrf_token'=>$token,'title'=>'<unsafe>']);
 $check($response['status']===422&&str_contains($response['body'],'aria-describedby="title-hint title-error"'),'field association');

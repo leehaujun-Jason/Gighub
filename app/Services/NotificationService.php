@@ -26,6 +26,7 @@ class NotificationService
         'cancellation_responded',
         'job_cancelled',
         'review_received',
+        'bid_not_selected',
     ];
 
     public function __construct(private readonly NotificationRepository $repo) {}
@@ -60,6 +61,7 @@ class NotificationService
         $jobId = isset($notification['job_id']) && $notification['job_id'] !== null ? (int)$notification['job_id'] : null;
 
         return match ($type) {
+            'bid_not_selected' => $userRole === 'freelancer' ? '?route=/freelancer/bids' : null,
             'bid_received' => $jobId !== null && $userRole === 'client'
                 ? '?route=/client/jobs/bids&id=' . $jobId
                 : ($userRole === 'client' ? '?route=/client/jobs' : '?route=/jobs'),
@@ -114,6 +116,7 @@ class NotificationService
             'milestone_approved' => 'View Milestones',
             'payment_released', 'payment_refunded' => 'View Wallet',
             'review_received' => 'View Feedback',
+            'bid_not_selected' => 'View My Bids',
             'cancellation_requested' => 'Review Request',
             'cancellation_responded', 'job_cancelled' => 'View Contract',
             'dispute_opened' => 'View Dispute',

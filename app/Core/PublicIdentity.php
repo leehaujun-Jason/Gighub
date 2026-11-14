@@ -22,7 +22,8 @@ final class PublicIdentity
             // Keep public pages available. Do not trust stale identity or destroy a session on transient failure.
             return null;
         }
-        if ($user === null) { $this->session->forget(); return null; }
+        if ($user === null || !$this->session->matchesCredential($user)) { $this->session->forget(); return null; }
+        unset($user['credential_stamp']);
         $this->session->touch();
         return $user;
     }

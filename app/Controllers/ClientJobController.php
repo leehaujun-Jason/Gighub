@@ -20,7 +20,9 @@ final class ClientJobController
         try {
             $page=(int)$raw;$rows=($this->serviceFactory)()->listing($access['user']['id'],$page);
             $hasNext=count($rows)>20;$jobs=array_slice($rows,0,20);
-            return $this->render('index',compact('jobs','page','hasNext'));
+            $removalNotice = $_SESSION['job_removed'] ?? false;
+            unset($_SESSION['job_removed']);
+            return $this->render('index',compact('jobs','page','hasNext','removalNotice'));
         }catch(Throwable){return self::unavailable();}
     }
     public function create(): array
@@ -39,7 +41,7 @@ final class ClientJobController
         try {
             $service=($this->serviceFactory)();$job=$service->owned($id,$access['user']['id']);
             if($editing) {
-                if($job['status']!=='draft')return self::text(409,'Published jobs are read-only.');
+                if(!$service->editable($job))return self::text(409,'This job cannot be edited.');
                 $old=$job;$old['skills']=array_column($job['skills'],'id');return $this->form($service,$id,$old,[]);
             }
             $rawNotice = $_SESSION['job_posting_notice'] ?? null;
@@ -52,6 +54,29 @@ final class ClientJobController
     public function store(array $input): array { return $this->write($input,false,false); }
     public function update(array $input): array { return $this->write($input,true,false); }
     public function publish(array $input): array { return $this->write($input,true,true); }
+    public function delete(array $input): array
+    {
+        $access = $this->guard->check('client');
+        if (!isset($access['user'])) return $access;
+        if (!Csrf::valid($input['csrf_token'] ?? null, 'job_posting')) return self::text(403, 'Invalid form session.');
+        $id = self::id($input['id'] ?? null);
+        if ($id === null) return self::text(400, 'Invalid job ID.');
+        try {
+            ($this->serviceFactory)()->remove($access['user']['id'], $id);
+            Csrf::rotate('job_posting');
+            $_SESSION['job_removed'] = true;
+            return ['status'=>303,'type'=>'text/plain; charset=UTF-8','body'=>'','location'=>'?route=/client/jobs'];
+        } catch (JobPostingException $error) {
+            return self::text($error->status, 'Job removal unavailable.');
+        } catch (\PDOException $error) {
+            if ((int)($error->errorInfo[1] ?? 0) === 1142) {
+                return self::text(503, 'Job removal is unavailable because a database permission is missing.');
+            }
+            return self::unavailable();
+        } catch (Throwable) {
+            return self::unavailable();
+        }
+    }
     private function write(array $input,bool $existing,bool $publish): array
     {
         $access=$this->guard->check('client');if(!isset($access['user']))return $access;
@@ -82,7 +107,9 @@ final class ClientJobController
     }
     private function form(object $service,?int $id,array $old,array $errors,int $status=200): array
     {
-        $skills=$service->catalogue();return $this->render('form',compact('id','old','errors','skills'),$status);
+        $skills=$service->catalogue();
+        $documents=$id===null?[]:$service->documents($id);
+        return $this->render('form',compact('id','old','errors','skills','documents'),$status);
     }
     private function render(string $view,array $data,int $status=200): array
     {

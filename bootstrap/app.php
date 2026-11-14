@@ -79,7 +79,14 @@ $profileFactory=static function() use ($config): \GigHub\Services\FreelancerProf
     $pdo=(new Database($config['database']))->connection();
     return new \GigHub\Services\FreelancerProfileService($pdo,new \GigHub\Repositories\FreelancerProfileRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo));
 };
-$profiles=new \GigHub\Controllers\FreelancerProfileController(new AuthGuard($authenticationFactory,$authSession),$profileFactory,$publicIdentity);
+foreach (['Repositories/ProfessionalDetailsRepository','Services/ProfessionalDetails','Controllers/ProfessionalDetailsController'] as $class) {
+    require_once $root . '/app/' . $class . '.php';
+}
+$detailsFactory = static fn () => new \GigHub\Repositories\ProfessionalDetailsRepository((new Database($config['database']))->connection());
+$details = new \GigHub\Controllers\ProfessionalDetailsController(new AuthGuard($authenticationFactory,$authSession), $detailsFactory);
+$router->get('/freelancer/profile/details', static fn () => $details->form($_GET));
+$router->post('/freelancer/profile/details', static fn () => $details->form($_GET, $_POST));
+$profiles=new \GigHub\Controllers\FreelancerProfileController(new AuthGuard($authenticationFactory,$authSession),$profileFactory,$publicIdentity,$detailsFactory);
 $router->get('/freelancer/profile',static fn()=>$profiles->own());
 $router->get('/freelancer/profile/edit',static fn()=>$profiles->own(true));
 $router->post('/freelancer/profile/edit',static fn()=>$profiles->update($_POST));
@@ -94,9 +101,9 @@ $bidFactory=static function() use ($config): \GigHub\Services\BidService {
 $bids=new \GigHub\Controllers\BidController(new AuthGuard($authenticationFactory,$authSession),$bidFactory);
 $router->get('/freelancer/bids',static fn()=>$bids->index($_GET));
 $router->get('/freelancer/bids/create',static fn()=>$bids->form($_GET));
-$router->post('/freelancer/bids/create',static fn()=>$bids->save($_POST));
+$router->post('/freelancer/bids/create',static fn()=>$bids->save(['_proposal'=>$_FILES['proposal']??null]+$_POST));
 $router->get('/freelancer/bids/edit',static fn()=>$bids->form($_GET,true));
-$router->post('/freelancer/bids/update',static fn()=>$bids->save($_POST,true));
+$router->post('/freelancer/bids/update',static fn()=>$bids->save(['_proposal'=>$_FILES['proposal']??null]+$_POST,true));
 $router->post('/freelancer/bids/withdraw',static fn()=>$bids->withdraw($_POST));
 $router->get('/client/jobs/bids',static fn()=>$bids->client($_GET));
 require_once $root.'/app/Services/AwardService.php';
@@ -196,7 +203,7 @@ $router->get('/notifications',static fn()=>$notifications->index($_GET));
 $router->post('/notifications/read',static fn()=>$notifications->markRead($_POST));
 $router->post('/notifications/read-all',static fn()=>$notifications->markAllRead($_POST));
 $router->get('/notifications/count',static fn()=>$notifications->unreadCount());
-foreach (['Repositories/MessageRepository','Services/MessageService','Controllers/MessageController'] as $class) {
+foreach (['Repositories/MessageRepository','Services/MessageService','Services/ChatAttachmentStorage','Controllers/MessageController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
 }
 $messageFactory=static function() use ($config): array {
@@ -208,7 +215,8 @@ $messageFactory=static function() use ($config): array {
 $messages=new \GigHub\Controllers\MessageController(new AuthGuard($authenticationFactory,$authSession),$messageFactory);
 $router->get('/messages',static fn()=>$messages->inbox());
 $router->get('/messages/thread',static fn()=>$messages->thread($_GET));
-$router->post('/messages/send',static fn()=>$messages->send($_POST));
+$router->post('/messages/send',static fn()=>$messages->send($_POST, $_FILES['attachment'] ?? null, $_FILES['attachments'] ?? null));
+$router->get('/messages/attachment',static fn()=>$messages->attachment($_GET));
 $router->get('/messages/poll',static fn()=>$messages->poll($_GET));
 $router->post('/messages/read',static fn()=>$messages->read($_POST));
 $router->get('/messages/count',static fn()=>$messages->unreadCount());
@@ -232,14 +240,98 @@ $router->get('/jobs',static fn()=>$publicJobs->index($_GET));
 $router->get('/jobs/show',static fn()=>$publicJobs->show($_GET));
 $router->get('/client/jobs',static fn()=>$clientJobs->index($_GET));
 $router->get('/client/jobs/create',static fn()=>$clientJobs->create());
-$router->post('/client/jobs/create',static fn()=>$clientJobs->store($_POST));
+$router->post('/client/jobs/create',static fn()=>$clientJobs->store(['_documents'=>$_FILES['documents']??[]]+$_POST));
 $router->get('/client/jobs/show',static fn()=>$clientJobs->show($_GET));
 $router->get('/client/jobs/edit',static fn()=>$clientJobs->edit($_GET));
-$router->post('/client/jobs/update',static fn()=>$clientJobs->update($_POST));
+$router->post('/client/jobs/update',static fn()=>$clientJobs->update(['_documents'=>$_FILES['documents']??[]]+$_POST));
 $router->post('/client/jobs/publish',static fn()=>$clientJobs->publish($_POST));
+$router->post('/client/jobs/delete',static fn()=>$clientJobs->delete($_POST));
+require_once $root.'/app/Services/MarketplaceDocuments.php';
+$router->get('/marketplace/document', static function () use ($config,$authenticationFactory,$authSession): array {
+    $missing=['status'=>404,'type'=>'text/plain; charset=UTF-8','body'=>'Document not found.'];
+    $id=filter_var($_GET['id']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+    if (!$id) return $missing;
+    try {
+        $pdo=(new Database($config['database']))->connection();
+        $access=(new AuthGuard($authenticationFactory,$authSession))->check();
+        $user=$access['user']??[];
+        if (($_GET['kind']??null)==='proposal') {
+            $q=$pdo->prepare("SELECT b.proposal_document_key AS storage_key,b.proposal_document_name AS display_name
+                FROM bids b JOIN jobs j ON j.id=b.job_id WHERE b.id=? AND b.proposal_document_key IS NOT NULL
+                AND ((?='client' AND j.client_id=?) OR (?='freelancer' AND b.freelancer_id=?))");
+            $q->execute([$id,$user['role']??'',$user['id']??0,$user['role']??'',$user['id']??0]);
+        } elseif (($_GET['kind']??null)==='job') {
+            $q=$pdo->prepare('SELECT d.storage_key,d.display_name,d.job_id,j.client_id FROM job_requirement_documents d JOIN jobs j ON j.id=d.job_id WHERE d.id=?');
+            $q->execute([$id]);
+            $file=$q->fetch();
+            if (!$file) return $missing;
+            if (!(($user['role']??null)==='client' && (int)$user['id']===(int)$file['client_id'])
+                && ($user['role']??null)!=='admin'
+                && (new \GigHub\Repositories\PublicJobRepository($pdo))->find((int)$file['job_id'])===false) return $missing;
+            return \GigHub\Services\MarketplaceDocuments::response($file);
+        } else return $missing;
+        $file=$q->fetch();
+        return $file ? \GigHub\Services\MarketplaceDocuments::response($file) : $missing;
+    } catch (\Throwable) {
+        return $missing;
+    }
+});
+foreach (['Repositories/PasswordResetRepository', 'Services/PasswordResetService', 'Controllers/PasswordResetController'] as $class) {
+    require_once $root . '/app/' . $class . '.php';
+}
+$passwordReset = new \GigHub\Controllers\PasswordResetController(static function () use ($config): \GigHub\Services\PasswordResetService {
+    $pdo = (new Database($config['database']))->connection();
+    return new \GigHub\Services\PasswordResetService(
+        $pdo,
+        new \GigHub\Repositories\PasswordResetRepository($pdo),
+        static fn () => MailTransportFactory::create($config['mail'], $config['app']['environment']),
+        $config['verification']['base_url'],
+    );
+}, $authSession);
+$router->get('/forgot-password', static fn () => $passwordReset->page('request'));
+$router->post('/forgot-password', static fn () => $passwordReset->request($_POST));
+$router->get('/forgot-password/sent', static fn () => $passwordReset->page('sent'));
+$router->get('/reset-password', static fn () => $passwordReset->page('reset'));
+$router->post('/reset-password', static fn () => $passwordReset->confirm($_POST));
+$router->get('/reset-password/success', static fn () => $passwordReset->success());
 $router->get('/login',static fn()=>$authentication->show());
 $router->post('/login',static fn()=>$authentication->login($_POST));
 $router->post('/logout',static fn()=>$authentication->logout($_POST));
+foreach (['Repositories/OnboardingRepository', 'Services/OnboardingService', 'Controllers/OnboardingController'] as $class) {
+    require_once $root . '/app/' . $class . '.php';
+}
+$onboarding = new \GigHub\Controllers\OnboardingController(
+    new AuthGuard($authenticationFactory, $authSession),
+    static function () use ($config): \GigHub\Services\OnboardingService {
+        $pdo = (new Database($config['database']))->connection();
+        return new \GigHub\Services\OnboardingService(
+            $pdo, new \GigHub\Repositories\OnboardingRepository($pdo), new \GigHub\Repositories\SkillRepository($pdo),
+        );
+    },
+    $detailsFactory,
+);
+foreach (['Repositories/AvatarRepository', 'Services/AvatarStorage', 'Controllers/AvatarController'] as $class) {
+    require_once $root . '/app/' . $class . '.php';
+}
+$avatars = new \GigHub\Controllers\AvatarController(
+    new AuthGuard($authenticationFactory, $authSession),
+    static fn () => new \GigHub\Repositories\AvatarRepository((new Database($config['database']))->connection()),
+    new \GigHub\Services\AvatarStorage($config['avatar_storage']),
+);
+$router->get('/profile/photo', static fn () => $avatars->show($_GET));
+$router->post('/profile/photo', static fn () => $avatars->change($_POST, $_FILES));
+require_once $root . '/app/Services/ClientLocation.php';
+$router->get('/profile/setup', static fn () => $onboarding->setup());
+$router->post('/profile/setup', static fn () => $onboarding->setup($_POST));
+require_once $root . '/app/Repositories/ClientProfileRepository.php';
+require_once $root . '/app/Controllers/ClientProfileController.php';
+$clientProfile = new \GigHub\Controllers\ClientProfileController(
+    new AuthGuard($authenticationFactory, $authSession),
+    static fn () => new \GigHub\Repositories\ClientProfileRepository((new Database($config['database']))->connection()),
+);
+$router->get('/client/profile', static fn () => $clientProfile->show());
+$router->get('/client/profile/edit', static fn () => $clientProfile->show(true));
+$router->post('/client/profile/edit', static fn () => $clientProfile->show(true, $_POST));
 $router->get('/client',static fn()=>$clientWorkspace->index());
 $router->get('/freelancer',static fn()=>$freelancerWorkspace->index());
 $router->post('/freelancer/skills',static fn()=>$freelancerWorkspace->updateSkills($_POST));
@@ -263,6 +355,10 @@ $router->post('/verify-email/resend', static fn () => $verification->resend($_PO
 $router->get('/verify-email/result', static fn () => $verification->result());
 $router->get('/register', static fn () => $registration->show());
 $router->post('/register', static fn () => $registration->submit($_POST));
+foreach (['freelancer', 'client'] as $registrationRole) {
+    $router->get('/register/' . $registrationRole, static fn () => $registration->show($registrationRole));
+    $router->post('/register/' . $registrationRole, static fn () => $registration->submit($_POST, $registrationRole));
+}
 $router->get('/register/pending', static fn () => $registration->pending());
 $router->get('/', static fn () => (new HomeController($publicIdentity, $publicRepositoryFactory))->show($_GET));
 $router->get('/health', static fn () => (new HealthController())->show(

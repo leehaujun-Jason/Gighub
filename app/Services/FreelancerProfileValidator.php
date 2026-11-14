@@ -25,6 +25,8 @@ final class FreelancerProfileValidator
             }
             $data['skills'][]=(int)$id;
         }
+        if ($data['skills'] === []) { $errors['skills'] ??= 'Select at least one skill.'; }
+        if (count($data['skills']) !== count(array_unique($data['skills']))) { $errors['skills'] = 'Select distinct skills.'; }
         $data['skills']=array_values(array_unique($data['skills'])); sort($data['skills'],SORT_NUMERIC);
         return compact('data','errors');
     }

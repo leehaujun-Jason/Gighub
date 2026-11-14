@@ -9,7 +9,8 @@ ob_start();
 
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
-header("Content-Security-Policy: default-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+$imagePolicy = ($_GET['route'] ?? null) === '/messages/thread' ? "img-src 'self' blob:; " : '';
+header("Content-Security-Policy: default-src 'self'; ${imagePolicy}base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
 header('Cache-Control: no-store');
 
 set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
@@ -32,6 +33,9 @@ $router = require dirname(__DIR__) . '/bootstrap/app.php';
 $response = $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_GET['route'] ?? '/');
 http_response_code($response['status']);
 header('Content-Type: ' . $response['type']);
+if (isset($response['content_disposition'])) {
+    header('Content-Disposition: ' . $response['content_disposition']);
+}
 if ($response['status'] === 405) {
     header('Allow: ' . ($response['allow'] ?? 'GET'));
 }

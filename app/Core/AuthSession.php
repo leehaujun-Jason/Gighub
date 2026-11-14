@@ -13,7 +13,7 @@ final class AuthSession
 
     private function now(): int { return $this->clock!==null?($this->clock)():time(); }
 
-    public function establish(int $id): void
+    public function establish(int $id, ?string $credentialStamp = null): void
     {
         unset($_SESSION['auth']);
         try {
@@ -21,6 +21,7 @@ final class AuthSession
         } catch(Throwable) { throw new RuntimeException('Session initialization unavailable.'); }
         $now=$this->now();
         $_SESSION=['_initialized'=>true,'auth'=>['user_id'=>$id,'issued_at'=>$now,'last_activity'=>$now]];
+        if ($credentialStamp !== null) { $_SESSION['auth']['credential_stamp'] = $credentialStamp; }
         Csrf::rotate('login');Csrf::rotate('logout');
     }
 
@@ -31,6 +32,13 @@ final class AuthSession
             ||$a['issued_at']>$now||$a['last_activity']>$now||$a['last_activity']<$a['issued_at']
             ||$now-$a['issued_at']>=28800||$now-$a['last_activity']>=1800) { $this->forget();return null; }
         return $a['user_id'];
+    }
+
+    public function matchesCredential(array $user): bool
+    {
+        $current = $user['credential_stamp'] ?? null;
+        $stored = $_SESSION['auth']['credential_stamp'] ?? null;
+        return $current === null ? $stored === null : is_string($stored) && hash_equals($current, $stored);
     }
 
     public function touch(): void { if(isset($_SESSION['auth'])) { $_SESSION['auth']['last_activity']=$this->now(); } }
