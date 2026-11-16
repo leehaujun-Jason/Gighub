@@ -14,6 +14,13 @@ class SubmissionService
         protected readonly ?\GigHub\Repositories\NotificationRepository $notifications = null
     ) {}
 
+    private function requireEarlierMilestonesApproved(int $jobId, int $position, bool $lock = false): void
+    {
+        if ($this->submissions->hasUnapprovedPredecessor($jobId, $position, $lock)) {
+            throw new SubmissionException(['form' => 'All earlier milestones must be approved before you can submit this deliverable.'], 409);
+        }
+    }
+
     public function getSubmissionContext(int $freelancerId, int $jobId, int $milestoneId): array
     {
         if (!$this->submissions->eligibleFreelancer($freelancerId)) {
@@ -54,10 +61,12 @@ class SubmissionService
             throw new SubmissionException(['form' => 'This milestone cannot accept submissions at this time.'], 409);
         }
 
+        $this->requireEarlierMilestonesApproved($jobId, (int)$milestone['position']);
+
         return [
             'job' => $job,
             'milestone' => $milestone,
-            'previous_submissions' => $this->submissions->submissionsForMilestone($jobId, $milestoneId),
+            'previous_submissions' => $this->submissions->withLinks($this->submissions->submissionsForMilestone($jobId, $milestoneId), $jobId),
         ];
     }
 
@@ -116,6 +125,8 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'This milestone cannot accept submissions at this time.'], 409);
             }
 
+            $this->requireEarlierMilestonesApproved($jobId, (int)$milestone['position'], true);
+
             // Step 4: Insert Work Submission Record
             $submissionId = $this->submissions->createMilestoneSubmission(
                 $jobId,
@@ -124,6 +135,8 @@ class SubmissionService
                 $validated['notes'],
                 $validated['deliverable_url']
             );
+
+            $this->submissions->addLinks($submissionId, $validated['links']);
 
             // Step 5: Update Milestone Status to 'submitted'
             $this->submissions->updateMilestoneStatus($jobId, $milestoneId, 'submitted');
@@ -183,7 +196,7 @@ class SubmissionService
 
         return [
             'job' => $job,
-            'submissions' => $this->submissions->submissionsForJob($jobId),
+            'submissions' => $this->submissions->withLinks($this->submissions->submissionsForJob($jobId), $jobId),
         ];
     }
 
@@ -258,7 +271,7 @@ class SubmissionService
 
             // Dispatch notification to freelancer
             if ($this->notifications !== null) {
-                $this->notifications->create((int)$submission['freelancer_id'], $jobId, 'milestone_approved', 'Milestone "' . $milestone['title'] . '" on "' . $job['title'] . '" has been approved!');
+                $this->notifications->create((int)$submission['submitted_by'], $jobId, 'milestone_approved', 'Milestone "' . $milestone['title'] . '" on "' . $job['title'] . '" has been approved!');
             }
 
             if ($ownTx) {
@@ -355,7 +368,7 @@ class SubmissionService
 
             // Dispatch notification to freelancer
             if ($this->notifications !== null) {
-                $this->notifications->create((int)$submission['freelancer_id'], $jobId, 'revision_requested', 'Revisions requested for milestone "' . $milestone['title'] . '" on "' . $job['title'] . '".');
+                $this->notifications->create((int)$submission['submitted_by'], $jobId, 'revision_requested', 'Revisions requested for milestone "' . $milestone['title'] . '" on "' . $job['title'] . '".');
             }
 
             if ($ownTx) {
@@ -420,7 +433,7 @@ class SubmissionService
             'job' => $job,
             'escrow' => $this->submissions->escrow($jobId) ?: null,
             'milestones' => $this->submissions->milestonesForJob($jobId),
-            'previous_submissions' => $this->submissions->finalSubmissionsForJob($jobId),
+            'previous_submissions' => $this->submissions->withLinks($this->submissions->finalSubmissionsForJob($jobId), $jobId),
             'latest_submission' => $this->submissions->latestFinalSubmissionForJob($jobId),
         ];
     }
@@ -483,6 +496,8 @@ class SubmissionService
                 $validated['notes'],
                 $validated['deliverable_url']
             );
+
+            $this->submissions->addLinks($submissionId, $validated['links']);
 
             // Step 6: Guarded Job Transition from 'in_progress' to 'under_review'
             $jobUpdated = $this->submissions->updateJobStatus($jobId, 'under_review', 'in_progress');
@@ -665,7 +680,7 @@ class SubmissionService
 
             // Dispatch notification to freelancer
             if ($this->notifications !== null) {
-                $this->notifications->create((int)$submission['freelancer_id'], $jobId, 'revision_requested', 'Revisions requested for final deliverables on "' . $job['title'] . '".');
+                $this->notifications->create((int)$submission['submitted_by'], $jobId, 'revision_requested', 'Revisions requested for final deliverables on "' . $job['title'] . '".');
             }
 
             // Milestone approvals remain intact

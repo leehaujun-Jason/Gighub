@@ -22,7 +22,7 @@ class JobTestRepository extends GigHub\Repositories\JobRepository {
  public function insert(int $owner,array $data,string $status):int{$this->writes[]=['owner'=>$owner,'data'=>$data,'status'=>$status];return 9;}
  public function updateDraft(int $id,int $owner,array $data,string $status):void{$this->writes[]=['owner'=>$owner,'data'=>$data,'status'=>$status];}
  public function replaceSkills(int $id,array $ids):void{if($this->fail)throw new RuntimeException('secret SQL detail');$this->writes[]=['skills'=>$ids];}
- public function listOwned(int $owner,int $page):array{return [];}
+ public function listOwned(int $owner,int $page, ?string $status = null):array{return [];}
 }
 class JobTestSkills extends GigHub\Repositories\SkillRepository {
  public function __construct(){}

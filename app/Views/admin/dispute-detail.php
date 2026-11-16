@@ -32,6 +32,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
 ?>
 
 <main id="main-content" tabindex="-1" class="gh-admin-layout">
+    </nav>
     <?php require dirname(__DIR__) . '/partials/notifications.php'; ?>
 
     <nav class="gh-back-nav" aria-label="Admin navigation">
@@ -258,6 +259,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
                     <div class="gh-party-block-email"><?= $escape($client['email'] ?? 'Unknown') ?></div>
                     <?php if (!empty($client['id'])): ?>
                         <div class="gh-party-block-id">User #<?= (int)$client['id'] ?></div>
+                <a class="gh-button gh-button-secondary" style="margin-top: .5rem" data-investigation-thread href="?route=/investigation-chat/thread&amp;dispute_id=<?= (int)$dispute['id'] ?>&amp;participant_id=<?= (int)$client['id'] ?>">Message Client <span class="gh-investigation-unread" data-investigation-unread hidden></span></a>
                     <?php endif; ?>
                 </div>
 
@@ -268,6 +270,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
                     <div class="gh-party-block-email"><?= $escape($freelancer['email'] ?? 'Unknown') ?></div>
                     <?php if (!empty($freelancer['id'])): ?>
                         <div class="gh-party-block-id">User #<?= (int)$freelancer['id'] ?></div>
+                <a class="gh-button gh-button-secondary" style="margin-top: .5rem" data-investigation-thread href="?route=/investigation-chat/thread&amp;dispute_id=<?= (int)$dispute['id'] ?>&amp;participant_id=<?= (int)$freelancer['id'] ?>">Message Freelancer <span class="gh-investigation-unread" data-investigation-unread hidden></span></a>
                     <?php endif; ?>
                 </div>
 

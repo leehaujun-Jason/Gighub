@@ -47,14 +47,30 @@ class BidRepository
         $q=$this->pdo->query("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='bids' AND COLUMN_NAME='status'");
         return str_contains((string)$q->fetchColumn(),"'withdrawn'");
     }
-    public function mine(int $freelancerId,int $page): array
+    public function mine(int $freelancerId,int $page, ?string $status = null): array
     {
-        $q=$this->pdo->prepare('SELECT b.id,b.job_id,b.amount,b.delivery_days,b.cover_letter,b.proposal_document_name,b.status,b.created_at,j.title,j.status AS job_status,j.awarded_bid_id FROM bids b JOIN jobs j ON j.id=b.job_id WHERE b.freelancer_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?');
-        $q->bindValue(1,$freelancerId,PDO::PARAM_INT); $q->bindValue(2,($page-1)*20,PDO::PARAM_INT); $q->execute(); return $q->fetchAll(PDO::FETCH_ASSOC);
+        $mutualCancellation = "(j.status='cancelled' AND j.awarded_bid_id=b.id AND EXISTS
+            (SELECT 1 FROM cancellation_requests cr WHERE cr.job_id=j.id AND cr.status='accepted'))";
+        $displayStatus = "CASE
+            WHEN $mutualCancellation THEN 'cancelled'
+            WHEN j.status='cancelled' AND j.awarded_bid_id IS NULL AND b.status='pending' THEN 'cancelled'
+            WHEN j.status='awarded' AND j.awarded_bid_id=b.id THEN 'selected'
+            WHEN b.status='rejected' OR (b.status='pending' AND j.awarded_bid_id<>b.id) THEN 'not_selected'
+            ELSE b.status END";
+        $filters = $status === null ? [] : explode(',', $status);
+        $placeholders = implode(',', array_fill(0, count($filters), '?'));
+        $q=$this->pdo->prepare('SELECT b.id,b.job_id,b.amount,b.delivery_days,b.cover_letter,b.proposal_document_name,b.status,b.created_at,j.title,j.status AS job_status,j.awarded_bid_id,'
+            . "$mutualCancellation AS mutual_cancellation FROM bids b JOIN jobs j ON j.id=b.job_id WHERE b.freelancer_id=?"
+            . ($status === null ? '' : " AND ($displayStatus) IN ($placeholders)")
+            . ' ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?');
+        $q->bindValue(1,$freelancerId,PDO::PARAM_INT);
+        foreach ($filters as $index => $filter) $q->bindValue($index + 2,$filter);
+        $q->bindValue(count($filters) + 2,($page-1)*20,PDO::PARAM_INT);
+        $q->execute(); return $q->fetchAll(PDO::FETCH_ASSOC);
     }
     public function clientBids(int $jobId,int $clientId,int $page): array
     {
-        $q=$this->pdo->prepare("SELECT b.id,b.freelancer_id,b.amount,b.delivery_days,b.cover_letter,b.status,b.created_at,u.display_name,(u.role='freelancer' AND u.status='active' AND u.email_verified_at IS NOT NULL) AS bidder_eligible FROM bids b JOIN jobs j ON j.id=b.job_id JOIN users u ON u.id=b.freelancer_id WHERE j.id=? AND j.client_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?");
+        $q=$this->pdo->prepare("SELECT b.id,b.freelancer_id,b.amount,b.delivery_days,b.cover_letter,CASE WHEN b.proposal_document_key IS NOT NULL THEN b.proposal_document_name END AS proposal_document_name,b.status,b.created_at,u.display_name,(u.role='freelancer' AND u.status='active' AND u.email_verified_at IS NOT NULL) AS bidder_eligible FROM bids b JOIN jobs j ON j.id=b.job_id JOIN users u ON u.id=b.freelancer_id WHERE j.id=? AND j.client_id=? ORDER BY b.created_at DESC,b.id DESC LIMIT 21 OFFSET ?");
         $q->bindValue(1,$jobId,PDO::PARAM_INT); $q->bindValue(2,$clientId,PDO::PARAM_INT); $q->bindValue(3,($page-1)*20,PDO::PARAM_INT); $q->execute(); return $q->fetchAll(PDO::FETCH_ASSOC);
     }
     public function bidOnJob(int $jobId,int $bidId,bool $lock=false): array|false

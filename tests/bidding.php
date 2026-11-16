@@ -48,7 +48,7 @@ $repo=new class extends GigHub\Repositories\BidRepository {
     public function update(int $id,int $owner,array $data,string $from): void { $this->events[]='update';$this->bid=array_replace($this->bid,$data,['status'=>'pending']); }
     public function withdraw(int $id,int $owner): void { $this->events[]='withdraw';$this->bid['status']='withdrawn'; }
     public function supportsWithdrawal(): bool { return $this->migration; }
-    public function mine(int $owner,int $page): array { return $this->bid===false?[]:[$this->bid+['title'=>'<Project>','job_status'=>'open','awarded_bid_id'=>null,'created_at'=>'2030-01-01']]; }
+    public function mine(int $owner,int $page, ?string $status = null): array { return $this->bid===false?[]:[$this->bid+['title'=>'<Project>','job_status'=>'open','awarded_bid_id'=>null,'created_at'=>'2030-01-01']]; }
     public function clientBids(int $job,int $client,int $page): array { return $this->bid===false?[]:[$this->bid+['display_name'=>'<Freelancer>','created_at'=>'2030-01-01']]; }
 };
 $service=new BidService($pdo,$repo);

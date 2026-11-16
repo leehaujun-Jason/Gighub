@@ -10,7 +10,7 @@ class JobPostingService
     public function __construct(private readonly PDO $pdo,private readonly JobRepository $jobs,private readonly SkillRepository $skills,private readonly ?\Closure $clock=null) {}
     public function catalogue(): array { return $this->skills->all(); }
     public function documents(int $id): array { return MarketplaceDocuments::jobs($this->pdo, $id); }
-    public function listing(int $clientId,int $page): array { return $this->jobs->listOwned($clientId,$page); }
+    public function listing(int $clientId,int $page, ?string $status = null): array { return $this->jobs->listOwned($clientId,$page,$status); }
     public function owned(int $id,int $clientId): array
     {
         $job=$this->jobs->findOwned($id,$clientId);

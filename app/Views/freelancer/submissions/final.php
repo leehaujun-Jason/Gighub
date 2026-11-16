@@ -77,14 +77,7 @@
             <input type="hidden" name="csrf_token" value="<?= $escape($token) ?>">
             <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
 
-            <div>
-                <label for="deliverable_url">Deliverable URL <span>(optional)</span></label>
-                <input type="url" id="deliverable_url" name="deliverable_url" maxlength="2048" value="<?= $escape($old['deliverable_url'] ?? '') ?>" placeholder="https://github.com/your-username/repository or https://demo.example.com" aria-describedby="url-hint" <?= isset($errors['deliverable_url']) ? 'aria-invalid="true"' : '' ?>>
-                <p class="hint" id="url-hint">Optional link to your full repository, production deployment, or final deliverable package. Must start with http:// or https://.</p>
-                <?php if (isset($errors['deliverable_url'])): ?>
-                    <p class="field-error"><?= $escape($errors['deliverable_url']) ?></p>
-                <?php endif; ?>
-            </div>
+            <?php require dirname(__DIR__, 2) . '/partials/submission-link-fields.php'; ?>
 
             <div>
                 <label for="notes">Final Delivery Notes & Project Summary <span>(required)</span></label>

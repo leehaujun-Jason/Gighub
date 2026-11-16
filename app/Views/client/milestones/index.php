@@ -46,7 +46,6 @@
     <h1>Milestones for <?= $escape($job['title']) ?></h1>
 
     <?php require dirname(__DIR__, 2) . '/partials/notifications.php'; ?>
-    <?php require dirname(__DIR__, 2) . '/partials/dispute-banner.php'; ?>
 
     <?php if ($isLocked): ?>
         <nav class="gh-back-nav" aria-label="Milestone workspace navigation">
@@ -234,14 +233,7 @@
                                 Review the completed project deliverables. You can accept the work or request revisions with specific feedback.
                             </p>
 
-                            <?php if (!empty($latestFinalSub['deliverable_url'])): ?>
-                                <div style="margin-bottom: 0.75rem;">
-                                    <strong style="font-size: 0.8125rem; text-transform: uppercase; color: var(--gh-muted); display: block; margin-bottom: 0.25rem;">Deliverable Link</strong>
-                                    <a href="<?= $escape($latestFinalSub['deliverable_url']) ?>" target="_blank" rel="noopener noreferrer" style="color: var(--gh-green); font-weight: 500;">
-                                        <?= $escape($latestFinalSub['deliverable_url']) ?> <span aria-hidden="true">↗</span>
-                                    </a>
-                                </div>
-                            <?php endif; ?>
+                            <?php $linkAttempt = $latestFinalSub; require dirname(__DIR__, 2) . '/partials/submission-links.php'; ?>
 
                             <div style="margin-bottom: 1.25rem;">
                                 <strong style="font-size: 0.8125rem; text-transform: uppercase; color: var(--gh-muted); display: block; margin-bottom: 0.25rem;">Submission Notes</strong>
@@ -465,7 +457,12 @@
                 <p>No milestones defined yet. <?= $isLocked ? 'No milestones were created for this project.' : 'Use the form below to create your first milestone checkpoint before funding the escrow.' ?></p>
             </div>
         <?php else: ?>
+            <?php $earlierMilestonesApproved = true; ?>
             <?php foreach ($milestones as $m): ?>
+                <?php
+                    $canSubmitInOrder = $earlierMilestonesApproved;
+                    $earlierMilestonesApproved = $earlierMilestonesApproved && $m['status'] === 'approved';
+                ?>
                 <article class="gh-milestone-card">
                     <div class="gh-milestone-header">
                         <div>
@@ -508,7 +505,9 @@
 
                     <?php if (!$isClient && $job['status'] === 'in_progress'): ?>
                         <div class="gh-milestone-actions" style="margin-top: 1rem;">
-                            <?php if ($m['status'] === 'pending'): ?>
+                            <?php if (!$canSubmitInOrder && in_array($m['status'], ['pending', 'revisions_requested'], true)): ?>
+                                <p>All earlier milestones must be approved before you can submit this deliverable.</p>
+                            <?php elseif ($m['status'] === 'pending'): ?>
                                 <a class="gh-button gh-button-primary" href="?route=/freelancer/milestones/submit&amp;job_id=<?= (int)$job['id'] ?>&amp;milestone_id=<?= (int)$m['id'] ?>">Submit Deliverable</a>
                             <?php elseif ($m['status'] === 'revisions_requested'): ?>
                                 <a class="gh-button gh-button-primary" href="?route=/freelancer/milestones/submit&amp;job_id=<?= (int)$job['id'] ?>&amp;milestone_id=<?= (int)$m['id'] ?>">Submit Revised Deliverable</a>
@@ -519,26 +518,6 @@
                             <?php endif; ?>
                         </div>
 
-                        <?php
-                            $latestRevisionFeedback = null;
-                            if ($m['status'] === 'revisions_requested') {
-                                foreach ($milestoneSubs as $s) {
-                                    if ($s['status'] === 'revisions_requested' && !empty($s['feedback'])) {
-                                        $latestRevisionFeedback = $s;
-                                        break;
-                                    }
-                                }
-                            }
-                        ?>
-                        <?php if ($latestRevisionFeedback !== null): ?>
-                            <div style="margin-top: 1rem; padding: 0.875rem 1rem; background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #d97706; border-radius: 4px;">
-                                <strong style="color: #92400e; font-size: 0.95rem;">Client Revision Feedback:</strong>
-                                <div style="margin-top: 0.35rem; color: #78350f; font-size: 0.875rem; white-space: pre-wrap;"><?= nl2br($escape($latestRevisionFeedback['feedback'])) ?></div>
-                                <?php if (!empty($latestRevisionFeedback['reviewed_at'])): ?>
-                                    <div style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--gh-muted);">Reviewed on <?= $escape($latestRevisionFeedback['reviewed_at']) ?> (UTC)</div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if ($isClient): ?>
@@ -692,6 +671,7 @@
             </form>
         </section>
     <?php endif; ?>
+    <?php require dirname(__DIR__, 2) . '/partials/dispute-banner.php'; ?>
 </main>
 <?php require dirname(__DIR__, 2) . '/partials/footer.php'; ?>
 </body>

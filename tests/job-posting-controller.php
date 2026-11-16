@@ -16,7 +16,7 @@ $service=new class extends GigHub\Services\JobPostingService {
  public int $writes=0;public ?array $failure=null;public bool $unavailable=false;public array $listRows=[];
  public function __construct(){}
  public function catalogue():array{return [['id'=>1,'name'=>'PHP <script>']];}
- public function listing(int $id,int $page):array{return $this->listRows;}
+ public function listing(int $id,int $page, ?string $status = null):array{return $this->listRows;}
  public function owned(int $id,int $owner):array{return ['id'=>$id,'title'=>'<script>alert(1)</script>','description'=>str_repeat('a',50),'budget'=>'100.00','deadline'=>'2026-11-02','status'=>'draft','skills'=>[]];}
  public function save(int $owner,array $input,?int $id=null):int{if($this->unavailable)throw new RuntimeException('secret driver detail');if($this->failure)throw new GigHub\Services\JobPostingException($this->failure);++$this->writes;return 9;}
  public function publish(int $owner,int $id):int{++$this->writes;return $id;}

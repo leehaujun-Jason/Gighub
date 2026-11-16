@@ -39,11 +39,13 @@
 /* Global Dismissible Notifications */
 .gh-notifications-container { max-width: 960px; margin: 1rem auto 0; padding: 0 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
 .gh-alert { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: var(--gh-control-radius); border: 1px solid transparent; font-size: 0.95rem; line-height: 1.4; }
-.gh-alert-content { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+.gh-shell .gh-notifications-container { box-sizing: border-box; width: 100%; }
+.gh-alert-content { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+.gh-shell .gh-alert button.gh-alert-close { flex: 0 0 auto; width: auto; margin: 0; padding: 0.25rem 0.5rem; background: transparent; color: inherit; }
 .gh-alert-icon { font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
 .gh-alert-message { overflow-wrap: anywhere; }
 .gh-alert-close { background: transparent; border: none; font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; color: inherit; opacity: 0.75; transition: opacity 0.15s ease-in-out; display: inline-flex; align-items: center; justify-content: center; min-height: 36px; min-width: 36px; }
-.gh-alert-close:hover, .gh-alert-close:focus-visible { opacity: 1; background: rgba(0,0,0,0.06); }
+.gh-shell .gh-alert button.gh-alert-close:is(:hover, :focus-visible) { opacity: 1; background: rgba(0,0,0,0.06); }
 .gh-alert-success { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
 .gh-alert-error { background: #fdf2f2; border-color: #f8b4b4; color: var(--gh-error); }
 .gh-alert-warning { background: var(--gh-warning-background); border-color: var(--gh-warning-border); color: var(--gh-warning-text); }
@@ -57,3 +59,14 @@
     .gh-shell .gh-button, .gh-shell .gh-skill-chip, .gh-shell .gh-control { border-color: ButtonText; }
     .gh-shell .gh-nav-link[aria-current="page"] { outline: 1px solid Highlight; }
 }
+.gh-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.gh-shell .gh-status-filter { width: min(30rem, calc(100% - 2rem)); box-sizing: border-box; max-height: calc(100dvh - 2rem); padding: 1.5rem; border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); background: var(--gh-surface); color: var(--gh-text); }
+.gh-status-filter::backdrop { background: rgb(0 0 0 / 50%); }
+.gh-status-filter fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
+.gh-status-filter h2 { font-size: 1.5em; letter-spacing: normal; margin-block: .83em; }
+.gh-status-filter legend { font: inherit; }
+.gh-status-filter label { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; font: inherit; }
+.gh-status-filter input[type="checkbox"] { inline-size: auto; min-block-size: 0; padding: 0; flex: none; }
+.gh-status-filter-actions { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+.gh-shell .gh-status-filter button.gh-button, .gh-shell button[data-status-filter-open] { width: auto; margin: 0; }
+.gh-investigation-unread:not([hidden]) { margin-inline-start: .5rem; padding: .125rem .5rem; border-radius: 999px; background: var(--gh-green); color: var(--gh-surface); font-size: .8rem; }

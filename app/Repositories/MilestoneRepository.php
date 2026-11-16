@@ -94,7 +94,7 @@ class MilestoneRepository
         }
         $q = $this->pdo->prepare('SELECT id, job_id, milestone_id, submitted_by, submission_type, notes, deliverable_url, status, submitted_at, reviewed_by, reviewed_at, feedback, created_at FROM work_submissions WHERE job_id = ? ORDER BY id DESC');
         $q->execute([$jobId]);
-        return $q->fetchAll(PDO::FETCH_ASSOC);
+        return (new SubmissionRepository($this->pdo))->withLinks($q->fetchAll(PDO::FETCH_ASSOC), $jobId);
     }
 
     public function find(int $id, int $jobId, bool $lock = false): array|false

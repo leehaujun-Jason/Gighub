@@ -10,7 +10,25 @@ use Throwable;
 final class ChatAttachmentStorage
 {
     private const DIRECTORY = 'C:/MariaDB_Recovery/GigHub_Clean_Test/private/chat-attachments';
-    public function __construct(private readonly string $directory = self::DIRECTORY, private readonly bool $documentsOnly = false) {}
+    private static ?string $chatDirectory = null;
+    private static ?string $marketplaceDirectory = null;
+    private readonly string $directory;
+
+    public static function configure(?string $chat, ?string $marketplace): void
+    {
+        self::$chatDirectory = $chat;
+        self::$marketplaceDirectory = $marketplace;
+    }
+
+    public static function marketplace(): self
+    {
+        return new self(self::$marketplaceDirectory ?? 'C:/MariaDB_Recovery/GigHub_Clean_Test/private/marketplace-documents', true);
+    }
+
+    public function __construct(?string $directory = null, private readonly bool $documentsOnly = false)
+    {
+        $this->directory = $directory ?? self::$chatDirectory ?? self::DIRECTORY;
+    }
 
     private function path(string $key): string
     {
@@ -20,9 +38,11 @@ final class ChatAttachmentStorage
             || !is_dir($directory) || !preg_match('/\A[a-f0-9]{64}\z/', $key)) {
             throw new RuntimeException('Attachment storage unavailable.');
         }
-        $webroot = rtrim($normalize($_SERVER['DOCUMENT_ROOT'] ?? 'C:/xampp/htdocs'), '/');
-        if ($webroot !== '' && str_starts_with($normalize($directory) . '/', $webroot . '/')) {
-            throw new RuntimeException('Attachment storage unavailable.');
+        foreach ([dirname(__DIR__, 2), $_SERVER['DOCUMENT_ROOT'] ?? ''] as $root) {
+            $resolvedRoot = $root !== '' ? realpath($root) : false;
+            if ($resolvedRoot !== false && str_starts_with($normalize($directory) . '/', rtrim($normalize($resolvedRoot), '/') . '/')) {
+                throw new RuntimeException('Attachment storage unavailable.');
+            }
         }
         return $directory . DIRECTORY_SEPARATOR . $key;
     }

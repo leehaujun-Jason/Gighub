@@ -96,6 +96,12 @@
     container.querySelectorAll('.gh-message-text').forEach((body) => renderLinks(body, body.textContent));
 
     const bidId = parseInt(container.getAttribute('data-bid-id'), 10);
+    const threadParams = new URLSearchParams(container.dataset.threadParams || {bid_id: bidId});
+    const routePrefix = container.dataset.threadRoute || '/messages';
+    const threadUrl = (action) => '?route=' + routePrefix + '/' + action;
+    const addThreadParams = (formData) => {
+        threadParams.forEach((value, key) => formData.set(key, value));
+    };
     const csrfToken = container.getAttribute('data-csrf') || '';
     const myUserId = parseInt(container.getAttribute('data-user-id'), 10);
     let lastMessageId = parseInt(container.getAttribute('data-last-id'), 10) || 0;
@@ -356,7 +362,7 @@
         const documents = document.createElement('div');
         documents.className = 'gh-chat-document-list';
         for (const item of msg.attachments ?? []) {
-            const url = '?route=/messages/attachment&bid_id=' + bidId + '&id=' + Number(msg.id) + (item.id === null ? '' : '&attachment_id=' + Number(item.id));
+            const url = threadUrl('attachment') + '&' + threadParams + '&id=' + Number(msg.id) + (item.id === null ? '' : '&attachment_id=' + Number(item.id));
             const link = document.createElement('a');
             link.className = 'gh-chat-attachment';
             link.href = url;
@@ -392,10 +398,10 @@
         try {
             const formData = new URLSearchParams();
             formData.append('csrf_token', csrfToken);
-            formData.append('bid_id', bidId);
+            addThreadParams(formData);
             formData.append('message_id', messageId);
 
-            const res = await fetch('?route=/messages/read', {
+            const res = await fetch(threadUrl('read'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -421,13 +427,13 @@
 
     // Polling function
     const pollMessages = async () => {
-        if (isPolling || document.visibilityState !== 'visible' || !bidId) {
+        if (isPolling || document.visibilityState !== 'visible' || (!bidId && !container.dataset.threadParams)) {
             return;
         }
 
         isPolling = true;
         try {
-            const res = await fetch(`?route=/messages/poll&bid_id=${bidId}&since_id=${lastMessageId}`, {
+            const res = await fetch(threadUrl('poll') + '&' + threadParams + '&since_id=' + lastMessageId, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -514,12 +520,14 @@
 
             const formData = new FormData();
             formData.append('csrf_token', csrfToken);
-            formData.append('bid_id', bidId);
+            addThreadParams(formData);
             formData.append('body', text);
+            const requestKey = form.querySelector('[name="request_key"]');
+            if (requestKey) formData.append('request_key', requestKey.value);
             for (const {file} of pending) formData.append('attachments[]', file);
 
             try {
-                const res = await fetch('?route=/messages/send', {
+                const res = await fetch(threadUrl('send'), {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -535,6 +543,7 @@
                 const data = await res.json();
 
                 if (res.status === 201 && data.success && data.message) {
+                    if (requestKey && data.request_key) requestKey.value = data.request_key;
                     textarea.value = '';
                     clearAttachment();
                     textarea.dispatchEvent(new Event('input'));

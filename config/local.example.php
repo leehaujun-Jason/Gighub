@@ -5,6 +5,9 @@ declare(strict_types=1);
 // local.php is already ignored by Git. This example contains no credentials.
 return [
     'app' => ['environment' => 'local'],
+    'avatar_storage' => '<absolute-private-directory-outside-webroot>',
+    'chat_attachment_storage' => '<absolute-private-chat-directory>',
+    'marketplace_document_storage' => '<absolute-private-marketplace-directory>',
     'verification' => ['base_url' => 'http://localhost/GigHub/public/'],
     // Configure privately only after approval for a controlled real-email test.
     // Never put real SMTP credentials in this example or enable it automatically.
@@ -23,8 +26,8 @@ return [
     'database' => [
         'enabled' => false,
         'host' => '<approved-host>',
-        'port' => 3306,
-        'name' => '<approved-database>',
+        'port' => 3309, // Example for the separate GigHub MariaDB instance. Verify your own port.
+        'name' => 'gighub_local', // Set this to the database you created.
         'username' => '<approved-username>',
         'password' => '<private-password>',
     ],

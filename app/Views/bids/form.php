@@ -11,8 +11,12 @@
 <div><label for="delivery_days">Estimated delivery (days)</label><input class="gh-control" id="delivery_days" name="delivery_days" type="number" min="1" max="65535" step="1" required value="<?= $escape((string)$values['delivery_days']) ?>" aria-describedby="delivery-hint<?= isset($errors['delivery_days'])?' delivery-error':'' ?>"<?= isset($errors['delivery_days'])?' aria-invalid="true"':'' ?>><p id="delivery-hint">Estimated duration after an eventual project start; this does not change the job's delivery deadline.</p><?php if (isset($errors['delivery_days'])): ?><p id="delivery-error" class="gh-bids-field-error"><?= $escape($errors['delivery_days']) ?></p><?php endif; ?></div>
 <div><label for="cover_letter">Proposal message</label><textarea class="gh-control" id="cover_letter" name="cover_letter" rows="9" maxlength="10000" required<?= isset($errors['cover_letter'])?' aria-invalid="true" aria-describedby="proposal-error"':'' ?>><?= $escape($values['cover_letter']) ?></textarea><p>Explain how you can help. Maximum 10,000 characters. This proposal is visible to the job's Client; avoid private payment or contact details.</p><?php if (isset($errors['cover_letter'])): ?><p id="proposal-error" class="gh-bids-field-error"><?= $escape($errors['cover_letter']) ?></p><?php endif; ?></div>
 <?php $row=$bid?:[]; require dirname(__DIR__).'/partials/proposal-document.php'; ?>
-<div><label for="bid-document">Proposal document (optional, 10 MB)</label>
-<input id="bid-document" name="proposal" data-marketplace-files type="file" accept=".pdf,.docx,.xlsx,.txt,.csv"><div data-file-preview></div></div>
+<fieldset class="gh-proposal-upload">
+    <legend>Proposal document (optional)</legend>
+    <label for="bid-document">Add one document (up to 10 MB)</label>
+    <input id="bid-document" name="proposal" data-marketplace-files type="file" accept=".pdf,.docx,.xlsx,.txt,.csv">
+    <div data-file-preview></div>
+</fieldset>
 <script src="assets/marketplace-documents.js?v=<?= $assetVersion('marketplace-documents.js') ?>" defer></script>
 <div class="gh-bid-actions"><button type="submit" class="gh-button gh-button-primary"><?= $resubmit?'Resubmit bid':($editing?'Save bid':'Submit bid') ?></button><a class="gh-button gh-button-secondary" href="?route=/freelancer/bids">Cancel</a></div></form>
 <?php if ($editing&&!$resubmit): ?><form class="gh-bid-withdraw" method="post" action="?route=/freelancer/bids/withdraw"><input type="hidden" name="csrf_token" value="<?= $escape($token) ?>"><input type="hidden" name="id" value="<?= (int)$bid['id'] ?>"><p>Withdraw this proposal from consideration. While the job remains open, you can edit and resubmit it from My Bids.</p><button type="submit" class="gh-button gh-button-secondary">Withdraw bid</button></form><?php endif; ?>

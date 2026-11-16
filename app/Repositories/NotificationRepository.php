@@ -25,7 +25,7 @@ class NotificationRepository
      */
     public function getForUser(int $userId, ?string $filter = null, int $limit = 20, int $offset = 0): array
     {
-        $sql = 'SELECT n.id, n.recipient_id, n.job_id, n.type, n.message, n.read_at, n.created_at, j.title AS job_title '
+        $sql = 'SELECT n.*, j.title AS job_title '
             . 'FROM notifications n '
             . 'LEFT JOIN jobs j ON j.id = n.job_id '
             . 'WHERE n.recipient_id = ? ';
@@ -93,7 +93,7 @@ class NotificationRepository
      */
     public function findForUser(int $notificationId, int $userId): ?array
     {
-        $q = $this->pdo->prepare('SELECT id, recipient_id, job_id, type, message, read_at, created_at FROM notifications WHERE id = ? AND recipient_id = ?');
+        $q = $this->pdo->prepare('SELECT * FROM notifications WHERE id = ? AND recipient_id = ?');
         $q->execute([$notificationId, $userId]);
         $row = $q->fetch(PDO::FETCH_ASSOC);
         return $row !== false ? $row : null;

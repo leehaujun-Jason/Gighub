@@ -44,6 +44,11 @@ foreach (['RegistrationValidator', 'RegistrationValidationException', 'Registrat
 
 date_default_timezone_set('UTC');
 $config = Config::load($root . '/config');
+require_once $root . '/app/Services/ChatAttachmentStorage.php';
+\GigHub\Services\ChatAttachmentStorage::configure(
+    $config['chat_attachment_storage'] ?? null,
+    $config['marketplace_document_storage'] ?? null
+);
 SecureSession::start($config['session']);
 $router = new Router();
 foreach (['Services/LoginValidator','Services/AuthenticationService','Controllers/AuthenticationController','Controllers/AccountHomeController'] as $class) {
@@ -210,10 +215,24 @@ $messageFactory=static function() use ($config): array {
     $pdo=(new Database($config['database']))->connection();
     $repo=new \GigHub\Repositories\MessageRepository($pdo);
     $service=new \GigHub\Services\MessageService();
-    return [$repo,$service];
+    return [$repo,$service,new \GigHub\Repositories\InvestigationChatRepository($pdo)];
 };
 $messages=new \GigHub\Controllers\MessageController(new AuthGuard($authenticationFactory,$authSession),$messageFactory);
 $router->get('/messages',static fn()=>$messages->inbox());
+foreach (['Repositories/InvestigationChatRepository','Services/InvestigationChatService','Controllers/InvestigationChatController'] as $class) {
+    require_once $root.'/app/'.$class.'.php';
+}
+$investigationChat = new \GigHub\Controllers\InvestigationChatController(new AuthGuard($authenticationFactory,$authSession), static function () use ($config) {
+    return new \GigHub\Services\InvestigationChatService(
+        new \GigHub\Repositories\InvestigationChatRepository((new Database($config['database']))->connection())
+    );
+});
+$router->get('/investigation-chat/thread',static fn()=>$investigationChat->handle('thread',$_GET));
+$router->get('/investigation-chat/poll',static fn()=>$investigationChat->handle('poll',$_GET));
+$router->get('/investigation-chat/count',static fn()=>$investigationChat->handle('count',$_GET));
+$router->post('/investigation-chat/send',static fn()=>$investigationChat->handle('send',$_POST,$_FILES['attachments'] ?? null));
+$router->get('/investigation-chat/attachment',static fn()=>$investigationChat->handle('attachment',$_GET));
+$router->post('/investigation-chat/read',static fn()=>$investigationChat->handle('read',$_POST));
 $router->get('/messages/thread',static fn()=>$messages->thread($_GET));
 $router->post('/messages/send',static fn()=>$messages->send($_POST, $_FILES['attachment'] ?? null, $_FILES['attachments'] ?? null));
 $router->get('/messages/attachment',static fn()=>$messages->attachment($_GET));

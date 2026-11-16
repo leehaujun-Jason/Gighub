@@ -67,14 +67,7 @@
             <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
             <input type="hidden" name="milestone_id" value="<?= (int)$milestone['id'] ?>">
 
-            <div>
-                <label for="deliverable_url">Deliverable URL <span>(optional)</span></label>
-                <input type="url" id="deliverable_url" name="deliverable_url" maxlength="2048" value="<?= $escape($old['deliverable_url'] ?? '') ?>" placeholder="https://github.com/your-username/repository or https://figma.com/..." aria-describedby="url-hint" <?= isset($errors['deliverable_url']) ? 'aria-invalid="true"' : '' ?>>
-                <p class="hint" id="url-hint">Optional link to your repository, live demo, or shared cloud deliverable. Must start with http:// or https://.</p>
-                <?php if (isset($errors['deliverable_url'])): ?>
-                    <p class="field-error"><?= $escape($errors['deliverable_url']) ?></p>
-                <?php endif; ?>
-            </div>
+            <?php require dirname(__DIR__, 2) . '/partials/submission-link-fields.php'; ?>
 
             <div>
                 <label for="notes">Submission Notes & Deliverable Summary <span>(required)</span></label>

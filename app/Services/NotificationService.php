@@ -61,6 +61,9 @@ class NotificationService
         $jobId = isset($notification['job_id']) && $notification['job_id'] !== null ? (int)$notification['job_id'] : null;
 
         return match ($type) {
+            'investigation_message' => !empty($notification['investigation_dispute_id']) && !empty($notification['investigation_participant_id'])
+                ? '?route=/investigation-chat/thread&dispute_id=' . (int)$notification['investigation_dispute_id']
+                    . '&participant_id=' . (int)$notification['investigation_participant_id'] : null,
             'bid_not_selected' => $userRole === 'freelancer' ? '?route=/freelancer/bids' : null,
             'bid_received' => $jobId !== null && $userRole === 'client'
                 ? '?route=/client/jobs/bids&id=' . $jobId
@@ -113,6 +116,7 @@ class NotificationService
             'escrow_funded' => 'View Milestones',
             'submission_received' => 'Review Submission',
             'revision_requested' => 'View Revisions',
+            'investigation_message' => 'Open Private Conversation',
             'milestone_approved' => 'View Milestones',
             'payment_released', 'payment_refunded' => 'View Wallet',
             'review_received' => 'View Feedback',

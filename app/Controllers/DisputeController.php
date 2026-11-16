@@ -59,7 +59,7 @@ final class DisputeController
         } catch (DisputeException $e) {
             Csrf::rotate('cancellation_action');
             $msg = $e->errors['reason'] ?? $e->errors['form'] ?? $e->getMessage();
-            Notification::error($msg);
+            $_SESSION['resolution_error'][$jobId] = ['dialog' => 'cancel-dialog', 'message' => $msg, 'reason' => $reason];
             return self::redirect($redirectUrl);
         } catch (Throwable) {
             return self::unavailable();
@@ -162,7 +162,7 @@ final class DisputeController
         } catch (DisputeException $e) {
             Csrf::rotate('dispute_action');
             $msg = $e->errors['reason'] ?? $e->errors['form'] ?? $e->getMessage();
-            Notification::error($msg);
+            $_SESSION['resolution_error'][$jobId] = ['dialog' => 'dispute-dialog', 'message' => $msg, 'reason' => $reason];
             return self::redirect($redirectUrl);
         } catch (Throwable) {
             return self::unavailable();

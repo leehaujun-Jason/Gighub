@@ -30,7 +30,7 @@ final class MarketplaceDocuments
 
     public static function storage(): ChatAttachmentStorage
     {
-        return new ChatAttachmentStorage('C:/MariaDB_Recovery/GigHub_Clean_Test/private/marketplace-documents', true);
+        return ChatAttachmentStorage::marketplace();
     }
 
     public static function saveJob(PDO $pdo, int $id, array $input, array $uploads, array &$keys): void

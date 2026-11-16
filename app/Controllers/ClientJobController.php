@@ -18,11 +18,19 @@ final class ClientJobController
         $raw=$query['page']??'1';
         if(!is_string($raw)||!preg_match('/\A[1-9][0-9]{0,4}\z/D',$raw))return self::text(400,'Invalid page.');
         try {
-            $page=(int)$raw;$rows=($this->serviceFactory)()->listing($access['user']['id'],$page);
+            $statuses=['draft','open','awarded','in_progress','under_review','disputed','completed','cancelled','closed_disputed'];
+            $status=$query['status']??'';
+            $selected = is_array($status) ? $status : (is_string($status) ? ($status === '' ? [] : explode(',', $status)) : [null]);
+            if (count($selected) > count($statuses)) return self::text(400,'Invalid status filter.');
+            foreach ($selected as $value) {
+                if (!in_array($value, $statuses, true)) return self::text(400,'Invalid status filter.');
+            }
+            $status = implode(',', array_unique($selected));
+            $page=(int)$raw;$rows=($this->serviceFactory)()->listing($access['user']['id'],$page,$status === '' ? null : $status);
             $hasNext=count($rows)>20;$jobs=array_slice($rows,0,20);
             $removalNotice = $_SESSION['job_removed'] ?? false;
             unset($_SESSION['job_removed']);
-            return $this->render('index',compact('jobs','page','hasNext','removalNotice'));
+            return $this->render('index',compact('jobs','page','hasNext','removalNotice','status','statuses'));
         }catch(Throwable){return self::unavailable();}
     }
     public function create(): array

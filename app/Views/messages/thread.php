@@ -1,3 +1,8 @@
+<?php
+$threadRoute = $threadRoute ?? '/messages';
+$threadParams = $threadParams ?? ['bid_id' => (int)$context['bid_id']];
+$isInvestigation = $isInvestigation ?? false;
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -12,7 +17,7 @@
 
 <main id="main-content" tabindex="-1" class="gh-thread-layout">
     <nav class="gh-thread-nav" aria-label="Conversation navigation">
-        <a class="gh-back-link" href="<?= $escape($backUrl) ?>">&larr; Back to <?= $navigationUser['role'] === 'client' ? 'Review Bids' : 'My Bids' ?></a>
+        <a class="gh-back-link" href="<?= $escape($backUrl) ?>">&larr; <?= $isInvestigation ? 'Back to dispute' : ($navigationUser['role'] === 'client' ? 'Back to Review Bids' : 'Back to My Bids') ?></a>
         <a class="gh-inbox-link" href="?route=/messages">All Messages</a>
     </nav>
 
@@ -32,8 +37,8 @@
         <div class="gh-thread-project-info">
             <span class="gh-project-label">Project:</span>
             <span class="gh-project-title"><?= $escape($context['job_title']) ?></span>
-            <span class="gh-project-divider">·</span>
-            <span class="gh-project-budget">Bid: RM<?= $escape($context['bid_amount']) ?></span>
+            <?php if (!$isInvestigation): ?><span class="gh-project-divider">·</span>
+            <span class="gh-project-budget">Bid: RM<?= $escape($context['bid_amount']) ?></span><?php endif; ?>
         </div>
     </header>
 
@@ -54,7 +59,9 @@
             class="gh-messages-container" 
             role="log" 
             aria-live="polite"
-            data-bid-id="<?= (int)$context['bid_id'] ?>"
+            data-bid-id="<?= (int)($context['bid_id'] ?? 0) ?>"
+            data-thread-route="<?= $escape($threadRoute) ?>"
+            data-thread-params="<?= $escape(http_build_query($threadParams)) ?>"
             data-last-id="<?= (int)$lastMessageId ?>"
             data-csrf="<?= $escape($csrfToken) ?>"
             data-user-id="<?= (int)$userId ?>"
@@ -81,7 +88,7 @@
                             <?php foreach ([true, false] as $images): ?>
                             <div class="<?= $images ? 'gh-chat-image-grid' : 'gh-chat-document-list' ?>"><?php foreach ($m['attachments'] as $item):
                                 if ((bool)$item['image'] !== $images) continue;
-                                $attachmentUrl = '?route=/messages/attachment&bid_id=' . (int)$context['bid_id'] . '&id=' . (int)$m['id'];
+                                $attachmentUrl = '?route=' . $threadRoute . '/attachment&' . http_build_query($threadParams) . '&id=' . (int)$m['id'];
                                 if ($item['id'] !== null) $attachmentUrl .= '&attachment_id=' . (int)$item['id']; ?>
                                 <a class="gh-chat-attachment" href="<?= $escape($attachmentUrl) ?>"<?= $item['image'] ? ' data-image-preview' : ' download' ?>><?php if ($item['image']): ?><img loading="lazy" src="<?= $escape($attachmentUrl) ?>" alt="Open image: <?= $escape($item['name']) ?>"><?php else: ?>&#128196; <?= $escape($item['name']) ?><?php endif; ?></a>
                             <?php endforeach; ?></div>
@@ -93,9 +100,12 @@
         </div>
 
         <?php if ($statusInfo['is_writable']): ?>
-            <form id="gh-message-form" class="gh-message-form" method="post" action="?route=/messages/send" enctype="multipart/form-data">
+            <form id="gh-message-form" class="gh-message-form" method="post" action="<?= $escape('?route=' . $threadRoute . '/send') ?>" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
-                <input type="hidden" name="bid_id" value="<?= (int)$context['bid_id'] ?>">
+                <?php foreach ($threadParams as $name => $value): ?>
+                    <input type="hidden" name="<?= $escape($name) ?>" value="<?= $escape((string)$value) ?>">
+                <?php endforeach; ?>
+                <?php if ($isInvestigation): ?><input type="hidden" name="request_key" value="<?= $escape($requestKey) ?>"><?php endif; ?>
 
                 <div id="gh-attachment-preview" class="gh-chat-previews"></div>
                 <div class="gh-composer">
@@ -123,7 +133,7 @@
             </form>
         <?php else: ?>
             <div class="gh-message-form-disabled">
-                <p>Replying is disabled because this proposal or project is no longer active.</p>
+                <p><?= $isInvestigation ? 'This investigation is read-only.' : 'Replying is disabled because this proposal or project is no longer active.' ?></p>
             </div>
         <?php endif; ?>
     </div>

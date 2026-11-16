@@ -32,16 +32,12 @@ final class MessageController
         $userId = (int)$user['id'];
         $role = (string)$user['role'];
 
-        if (!in_array($role, ['client', 'freelancer'], true)) {
-            Notification::error('Messaging is only accessible to Clients and Freelancers.');
-            return self::redirect('/');
-        }
-
         try {
             /** @var \GigHub\Repositories\MessageRepository $repo */
-            [$repo] = ($this->factory)();
+            $repositories = ($this->factory)();
+            $repo = $repositories[0];
 
-            $rawConversations = $repo->getInboxConversations($userId, $role);
+            $rawConversations = in_array($role,['client','freelancer'],true) ? $repo->getInboxConversations($userId, $role) : [];
             $conversations = [];
 
             foreach ($rawConversations as $conv) {
@@ -52,6 +48,18 @@ final class MessageController
                 $conv['malaysia_time'] = MessageService::formatMalaysiaTime($conv['latest_message_time']);
                 $conv['thread_url'] = '?route=/messages/thread&bid_id=' . (int)$conv['bid_id'];
                 $conv['unread_count'] = (int)($conv['unread_count'] ?? 0);
+                $conversations[] = $conv;
+            }
+
+            foreach (isset($repositories[2]) ? $repositories[2]->inbox($user) : [] as $conv) {
+                $conv['status_label'] = $conv['status'] === 'open' ? 'Investigation' : 'Investigation · Read-only';
+                $conv['counterpart_name'] = $role === 'admin' ? ucfirst($conv['participant_role']) : 'Admin';
+                $conv['counterpart_role'] = $role === 'admin' ? $conv['participant_role'] : 'admin';
+                $conv['relative_time'] = MessageService::formatRelativeTime($conv['latest_message_time']);
+                $conv['malaysia_time'] = MessageService::formatMalaysiaTime($conv['latest_message_time']);
+                $conv['latest_message_body'] = 'Private dispute investigation';
+                $conv['thread_url'] = '?route=/investigation-chat/thread&dispute_id=' . (int)$conv['dispute_id']
+                    . '&participant_id=' . (int)$conv['participant_id'];
                 $conversations[] = $conv;
             }
 
@@ -474,9 +482,12 @@ final class MessageController
 
         try {
             /** @var \GigHub\Repositories\MessageRepository $repo */
-            [$repo] = ($this->factory)();
+            $repositories = ($this->factory)();
+            $repo = $repositories[0];
 
-            $count = $repo->getTotalUnreadCount($userId, $role);
+            $count = in_array($role,['client','freelancer'],true) ? $repo->getTotalUnreadCount($userId, $role) : 0;
+            $investigation = $repositories[2] ?? null;
+            if ($investigation !== null) $count += array_sum(array_column($investigation->inbox($user),'unread_count'));
 
             return self::json(200, [
                 'count' => $count,

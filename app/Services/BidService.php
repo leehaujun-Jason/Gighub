@@ -12,7 +12,7 @@ class BidService
         private readonly BidRepository $bids,
         private readonly ?\GigHub\Repositories\NotificationRepository $notifications = null
     ) {}
-    public function listing(int $freelancerId,int $page): array { return $this->bids->mine($freelancerId,$page); }
+    public function listing(int $freelancerId,int $page, ?string $status = null): array { return $this->bids->mine($freelancerId,$page,$status); }
     private function assertJob(array|false $job,int $freelancerId,bool $lock=false): void
     {
         if ($job===false || !$this->bids->eligible((int)$job['client_id'],'client',$lock)) throw new BidException(['form'=>'Job not found.'],404);

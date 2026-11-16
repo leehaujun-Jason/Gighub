@@ -6,6 +6,31 @@ use PDO;
 
 class SubmissionRepository
 {
+    public function addLinks(int $submissionId, array $links): void
+    {
+        if ($links === []) return;
+        $query = $this->pdo->prepare('INSERT INTO work_submission_links (submission_id, label, url, position) VALUES (?, ?, ?, ?)');
+        foreach ($links as $index => $link) {
+            $query->execute([$submissionId, $link['label'], $link['url'], $index + 1]);
+        }
+    }
+
+    public function withLinks(array $attempts, int $jobId): array
+    {
+        if ($attempts === []) return [];
+        $query = $this->pdo->prepare('SELECT l.submission_id, l.label, l.url FROM work_submission_links l
+            JOIN work_submissions s ON s.id = l.submission_id WHERE s.job_id = ? ORDER BY l.submission_id, l.position');
+        $query->execute([$jobId]);
+        $byAttempt = [];
+        foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $link) {
+            $byAttempt[$link['submission_id']][] = $link;
+        }
+        foreach ($attempts as &$attempt) {
+            $attempt['links'] = $byAttempt[$attempt['id']] ?? [];
+        }
+        return $attempts;
+    }
+
     public function __construct(protected readonly PDO $pdo) {}
 
     public function job(int $jobId, bool $lock = false): array|false
@@ -168,6 +193,15 @@ class SubmissionRepository
             $q->execute([$status, $jobId]);
         }
         return $q->rowCount();
+    }
+
+    public function hasUnapprovedPredecessor(int $jobId, int $position, bool $lock = false): bool
+    {
+        $sql = "SELECT id FROM milestones WHERE job_id = ? AND position < ? AND status <> 'approved' LIMIT 1"
+            . ($lock ? ' FOR UPDATE' : '');
+        $query = $this->pdo->prepare($sql);
+        $query->execute([$jobId, $position]);
+        return $query->fetchColumn() !== false;
     }
 
     public function allMilestonesApproved(int $jobId, bool $lock = false): bool

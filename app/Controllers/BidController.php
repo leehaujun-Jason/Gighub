@@ -16,10 +16,18 @@ final class BidController
         $access=$this->guard->check('freelancer'); if (!isset($access['user'])) return $access;
         $page=self::page($query); if ($page===null) return self::text(400,'Invalid page.');
         try {
-            $rows=($this->serviceFactory)()->listing((int)$access['user']['id'],$page);
+            $statuses=['pending'=>'Pending','selected'=>'Selected — awaiting funding','accepted'=>'Accepted','not_selected'=>'Not Selected','cancelled'=>'Cancelled','withdrawn'=>'Withdrawn'];
+            $status=$query['status']??'';
+            $selected = is_array($status) ? $status : (is_string($status) ? ($status === '' ? [] : explode(',', $status)) : [null]);
+            if (count($selected) > count($statuses)) return self::text(400,'Invalid status filter.');
+            foreach ($selected as $value) {
+                if (!in_array($value, array_keys($statuses), true)) return self::text(400,'Invalid status filter.');
+            }
+            $status = implode(',', array_unique($selected));
+            $rows=($this->serviceFactory)()->listing((int)$access['user']['id'],$page,$status === '' ? null : $status);
             $hasNext=count($rows)>20; $bids=array_slice($rows,0,20);
             $notice=$_SESSION['bid_notice']??null; unset($_SESSION['bid_notice']);
-            return $this->render('index',compact('bids','hasNext','page','notice'),$access['user']);
+            return $this->render('index',compact('bids','hasNext','page','notice','status','statuses'),$access['user']);
         } catch (Throwable) { return self::unavailable(); }
     }
     public function form(array $query,bool $editing=false): array

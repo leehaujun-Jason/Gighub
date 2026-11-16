@@ -14,7 +14,7 @@
     <div class="gh-messages-header">
         <p class="gh-messages-eyebrow">COMMUNICATION</p>
         <h1 class="gh-messages-title">Messages</h1>
-        <p class="gh-messages-subtitle">Direct conversations between clients and freelancers on proposals and active contracts.</p>
+        <p class="gh-messages-subtitle"><?= $userRole === 'admin' ? 'Private dispute investigation conversations.' : 'Proposal, contract, and private investigation conversations.' ?></p>
     </div>
 
     <?php if (empty($conversations)): ?>
@@ -29,6 +29,8 @@
             <div class="gh-empty-actions">
                 <?php if ($userRole === 'client'): ?>
                     <a class="gh-button gh-button-primary" href="?route=/client/jobs">Manage My Jobs</a>
+                <?php elseif ($userRole === 'admin'): ?>
+                    <a class="gh-button gh-button-primary" href="?route=/admin/disputes">Open Disputes</a>
                 <?php else: ?>
                     <a class="gh-button gh-button-primary" href="?route=/freelancer/bids">View My Bids</a>
                 <?php endif; ?>

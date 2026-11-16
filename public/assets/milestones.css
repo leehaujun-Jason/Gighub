@@ -593,3 +593,15 @@
     font-size: 0.95rem;
 }
 .gh-btn-dispute-response:hover { background: var(--gh-green-hover, #103d31); }
+.gh-shell .gh-resolution-dialog {
+    position: fixed;
+    width: min(36rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    box-sizing: border-box;
+    overflow: auto;
+    margin: auto;
+    padding: 2rem;
+    color: var(--gh-text);
+}
+.gh-shell .gh-resolution-dialog:not([open]) { display: none; }
+.gh-resolution-dialog::backdrop { background: rgb(0 0 0 / 50%); }

@@ -280,6 +280,19 @@ CREATE TABLE work_submissions (
     CONSTRAINT ck_submissions_revision CHECK (status <> 'revisions_requested' OR (feedback IS NOT NULL AND CHAR_LENGTH(TRIM(feedback)) > 0))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE work_submission_links (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    submission_id INT UNSIGNED NOT NULL,
+    label VARCHAR(120) NOT NULL,
+    url VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    position SMALLINT UNSIGNED NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_submission_link_position (submission_id, position),
+    UNIQUE KEY uq_submission_link_url (submission_id, url),
+    CONSTRAINT fk_submission_link_attempt FOREIGN KEY (submission_id) REFERENCES work_submissions (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    CONSTRAINT ck_submission_link_position CHECK (position > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE uploaded_files (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     owner_user_id INT UNSIGNED NOT NULL,
@@ -430,7 +443,9 @@ CREATE TABLE notifications (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     recipient_id INT UNSIGNED NOT NULL,
     job_id INT UNSIGNED NULL DEFAULT NULL,
-    type ENUM('bid_received','award_selected','award_cancelled','escrow_funded','submission_received','revision_requested','milestone_approved','payment_released','payment_refunded','dispute_opened','dispute_resolved','cancellation_requested','cancellation_responded','job_cancelled','review_received','bid_not_selected') NOT NULL,
+    type ENUM('bid_received','award_selected','award_cancelled','escrow_funded','submission_received','revision_requested','milestone_approved','payment_released','payment_refunded','dispute_opened','dispute_resolved','cancellation_requested','cancellation_responded','job_cancelled','review_received','bid_not_selected','investigation_message') NOT NULL,
+    investigation_dispute_id INT UNSIGNED NULL,
+    investigation_participant_id INT UNSIGNED NULL,
     message VARCHAR(500) NOT NULL,
     read_at DATETIME NULL DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -467,6 +482,46 @@ CREATE TABLE disputes (
         (status = 'open' AND decision IS NULL AND decision_note IS NULL AND resolved_at IS NULL)
         OR (status = 'resolved' AND decision IS NOT NULL AND admin_id IS NOT NULL AND decision_note IS NOT NULL AND CHAR_LENGTH(TRIM(decision_note)) > 0 AND resolved_at IS NOT NULL)
     )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE dispute_investigation_messages (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    dispute_id INT UNSIGNED NOT NULL,
+    participant_id INT UNSIGNED NOT NULL,
+    sender_id INT UNSIGNED NOT NULL,
+    body TEXT NOT NULL,
+    request_key CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_investigation_send (dispute_id, participant_id, sender_id, request_key),
+    KEY ix_investigation_history (dispute_id, participant_id, id),
+    CONSTRAINT fk_investigation_dispute FOREIGN KEY (dispute_id) REFERENCES disputes (id),
+    CONSTRAINT fk_investigation_participant FOREIGN KEY (participant_id) REFERENCES users (id),
+    CONSTRAINT fk_investigation_sender FOREIGN KEY (sender_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE dispute_investigation_attachments (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    message_id INT UNSIGNED NOT NULL,
+    attachment_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    attachment_name VARCHAR(255) NOT NULL,
+    attachment_image TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    UNIQUE KEY uq_investigation_attachment_key (attachment_key),
+    KEY ix_investigation_attachments (message_id, id),
+    CONSTRAINT fk_investigation_attachment_message FOREIGN KEY (message_id) REFERENCES dispute_investigation_messages (id),
+    CONSTRAINT ck_investigation_attachment_image CHECK (attachment_image IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE dispute_investigation_watermarks (
+    dispute_id INT UNSIGNED NOT NULL,
+    participant_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    last_read_message_id INT UNSIGNED NOT NULL DEFAULT 0,
+    read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (dispute_id, participant_id, user_id),
+    KEY ix_investigation_watermark_viewer (user_id),
+    CONSTRAINT fk_investigation_watermark_dispute FOREIGN KEY (dispute_id) REFERENCES disputes (id),
+    CONSTRAINT fk_investigation_watermark_participant FOREIGN KEY (participant_id) REFERENCES users (id),
+    CONSTRAINT fk_investigation_watermark_viewer FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE cancellation_requests (

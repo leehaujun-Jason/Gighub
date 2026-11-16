@@ -325,6 +325,19 @@ class MockSubmissionRepository extends SubmissionRepository {
         return 0;
     }
 
+    public function withLinks(array $attempts, int $jobId): array {
+        return $attempts;
+    }
+
+    public function hasUnapprovedPredecessor(int $jobId, int $position, bool $lock = false): bool {
+        foreach ($this->milestonesForJob($jobId) as $milestone) {
+            if ((int)$milestone['position'] < $position && $milestone['status'] !== 'approved') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function allMilestonesApproved(int $jobId, bool $lock = false): bool {
         $ms = array_filter($this->milestones, static fn($m) => (int)$m['job_id'] === $jobId);
         if (empty($ms)) {

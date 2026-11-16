@@ -5,13 +5,18 @@ use PDO;
 class JobRepository
 {
     public function __construct(protected readonly PDO $pdo) {}
-    public function listOwned(int $clientId,int $page): array
+    public function listOwned(int $clientId,int $page, ?string $status = null): array
     {
+        $filters = $status === null ? [] : explode(',', $status);
+        $placeholders = implode(',', array_fill(0, count($filters), '?'));
         $q=$this->pdo->prepare('SELECT j.id,title,budget,deadline,status,created_at,awarded_bid_id,awarded_at,
             EXISTS(SELECT 1 FROM bids b WHERE b.job_id=j.id) AS has_bids,
             EXISTS(SELECT 1 FROM milestones m WHERE m.job_id=j.id) AS has_milestones
-            FROM jobs j WHERE client_id=? ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?');
-        $q->bindValue(1,$clientId,PDO::PARAM_INT);$q->bindValue(2,($page-1)*20,PDO::PARAM_INT);$q->execute();return $q->fetchAll();
+            FROM jobs j WHERE client_id=?' . ($status === null ? '' : ' AND j.status IN (' . $placeholders . ')') . ' ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?');
+        $q->bindValue(1,$clientId,PDO::PARAM_INT);
+        foreach ($filters as $index => $filter) $q->bindValue($index + 2,$filter);
+        $q->bindValue(count($filters) + 2,($page-1)*20,PDO::PARAM_INT);
+        $q->execute();return $q->fetchAll();
     }
     public function findOwned(int $id,int $clientId,bool $lock=false): array|false
     {

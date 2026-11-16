@@ -15,9 +15,16 @@ $isClient = $disputeContext['is_client'] ?? ($isClient ?? false);
 $cancellationActionToken = $cancellationActionToken ?? \GigHub\Core\Csrf::token('cancellation_action');
 $disputeActionToken = $disputeActionToken ?? \GigHub\Core\Csrf::token('dispute_action');
 $jobId = (int)($job['id'] ?? 0);
+$resolutionError = $_SESSION['resolution_error'][$jobId] ?? [];
+unset($_SESSION['resolution_error'][$jobId]);
+$cancelError = ($resolutionError['dialog'] ?? '') === 'cancel-dialog';
+$disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
 ?>
 
 <div class="gh-dispute-banner" id="dispute-section">
+    <?php if (($cancelError && !$canCancel) || ($disputeError && !$canDispute)): ?>
+        <p role="alert"><?= $escape($resolutionError['message']) ?></p>
+    <?php endif; ?>
     <?php if ($dispute !== null && $dispute['status'] === 'open'): ?>
         <section class="gh-resolution-alert gh-resolution-alert--warning" role="alert" aria-label="Formal dispute status">
             <span class="gh-resolution-icon" aria-hidden="true">⚠️</span>
@@ -97,6 +104,18 @@ $jobId = (int)($job['id'] ?? 0);
             </div>
         </section>
 
+    <?php elseif ($cancellation !== null && $cancellation['status'] === 'accepted'): ?>
+        <section class="gh-resolution-alert" aria-label="Completed mutual cancellation">
+            <div class="gh-resolution-content">
+                <h3 class="gh-resolution-title">Mutual Cancellation Agreed</h3>
+                <p>This job has been cancelled by mutual agreement between the Client and Freelancer.</p>
+                <dl>
+                    <dt>Reason</dt><dd><?= nl2br($escape($cancellation['reason'])) ?></dd>
+                    <dt>Requested by</dt><dd><?= $escape($cancellation['requester_name']) ?> · <?= $escape($cancellation['created_at']) ?> UTC</dd>
+                    <dt>Accepted by</dt><dd><?= $escape($cancellation['responder_name']) ?> · <?= $escape($cancellation['responded_at']) ?> UTC</dd>
+                </dl>
+            </div>
+        </section>
     <?php elseif ($cancellation !== null && $cancellation['status'] === 'pending'): ?>
         <section class="gh-resolution-alert gh-resolution-alert--warning" role="alert" aria-label="Mutual cancellation pending">
             <span class="gh-resolution-icon" aria-hidden="true">⏱️</span>
@@ -150,16 +169,23 @@ $jobId = (int)($job['id'] ?? 0);
     <?php endif; ?>
 
     <?php if ($canCancel || $canDispute): ?>
-        <div class="gh-resolution-grid <?= ($canCancel && $canDispute) ? 'gh-resolution-grid--two-col' : '' ?>">
+        <section class="gh-milestone-card" aria-labelledby="job-issues-title">
+            <h2 id="job-issues-title">Job Issues &amp; Resolution</h2>
+            <p>Need to cancel the project or resolve an issue with the other party?</p>
+            <div class="gh-milestone-actions">
+                <?php if ($canCancel): ?><button type="button" class="gh-button gh-button-secondary" data-resolution-open="cancel-dialog">Request Mutual Cancellation</button><?php endif; ?>
+                <?php if ($canDispute): ?><button type="button" class="gh-button gh-button-secondary" data-resolution-open="dispute-dialog">Raise Formal Dispute</button><?php endif; ?>
+            </div>
             <?php if ($canCancel): ?>
-                <div class="gh-resolution-card gh-resolution-card--cancel">
-                    <h4 class="gh-resolution-card-title">
+                <dialog id="cancel-dialog" class="gh-resolution-dialog gh-resolution-card gh-resolution-card--cancel" aria-labelledby="cancel-dialog-title"<?= $cancelError ? ' data-resolution-reopen' : '' ?>>
+                    <h4 id="cancel-dialog-title" class="gh-resolution-card-title">
                         <span>🤝</span> Request Mutual Cancellation
                     </h4>
                     <p class="gh-resolution-card-desc">
                         If both parties agree to cancel, the locked escrow is safely refunded to the client wallet and the contract closes without administrative dispute fees.
                     </p>
                     <form method="post" action="?route=/jobs/cancellation" class="gh-resolution-form" onsubmit="return confirm('Submit a mutual cancellation request? Your counterpart will be asked to review and accept.');">
+                        <?php if ($cancelError): ?><p role="alert"><?= $escape($resolutionError['message']) ?></p><?php endif; ?>
                         <input type="hidden" name="csrf_token" value="<?= $escape($cancellationActionToken) ?>">
                         <input type="hidden" name="job_id" value="<?= $jobId ?>">
 
@@ -167,29 +193,31 @@ $jobId = (int)($job['id'] ?? 0);
                             <label for="cancellation-reason" class="gh-resolution-label">
                                 Reason for Cancellation <span class="gh-resolution-hint">(10–1,000 characters)</span>
                             </label>
-                            <textarea id="cancellation-reason" name="reason" class="gh-control gh-resolution-textarea" required minlength="10" maxlength="1000" placeholder="Explain clearly why mutual cancellation is proposed..." oninput="const c = document.getElementById('cancel-char-count'); if(c) c.textContent = this.value.length;"></textarea>
+                            <textarea id="cancellation-reason" name="reason" class="gh-control gh-resolution-textarea" required minlength="10" maxlength="1000" placeholder="Explain clearly why mutual cancellation is proposed..." oninput="const c = document.getElementById('cancel-char-count'); if(c) c.textContent = this.value.length;"><?= $cancelError ? $escape($resolutionError['reason']) : '' ?></textarea>
                             <div class="gh-char-counter"><span id="cancel-char-count">0</span> / 1,000</div>
                         </div>
 
                         <div class="gh-resolution-actions">
                             <button type="submit" class="gh-button gh-btn-cancel-req">Send Cancellation Request</button>
+                            <button type="button" class="gh-button gh-button-secondary" data-resolution-close>Cancel</button>
                         </div>
                     </form>
-                </div>
+                </dialog>
             <?php endif; ?>
 
             <?php if ($canDispute): ?>
-                <div class="gh-dispute-action-card">
+                <dialog id="dispute-dialog" class="gh-resolution-dialog gh-dispute-action-card" aria-labelledby="dispute-dialog-title"<?= $disputeError ? ' data-resolution-reopen' : '' ?>>
                     <div class="gh-dispute-action-header">
                         <span class="gh-dispute-icon-badge" aria-hidden="true">⚖️</span>
                         <div class="gh-dispute-header-text">
-                            <h4 class="gh-dispute-title">Raise Formal Dispute</h4>
+                            <h4 id="dispute-dialog-title" class="gh-dispute-title">Raise Formal Dispute</h4>
                             <p class="gh-dispute-subtitle">
                                 Escalate to GigHub administrative mediation. Work and escrow will be <strong>frozen immediately</strong> until an administrator reviews all evidence and issues a binding decision.
                             </p>
                         </div>
                     </div>
                     <form method="post" action="?route=/jobs/dispute" class="gh-resolution-form" onsubmit="return confirm('Are you sure you want to open a formal dispute? This will freeze all contract actions and submit the case for administrative adjudication.');">
+                        <?php if ($disputeError): ?><p role="alert"><?= $escape($resolutionError['message']) ?></p><?php endif; ?>
                         <input type="hidden" name="csrf_token" value="<?= $escape($disputeActionToken) ?>">
                         <input type="hidden" name="job_id" value="<?= $jobId ?>">
 
@@ -197,7 +225,7 @@ $jobId = (int)($job['id'] ?? 0);
                             <label for="dispute-reason" class="gh-resolution-label">
                                 Dispute Details &amp; Grievance <span class="gh-resolution-hint">(10–1,000 characters)</span>
                             </label>
-                            <textarea id="dispute-reason" name="reason" class="gh-control gh-dispute-textarea" required minlength="10" maxlength="1000" placeholder="Provide a clear and concise description of the dispute, e.g., the issue, affected milestones, and your requested resolution..." oninput="const c = document.getElementById('dispute-char-count'); if(c) c.textContent = this.value.length;"></textarea>
+                            <textarea id="dispute-reason" name="reason" class="gh-control gh-dispute-textarea" required minlength="10" maxlength="1000" placeholder="Provide a clear and concise description of the dispute, e.g., the issue, affected milestones, and your requested resolution..." oninput="const c = document.getElementById('dispute-char-count'); if(c) c.textContent = this.value.length;"><?= $disputeError ? $escape($resolutionError['reason']) : '' ?></textarea>
                             <div class="gh-char-counter"><span id="dispute-char-count">0</span> / 1,000</div>
                         </div>
 
@@ -205,13 +233,14 @@ $jobId = (int)($job['id'] ?? 0);
                             <button type="submit" class="gh-button gh-btn-dispute-submit">
                                 <span aria-hidden="true">✈</span> Escalate to Administrator
                             </button>
-                            <button type="button" class="gh-button gh-button-secondary gh-btn-dispute-cancel" onclick="const ta = document.getElementById('dispute-reason'); if (ta) { ta.value = ''; const c = document.getElementById('dispute-char-count'); if(c) c.textContent = '0'; }">
+                            <button type="button" class="gh-button gh-button-secondary gh-btn-dispute-cancel" data-resolution-close>
                                 Cancel
                             </button>
                         </div>
                     </form>
-                </div>
+                </dialog>
             <?php endif; ?>
-        </div>
+        </section>
+        <script src="assets/resolution-dialogs.js" defer></script>
     <?php endif; ?>
 </div>

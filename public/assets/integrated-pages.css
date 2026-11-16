@@ -66,3 +66,16 @@
     outline-offset: 2px;
 }
 .gh-bids-layout .gh-marketplace-document { margin-block: .75rem; padding: .5rem .75rem; border: 1px solid var(--gh-border); border-radius: var(--gh-control-radius); }
+.gh-bid-form .gh-proposal-upload { border: 0; padding: 0; margin: 0; min-width: 0; }
+.gh-proposal-upload legend { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; }
+.gh-shell input[data-marketplace-files] {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--gh-border);
+    border-radius: var(--gh-control-radius);
+    padding: .8rem;
+    font: inherit;
+    color: var(--gh-text);
+    background: var(--gh-surface);
+}

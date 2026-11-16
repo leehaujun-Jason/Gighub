@@ -8,3 +8,4 @@ $assetVersion = $assetVersion ?? static fn(string $sheet): string => is_file(dir
 <?php foreach (['design-tokens.css','components.css','shared-shell.css','integrated-pages.css'] as $sheet): ?>
 <link rel="stylesheet" href="assets/<?= $sheet ?>?v=<?= $assetVersion($sheet) ?>">
 <?php endforeach; ?>
+<script src="assets/investigation-unread.js?v=<?= $assetVersion('investigation-unread.js') ?>" defer></script>

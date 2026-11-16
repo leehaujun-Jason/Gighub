@@ -34,20 +34,8 @@ final class Database
         if ($this->pdo !== null) {
             return $this->pdo;
         }
+        $expectedDatabase = $this->validatedDatabaseName();
         $s = $this->settings;
-        $expectedDatabase = $this->allowSchemaValidation ? 'gighub_schema_test' : 'gighub_dev';
-        if (($s['enabled'] ?? false) !== true
-            || !is_string($s['host'] ?? null)
-            || !preg_match('/\A[a-zA-Z0-9.:-]+\z/', $s['host'])
-            || !is_string($s['name'] ?? null)
-            || !preg_match('/\A[a-zA-Z0-9_]+\z/', $s['name'])
-            || $s['name'] !== $expectedDatabase
-            || ($this->allowSchemaValidation && PHP_SAPI !== 'cli')
-            || !is_string($s['username'] ?? null) || trim($s['username']) === ''
-            || !is_string($s['password'] ?? null)
-            || !is_int($s['port'] ?? null) || $s['port'] < 1 || $s['port'] > 65535) {
-            throw new RuntimeException('Database connection unavailable.');
-        }
 
         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $s['host'], $s['port'], $s['name']);
         try {
@@ -71,5 +59,23 @@ final class Database
             error_log('[GigHub] Database connection or session initialization failed.');
             throw new RuntimeException('Database connection unavailable.');
         }
+    }
+    private function validatedDatabaseName(): string
+    {
+        $s = $this->settings;
+        if (($s['enabled'] ?? false) !== true
+            || !is_string($s['host'] ?? null)
+            || !preg_match('/\A[a-zA-Z0-9.:-]+\z/', $s['host'])
+            || !is_string($s['name'] ?? null)
+            || !preg_match('/\A[a-zA-Z0-9_]{1,64}\z/', $s['name'])
+            || ($this->allowSchemaValidation
+                ? PHP_SAPI !== 'cli' || $s['name'] !== 'gighub_schema_test'
+                : strcasecmp($s['name'], 'gighub_schema_test') === 0)
+            || !is_string($s['username'] ?? null) || trim($s['username']) === ''
+            || !is_string($s['password'] ?? null)
+            || !is_int($s['port'] ?? null) || $s['port'] < 1 || $s['port'] > 65535) {
+            throw new RuntimeException('Database connection unavailable.');
+        }
+        return $s['name'];
     }
 }

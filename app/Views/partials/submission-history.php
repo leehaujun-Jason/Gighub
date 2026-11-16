@@ -68,15 +68,7 @@ foreach ($chronological as $item) {
                 </time>
             </header>
 
-            <?php if (!empty($sub['deliverable_url'])): ?>
-                <div class="gh-sub-card-url-row">
-                    <span class="gh-sub-row-label">Deliverable Link</span>
-                    <a href="<?= $escape($sub['deliverable_url']) ?>" target="_blank" rel="noopener noreferrer" class="gh-sub-url-link">
-                        <?= $escape($sub['deliverable_url']) ?>
-                        <span aria-hidden="true">↗</span>
-                    </a>
-                </div>
-            <?php endif; ?>
+            <?php $linkAttempt = $sub; require __DIR__ . '/submission-links.php'; ?>
 
             <div class="gh-sub-card-notes-row">
                 <span class="gh-sub-row-label">Submission Notes</span>
@@ -108,9 +100,7 @@ foreach ($chronological as $item) {
                             </time>
                         <?php endif; ?>
                     </div>
-                    <div class="gh-sub-review-body">
-                        <?= nl2br($escape($sub['feedback'])) ?>
-                    </div>
+                    <div class="gh-sub-review-body"><?= $escape($sub['feedback']) ?></div>
                 </div>
             <?php endif; ?>
         </article>
