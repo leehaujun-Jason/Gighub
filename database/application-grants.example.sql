@@ -25,6 +25,7 @@ GRANT SELECT, INSERT, DELETE ON `gighub_local`.`user_skills` TO 'gighub_runtime'
 GRANT SELECT, INSERT, DELETE ON `gighub_local`.`job_skills` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT, INSERT, DELETE ON `gighub_local`.`job_requirement_documents` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT, INSERT ON `gighub_local`.`work_submission_links` TO 'gighub_runtime'@'127.0.0.1';
+GRANT SELECT, INSERT ON `gighub_local`.`dispute_evidence_images` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT, INSERT ON `gighub_local`.`wallet_entries` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT, INSERT ON `gighub_local`.`chat_messages` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT, INSERT ON `gighub_local`.`chat_message_attachments` TO 'gighub_runtime'@'127.0.0.1';

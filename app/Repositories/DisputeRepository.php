@@ -316,34 +316,16 @@ class DisputeRepository
         return (int)$q->fetchColumn();
     }
 
-    /**
-     * Count total chat messages for a bid (dispute evidence pagination).
-     */
-    public function countDisputeChatMessages(int $bidId): int
+    public function addEvidence(int $disputeId, array $file, int $position): void
     {
-        $sql = 'SELECT COUNT(*) FROM chat_messages WHERE bid_id = ?';
-        $q = $this->pdo->prepare($sql);
-        $q->execute([$bidId]);
-        return (int)$q->fetchColumn();
+        $q = $this->pdo->prepare('INSERT INTO dispute_evidence_images (dispute_id, storage_key, original_name, display_position) VALUES (?, ?, ?, ?)');
+        $q->execute([$disputeId, $file['key'], $file['name'], $position]);
     }
 
-    /**
-     * Retrieve chronologically ordered bid chat messages for dispute evidence.
-     * Read-only. Does NOT alter chat_read_watermarks.
-     */
-    public function getDisputeChatMessages(int $bidId, int $limit = 500, int $offset = 0): array
+    public function evidence(int $disputeId): array
     {
-        $sql = 'SELECT cm.id, cm.bid_id, cm.sender_id, cm.body, cm.created_at, u.display_name AS sender_name
-                FROM chat_messages cm
-                JOIN users u ON u.id = cm.sender_id
-                WHERE cm.bid_id = ?
-                ORDER BY cm.id ASC
-                LIMIT ? OFFSET ?';
-        $q = $this->pdo->prepare($sql);
-        $q->bindValue(1, $bidId, PDO::PARAM_INT);
-        $q->bindValue(2, $limit, PDO::PARAM_INT);
-        $q->bindValue(3, $offset, PDO::PARAM_INT);
-        $q->execute();
+        $q = $this->pdo->prepare('SELECT id, storage_key, original_name FROM dispute_evidence_images WHERE dispute_id = ? ORDER BY display_position, id');
+        $q->execute([$disputeId]);
         return $q->fetchAll(PDO::FETCH_ASSOC);
     }
 

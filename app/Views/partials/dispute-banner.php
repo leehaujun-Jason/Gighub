@@ -7,6 +7,7 @@ if (!isset($escape)) {
 
 $cancellation = $disputeContext['cancellation'] ?? null;
 $dispute = $disputeContext['dispute'] ?? null;
+$evidenceImages = $disputeContext['evidence'] ?? [];
 $canCancel = $disputeContext['can_cancel'] ?? false;
 $canDispute = $disputeContext['can_dispute'] ?? false;
 $canRespondCancellation = $disputeContext['can_respond_cancellation'] ?? false;
@@ -40,6 +41,10 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                         <span class="gh-statement-time"><?= $escape($dispute['created_at']) ?> UTC</span>
                     </div>
                     <p class="gh-statement-body"><?= $escape($dispute['reason']) ?></p>
+                    <section class="gh-dispute-evidence-block" aria-label="Dispute evidence">
+                        <h4 class="gh-statement-author">Dispute Evidence</h4>
+                        <?php require __DIR__ . '/dispute-evidence.php'; ?>
+                    </section>
                 </div>
 
                 <?php if (!empty($dispute['response'])): ?>
@@ -95,6 +100,14 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                 </p>
 
                 <div class="gh-resolution-statement-box" style="border-left: 4px solid #2563eb; background: #ffffff;">
+                    <div class="gh-statement-header"><span class="gh-statement-author">Original Dispute Reason</span></div>
+                    <p class="gh-statement-body"><?= $escape($dispute['reason']) ?></p>
+                    <section class="gh-dispute-evidence-block" aria-label="Dispute evidence">
+                        <h4 class="gh-statement-author">Dispute Evidence</h4>
+                        <?php require __DIR__ . '/dispute-evidence.php'; ?>
+                    </section>
+                </div>
+                <div class="gh-resolution-statement-box" style="border-left: 4px solid #2563eb; background: #ffffff;">
                     <div class="gh-statement-header">
                         <span class="gh-statement-author" style="color: #1e40af;">Administrator Rationale</span>
                         <span class="gh-statement-time"><?= $escape($dispute['resolved_at']) ?> UTC by <?= $escape($dispute['admin_name'] ?? 'Admin') ?></span>
@@ -105,14 +118,15 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
         </section>
 
     <?php elseif ($cancellation !== null && $cancellation['status'] === 'accepted'): ?>
-        <section class="gh-resolution-alert" aria-label="Completed mutual cancellation">
+        <section class="gh-resolution-alert gh-resolution-alert--neutral gh-cancellation-agreed" aria-label="Completed mutual cancellation">
+            <span class="gh-resolution-icon" aria-hidden="true">✓</span>
             <div class="gh-resolution-content">
                 <h3 class="gh-resolution-title">Mutual Cancellation Agreed</h3>
-                <p>This job has been cancelled by mutual agreement between the Client and Freelancer.</p>
-                <dl>
-                    <dt>Reason</dt><dd><?= nl2br($escape($cancellation['reason'])) ?></dd>
-                    <dt>Requested by</dt><dd><?= $escape($cancellation['requester_name']) ?> · <?= $escape($cancellation['created_at']) ?> UTC</dd>
-                    <dt>Accepted by</dt><dd><?= $escape($cancellation['responder_name']) ?> · <?= $escape($cancellation['responded_at']) ?> UTC</dd>
+                <p class="gh-resolution-desc">This job has been cancelled by mutual agreement between the Client and Freelancer.</p>
+                <div class="gh-resolution-statement-box"><h4 class="gh-statement-author">Cancellation Reason</h4><p class="gh-statement-body"><?= $escape($cancellation['reason']) ?></p></div>
+                <dl class="gh-cancellation-metadata">
+                    <div><dt>Requested By</dt><dd><strong><?= $escape($cancellation['requester_name']) ?></strong><span><?= $escape($cancellation['created_at']) ?> UTC</span></dd></div>
+                    <div><dt>Accepted By</dt><dd><strong><?= $escape($cancellation['responder_name']) ?></strong><span><?= $escape($cancellation['responded_at']) ?> UTC</span></dd></div>
                 </dl>
             </div>
         </section>
@@ -216,7 +230,7 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                             </p>
                         </div>
                     </div>
-                    <form method="post" action="?route=/jobs/dispute" class="gh-resolution-form" onsubmit="return confirm('Are you sure you want to open a formal dispute? This will freeze all contract actions and submit the case for administrative adjudication.');">
+                    <form method="post" action="?route=/jobs/dispute" enctype="multipart/form-data" class="gh-resolution-form" onsubmit="return confirm('Are you sure you want to open a formal dispute? This will freeze all contract actions and submit the case for administrative adjudication.');">
                         <?php if ($disputeError): ?><p role="alert"><?= $escape($resolutionError['message']) ?></p><?php endif; ?>
                         <input type="hidden" name="csrf_token" value="<?= $escape($disputeActionToken) ?>">
                         <input type="hidden" name="job_id" value="<?= $jobId ?>">
@@ -225,6 +239,15 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                             <label for="dispute-reason" class="gh-resolution-label">
                                 Dispute Details &amp; Grievance <span class="gh-resolution-hint">(10–1,000 characters)</span>
                             </label>
+                            <label for="dispute-evidence">Supporting images (optional, up to 6; 5 MB and 12 megapixels each)</label>
+                            <div class="gh-evidence-toolbar">
+                                <input id="dispute-evidence" class="visually-hidden" type="file" name="evidence[]" accept="image/jpeg,image/png,image/webp" multiple data-dispute-evidence aria-describedby="evidence-count evidence-error">
+                                <button type="button" class="gh-button gh-button-secondary gh-evidence-add" data-evidence-add aria-label="Add evidence images"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/></svg></button>
+                                <span id="evidence-count" data-evidence-count aria-live="polite">0 / 6</span>
+                            </div>
+                            <p id="evidence-error" data-evidence-error role="alert" hidden></p>
+                            <div class="dispute-evidence-gallery" data-evidence-previews></div>
+                            <script src="assets/dispute-evidence.js?v=2" defer></script>
                             <textarea id="dispute-reason" name="reason" class="gh-control gh-dispute-textarea" required minlength="10" maxlength="1000" placeholder="Provide a clear and concise description of the dispute, e.g., the issue, affected milestones, and your requested resolution..." oninput="const c = document.getElementById('dispute-char-count'); if(c) c.textContent = this.value.length;"><?= $disputeError ? $escape($resolutionError['reason']) : '' ?></textarea>
                             <div class="gh-char-counter"><span id="dispute-char-count">0</span> / 1,000</div>
                         </div>

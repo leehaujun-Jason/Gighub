@@ -9,7 +9,7 @@ ob_start();
 
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
-$imagePolicy = in_array($_GET['route'] ?? null, ['/messages/thread','/investigation-chat/thread'], true) ? "img-src 'self' blob:; " : '';
+$imagePolicy = in_array($_GET['route'] ?? null, ['/messages/thread','/investigation-chat/thread','/client/jobs/milestones','/freelancer/jobs/milestones'], true) ? "img-src 'self' blob:; " : '';
 header("Content-Security-Policy: default-src 'self'; ${imagePolicy}base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
 header('Cache-Control: no-store');
 

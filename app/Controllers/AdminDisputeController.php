@@ -74,11 +74,11 @@ final class AdminDisputeController
         }
 
         $user = $access['user'];
-        $chatPage = max(1, (int)($query['chat_page'] ?? 1));
+
 
         try {
             $service = ($this->serviceFactory)();
-            $dossier = $service->getDisputeDossier((int)$user['id'], $disputeId, $chatPage);
+            $dossier = $service->getDisputeDossier((int)$user['id'], $disputeId);
 
             return $this->render('dispute-detail', [
                 'user' => $user,

@@ -123,7 +123,7 @@ final class DisputeController
     /**
      * Escalate contract to formal dispute (Client or Freelancer).
      */
-    public function raiseDispute(array $post): array
+    public function raiseDispute(array $post, array $uploads = []): array
     {
         $access = $this->guard->check();
         if (!isset($access['user'])) {
@@ -154,7 +154,18 @@ final class DisputeController
 
         try {
             $service = ($this->serviceFactory)();
-            $service->raiseDispute((int)$user['id'], $jobId, $reason);
+            $files = [];
+            $upload = $uploads['evidence'] ?? [];
+            if ($upload !== []) {
+                if (!is_array($upload['error'] ?? null) || count($upload['error']) > 6) {
+                    throw new DisputeException(['reason' => 'Choose at most six evidence images.'], 422);
+                }
+                foreach ($upload['error'] as $i => $error) {
+                    if ($error === UPLOAD_ERR_NO_FILE) continue;
+                    $files[] = ['error'=>$error, 'name'=>$upload['name'][$i] ?? '', 'tmp_name'=>$upload['tmp_name'][$i] ?? ''];
+                }
+            }
+            $service->raiseDispute((int)$user['id'], $jobId, $reason, $files);
             Csrf::rotate('dispute_action');
 
             Notification::success('Formal dispute opened. Contract activities are frozen pending administrative mediation.');
@@ -230,6 +241,20 @@ final class DisputeController
         } catch (Throwable) {
             return self::unavailable();
         }
+    }
+
+    public function evidence(array $query): array
+    {
+        $access = $this->guard->check();
+        if (!isset($access['user'])) return $access;
+        $id = self::id($query['dispute_id'] ?? null);
+        $imageId = self::id($query['id'] ?? null);
+        if (!$id || !$imageId) return self::text(404, 'Evidence not found.');
+        try {
+            $file = ($this->serviceFactory)()->evidenceImage($access['user'], $id, $imageId);
+            if ($file === null) return self::text(404, 'Evidence not found.');
+            return ['status'=>200, 'type'=>'image/webp', 'body'=>$file, 'content_disposition'=>'inline'];
+        } catch (Throwable) { return self::text(404, 'Evidence not found.'); }
     }
 
     private static function redirect(string $url): array

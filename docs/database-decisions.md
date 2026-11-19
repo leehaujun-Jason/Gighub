@@ -5,7 +5,7 @@ Status: accepted development database foundation following isolated MariaDB 10.4
 ## Source and authority
 
 - Current instructions: the user's 14 approved revised decisions and exact 20-table list, supplied on 2026-10-30. These override the report and earlier assistant proposals.
-- Report inspected: `C:\Users\Acer\Downloads\Project I Portfolio.pdf`, 130 PDF pages.
+- Report inspected: `Project I Portfolio.pdf` (private academic reference, not distributed with this repository), 130 PDF pages.
 - Source SHA-256: `3674427c1ba428e6fc4f3d353413cabe5ff76c9294b6e2e08781027bca3636f4`.
 - Page references below are printed report pages; add two for the PDF viewer page number (ERD printed 86 = PDF 88).
 - Schema: `database/schema.sql`; full dictionary, state machine, ownership rules and transactional invariants: `docs/database-design.md`.

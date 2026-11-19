@@ -292,8 +292,12 @@ class DisputeService
     /**
      * Escalate contract to administrative dispute.
      */
-    public function raiseDispute(int $userId, int $jobId, string $reason): array
+    public function raiseDispute(int $userId, int $jobId, string $reason, array $files = []): array
     {
+        $stored = [];
+        $commitStarted = false;
+        $storage = new ChatAttachmentStorage();
+        if (count($files) > 6) throw new DisputeException(['reason' => 'Choose at most six evidence images.'], 422);
         $trimmedReason = trim($reason);
         if (mb_strlen($trimmedReason) < 10 || mb_strlen($trimmedReason) > 1000) {
             throw new DisputeException(['reason' => 'Dispute reason must be between 10 and 1,000 characters.'], 422);
@@ -357,12 +361,22 @@ class DisputeService
 
             // B. Create dispute record
             $disputeId = $this->disputes->createDispute($jobId, $userId, $trimmedReason);
+            foreach ($files as $position => $file) {
+                if (!preg_match('/\.(?:jpe?g|png|webp)$/i', (string)($file['name'] ?? ''))) {
+                    throw new DisputeException(['reason' => 'Evidence must be JPEG, PNG or WebP images.'], 422);
+                }
+                try { $image = $storage->store($file); }
+                catch (\InvalidArgumentException $e) { throw new DisputeException(['reason' => $e->getMessage()], 422); }
+                $stored[] = $image;
+                $this->disputes->addEvidence($disputeId, $image, $position);
+            }
 
             // C. Notify counterpart
             $counterpartId = ($userId === $clientId) ? $freelancerId : $clientId;
             $notifMsg = 'A formal dispute has been opened for "' . $job['title'] . '" and escalated for administrative mediation.';
             $this->disputes->createNotification($counterpartId, $jobId, 'dispute_opened', $notifMsg);
 
+            $commitStarted = true;
             $this->pdo->commit();
 
             return [
@@ -374,10 +388,12 @@ class DisputeService
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
+            // Retain files after an ambiguous commit outcome to avoid broken evidence references.
+            if (!$commitStarted) foreach ($stored as $image) { try { $storage->remove($image['key']); } catch (Throwable) {} }
             if ($e instanceof DisputeException) {
                 throw $e;
             }
-            throw new DisputeException(['form' => 'Failed to raise dispute: ' . $e->getMessage()], 500);
+            throw new DisputeException(['form' => 'Unable to raise dispute. Please try again.'], 500);
         }
     }
 
@@ -668,23 +684,6 @@ class DisputeService
         $escrow = $this->disputes->getEscrow($jobId);
         $cancellation = $this->disputes->getCancellationRequest($jobId);
 
-        // Bounded chat evidence pagination (SEC-M21-005)
-        $chatPage = max(1, $chatPage);
-        $chatPerPage = ($chatPerPage > 0 && $chatPerPage <= 100) ? $chatPerPage : 50;
-        $totalChatMessages = 0;
-        $totalPages = 1;
-        $chatMessages = [];
-
-        if ($bidId > 0) {
-            $totalChatMessages = $this->disputes->countDisputeChatMessages($bidId);
-            $totalPages = max(1, (int)ceil($totalChatMessages / $chatPerPage));
-            if ($chatPage > $totalPages) {
-                $chatPage = $totalPages;
-            }
-            $offset = ($chatPage - 1) * $chatPerPage;
-            $chatMessages = $this->disputes->getDisputeChatMessages($bidId, $chatPerPage, $offset);
-        }
-
         $milestones = $this->disputes->getJobMilestonesAndSubmissions($jobId);
 
         return [
@@ -695,13 +694,7 @@ class DisputeService
             'freelancer' => $freelancer,
             'escrow' => $escrow,
             'cancellation' => $cancellation,
-            'chat_messages' => $chatMessages,
-            'chat_pagination' => [
-                'current_page' => $chatPage,
-                'per_page' => $chatPerPage,
-                'total_items' => $totalChatMessages,
-                'total_pages' => $totalPages,
-            ],
+            'evidence' => $this->disputes->evidence($disputeId),
             'milestones' => $milestones,
         ];
     }
@@ -709,6 +702,24 @@ class DisputeService
     /**
      * Fetch admin dispute queue.
      */
+    public function evidenceImage(array $user, int $disputeId, int $imageId): ?string
+    {
+        $dispute = $this->disputes->getDisputeById($disputeId);
+        if (!$dispute) return null;
+        $job = $this->disputes->getJob((int)$dispute['job_id']);
+        if (!$job) return null;
+        $bid = $this->disputes->getBid((int)$job['awarded_bid_id']);
+        $role = $user['role'] ?? '';
+        $allowed = ($role === 'admin' && ($user['status'] ?? '') === 'active')
+            || ($role === 'client' && (int)$job['client_id'] === (int)$user['id'])
+            || ($role === 'freelancer' && $bid && (int)$bid['freelancer_id'] === (int)$user['id']);
+        if (!$allowed) return null;
+        foreach ($this->disputes->evidence($disputeId) as $image) {
+            if ((int)$image['id'] === $imageId) return (new ChatAttachmentStorage())->read($image['storage_key']) ?: null;
+        }
+        return null;
+    }
+
     public function getAdminQueue(int $adminId, string $status = 'open'): array
     {
         $admin = $this->disputes->getUser($adminId);
@@ -788,6 +799,7 @@ class DisputeService
             'is_freelancer' => $isFreelancer,
             'is_admin' => $isAdmin,
             'can_cancel' => $canCancel,
+            'evidence' => $dispute !== null ? $this->disputes->evidence((int)$dispute['id']) : [],
             'can_dispute' => $canDispute,
             'can_respond_cancellation' => $canRespondCancellation,
             'can_respond_dispute' => $canRespondDispute,

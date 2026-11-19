@@ -605,3 +605,20 @@
 }
 .gh-shell .gh-resolution-dialog:not([open]) { display: none; }
 .gh-resolution-dialog::backdrop { background: rgb(0 0 0 / 50%); }
+.gh-evidence-toolbar { display: flex; align-items: center; gap: .75rem; margin-block: .75rem; color: var(--gh-muted); }
+.gh-dispute-evidence-block { margin-top: 1rem; }
+.gh-dispute-evidence-block > h4 { margin: 0 0 .75rem; }
+.gh-evidence-toolbar input[data-dispute-evidence] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.gh-shell .gh-evidence-toolbar .gh-evidence-add { width: 44px; min-height: 44px; margin: 0; padding: .5rem; justify-content: center; }
+[data-evidence-error] { color: var(--gh-error); }
+[data-evidence-previews] { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: .75rem; margin-block: .75rem; }
+.gh-evidence-preview { position: relative; min-width: 0; }
+.gh-evidence-preview img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: var(--gh-control-radius); }
+.gh-shell .gh-evidence-preview .gh-evidence-remove { position: absolute; top: .25rem; right: .25rem; display: grid; place-items: center; width: 32px; height: 32px; min-height: 32px; margin: 0; padding: 0; border: 1px solid var(--gh-error); border-radius: 50%; color: var(--gh-error); background: var(--gh-surface); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.gh-shell .gh-evidence-preview .gh-evidence-remove:hover { background: var(--gh-error); color: var(--gh-surface); }
+.gh-evidence-remove:focus-visible, .gh-evidence-add:focus-visible { outline: 3px solid var(--gh-green); outline-offset: 3px; }
+.gh-cancellation-agreed .gh-statement-author { margin: 0 0 .5rem; }
+.gh-cancellation-metadata { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1rem; margin: 1rem 0 0; }
+.gh-cancellation-metadata dt { color: var(--gh-muted); font-size: .875rem; }
+.gh-cancellation-metadata dd { margin: .25rem 0 0; overflow-wrap: anywhere; }
+.gh-cancellation-metadata dd span { display: block; color: var(--gh-muted); font-size: .8125rem; }

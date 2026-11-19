@@ -1,5 +1,15 @@
 /* Shared layout only. Load design-tokens.css and components.css first. */
 html { scrollbar-gutter: stable; }
+.dispute-evidence-gallery { display: flex; flex-wrap: wrap; gap: 1rem; }
+.dispute-evidence-gallery img { object-fit: cover; border-radius: var(--gh-control-radius); max-width: 100%; }
+.gh-shell .gh-evidence-viewer { width: min(56rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); padding: 1.25rem; border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); background: var(--gh-surface); color: var(--gh-text); overflow: auto; }
+.gh-evidence-viewer::backdrop { background: rgb(0 0 0 / 60%); }
+.gh-evidence-viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.gh-evidence-viewer-header h3 { margin: 0; }
+.gh-shell .gh-evidence-viewer-header button { width: auto; margin: 0; }
+.gh-evidence-viewer [data-evidence-viewer-name] { overflow-wrap: anywhere; }
+.gh-evidence-viewer img { display: block; max-width: 100%; max-height: 70dvh; width: auto; height: auto; object-fit: contain; margin: auto; }
+.gh-evidence-viewer [hidden] { display: none; }
 .gh-shell { margin: 0; min-height: 100vh; display: flex; flex-direction: column; font-family: var(--gh-font-family); font-size: var(--gh-font-size); color: var(--gh-text); background: var(--gh-background); line-height: 1.6; }
 .gh-shell *, .gh-shell *::before, .gh-shell *::after { box-sizing: border-box; }
 .gh-header { position: sticky; top: 0; z-index: 20; width: 100%; background: var(--gh-header-background); border-bottom: 1px solid var(--gh-border); box-shadow: 0 3px 12px #142c2512; }

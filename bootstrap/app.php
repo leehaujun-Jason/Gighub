@@ -141,7 +141,8 @@ $disputes=new \GigHub\Controllers\DisputeController(new AuthGuard($authenticatio
 $adminDisputes=new \GigHub\Controllers\AdminDisputeController(new AuthGuard($authenticationFactory,$authSession),$disputeFactory);
 $router->post('/jobs/cancellation',static fn()=>$disputes->requestCancellation($_POST));
 $router->post('/jobs/cancellation/respond',static fn()=>$disputes->respondCancellation($_POST));
-$router->post('/jobs/dispute',static fn()=>$disputes->raiseDispute($_POST));
+$router->post('/jobs/dispute',static fn()=>$disputes->raiseDispute($_POST,$_FILES));
+$router->get('/jobs/dispute/evidence',static fn()=>$disputes->evidence($_GET));
 $router->post('/jobs/dispute/respond',static fn()=>$disputes->submitDisputeResponse($_POST));
 foreach (['Repositories/MilestoneRepository','Services/MilestoneValidator','Services/MilestoneException','Services/MilestoneService','Controllers/MilestoneController'] as $class) {
     require_once $root.'/app/'.$class.'.php';

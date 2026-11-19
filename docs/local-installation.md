@@ -28,7 +28,7 @@ SHOW TRIGGERS FROM gighub_local;
 SHOW GRANTS FOR 'gighub_runtime'@'127.0.0.1';
 ```
 
-Expect 32 base tables and the two wallet-ledger immutability triggers. Connect separately as the runtime account and verify `SELECT DATABASE(), CURRENT_USER(), @@port;` and `SELECT COUNT(*) FROM skills;`. Seed skills only as the setup operator using the [controlled catalogue procedure](skills-catalogue-plan.md).
+Expect 33 base tables and the two wallet-ledger immutability triggers. Connect separately as the runtime account and verify `SELECT DATABASE(), CURRENT_USER(), @@port;` and `SELECT COUNT(*) FROM skills;`. Seed skills only as the setup operator using the [controlled catalogue procedure](skills-catalogue-plan.md).
 
 ## Provision the first Admin
 
@@ -50,3 +50,6 @@ Create separate writable directories outside both the checkout and Apache docume
 Regular Chat and investigation chat share the configured chat storage. Job requirement documents and proposal documents share marketplace storage. Deliverable links are stored in the database. The schema's `uploaded_files` table is not used by the current deliverable submission path.
 
 Start Apache, open the site's public entry point, and verify public browsing, Client and Freelancer registration and verification, Admin login, and authorized upload/download for each storage type. Verify with disposable local accounts. The health endpoint alone does not prove database access.
+# Dispute evidence schema update
+
+The canonical schema now includes `dispute_evidence_images` (33 tables). Fresh installs import the canonical schema and use the updated table grants; do not replay Migration 014. Existing installations require a verified backup and separately approved Migration 014 deployment. See [dispute-evidence-deployment.md](dispute-evidence-deployment.md).

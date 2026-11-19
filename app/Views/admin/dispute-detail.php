@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Dispute Dossier #<?= (int)($dossier['dispute']['id'] ?? 0) ?> · GigHub Admin</title>
     <?php require dirname(__DIR__) . '/partials/page-shell.php'; ?>
-    <link rel="stylesheet" href="assets/admin.css?v=2">
+    <link rel="stylesheet" href="assets/admin.css?v=4">
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__) . '/partials/header.php'; ?>
@@ -18,8 +18,6 @@ $client = $dossier['client'];
 $freelancer = $dossier['freelancer'];
 $escrow = $dossier['escrow'];
 $cancellation = $dossier['cancellation'];
-$chatMessages = $dossier['chat_messages'] ?? [];
-$chatPagination = $dossier['chat_pagination'] ?? ['current_page' => 1, 'per_page' => 50, 'total_items' => count($chatMessages), 'total_pages' => 1];
 $milestones = $dossier['milestones'] ?? [];
 
 $escrowAmount = ($escrow !== null) ? (float)$escrow['amount'] : (float)($job['budget'] ?? 0);
@@ -107,9 +105,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
                 <!-- Counterpart formal response -->
                 <div class="gh-statement-box <?= !empty($dispute['response']) ? 'gh-statement-response' : 'gh-statement-pending' ?>">
                     <div class="gh-statement-header">
-                        <span class="gh-statement-title">
-                            Counterpart Response (<?= $escape($counterpartRole) ?>: <?= $escape($counterpartName) ?>)
-                        </span>
+                        <span class="gh-statement-title">Counterpart Response (<?= $escape($counterpartRole) ?>: <?= $escape($counterpartName) ?>)</span>
                         <?php if (empty($dispute['response'])): ?>
                             <span class="gh-statement-time" style="color:#6b7280;">Optional / Pending</span>
                         <?php endif; ?>
@@ -117,9 +113,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
                     <?php if (!empty($dispute['response'])): ?>
                         <p class="gh-statement-body"><?= $escape($dispute['response']) ?></p>
                     <?php else: ?>
-                        <p class="gh-statement-body" style="color:#6b7280;font-style:italic;">
-                            Counterpart has not submitted a formal written response yet. (A response is optional; administrators may proceed with binding adjudication at any time based on available evidence.)
-                        </p>
+                        <p class="gh-statement-body" style="color:#6b7280;font-style:italic;">Counterpart has not submitted a formal written response yet. (A response is optional; administrators may proceed with binding adjudication at any time based on available evidence.)</p>
                     <?php endif; ?>
                 </div>
 
@@ -187,62 +181,9 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
                 <?php endif; ?>
             </div>
 
-            <!-- Section 3: Bid-Scoped Direct Messages -->
             <div class="gh-admin-card">
-                <h2 class="gh-dossier-section-title">
-                    <span aria-hidden="true">💬</span>
-                    <span>Direct Messaging Evidence</span>
-                </h2>
-                <div class="gh-transcript-disclaimer">
-                    <span aria-hidden="true">ℹ️</span>
-                    <div>
-                        <strong>Read-only transcript:</strong> Direct messages exchanged between Client and Freelancer on this contract. Admin inspection does not modify participant unread watermarks.
-                    </div>
-                </div>
-
-                <?php if (empty($chatMessages)): ?>
-                    <div style="text-align:center;padding:2rem 1rem;color:#9ca3af;font-size:0.95rem;">
-                        No direct messages exchanged on this contract.
-                    </div>
-                <?php else: ?>
-                    <div class="gh-chat-transcript" tabindex="0" aria-label="Direct message transcript">
-                        <?php foreach ($chatMessages as $msg): ?>
-                            <?php
-                            $isFromClient = ($client !== null && (int)$msg['sender_id'] === (int)$client['id']);
-                            ?>
-                            <div class="gh-transcript-msg <?= $isFromClient ? 'gh-transcript-client' : 'gh-transcript-freelancer' ?>">
-                                <div class="gh-transcript-meta">
-                                    <div style="display:flex;align-items:center;gap:0.35rem;">
-                                        <strong><?= $escape($msg['sender_name']) ?></strong>
-                                        <span class="gh-role-tag <?= $isFromClient ? 'gh-role-tag-client' : 'gh-role-tag-freelancer' ?>">
-                                            <?= $isFromClient ? 'Client' : 'Freelancer' ?>
-                                        </span>
-                                    </div>
-                                    <span><?= $escape(substr((string)$msg['created_at'], 11, 5)) ?> UTC</span>
-                                </div>
-                                <div class="gh-transcript-body" style="white-space:pre-wrap;"><?= $escape($msg['body']) ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <?php if (($chatPagination['total_items'] ?? 0) > 0): ?>
-                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;margin-top:0.85rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;font-size:0.875rem;">
-                            <span style="color:#6b7280;">
-                                Showing <?= count($chatMessages) ?> of <?= (int)$chatPagination['total_items'] ?> message<?= (int)$chatPagination['total_items'] === 1 ? '' : 's' ?><?php if ((int)$chatPagination['total_pages'] > 1): ?> (Page <?= (int)$chatPagination['current_page'] ?> of <?= (int)$chatPagination['total_pages'] ?>)<?php endif; ?>
-                            </span>
-                            <?php if ((int)$chatPagination['total_pages'] > 1): ?>
-                                <nav style="display:flex;gap:0.5rem;" aria-label="Chat pagination">
-                                    <?php if ((int)$chatPagination['current_page'] > 1): ?>
-                                        <a href="?route=/admin/disputes/show&amp;id=<?= (int)$dispute['id'] ?>&amp;chat_page=<?= (int)$chatPagination['current_page'] - 1 ?>" class="gh-btn" style="padding:0.25rem 0.65rem;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;font-size:0.825rem;font-weight:600;">← Previous</a>
-                                    <?php endif; ?>
-                                    <?php if ((int)$chatPagination['current_page'] < (int)$chatPagination['total_pages']): ?>
-                                        <a href="?route=/admin/disputes/show&amp;id=<?= (int)$dispute['id'] ?>&amp;chat_page=<?= (int)$chatPagination['current_page'] + 1 ?>" class="gh-btn" style="padding:0.25rem 0.65rem;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;font-size:0.825rem;font-weight:600;">Next →</a>
-                                    <?php endif; ?>
-                                </nav>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
+                <h2 class="gh-dossier-section-title">Dispute Evidence</h2>
+                <?php $evidenceImages = $dossier['evidence'] ?? []; require dirname(__DIR__) . '/partials/dispute-evidence.php'; ?>
             </div>
         </div>
 
