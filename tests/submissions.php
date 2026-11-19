@@ -11,6 +11,10 @@ set_error_handler(static function (int $severity, string $message, string $file,
 
 $root = dirname(__DIR__);
 foreach ([
+    'Services/PaymentMoney',
+    'Repositories/ProgressiveEscrowRepository',
+    'Services/ProgressiveEscrowService',
+    'Services/SubmissionValidator',
     'Core/Csrf',
     'Core/Notification',
     'Core/AuthSession',
@@ -781,6 +785,7 @@ $repo->milestones[2] = [
     'id' => 2,
     'job_id' => 2,
     'title' => 'Initial Prototype',
+    'position' => 1,
     'status' => 'submitted',
     'approved_at' => null,
     'due_date' => '2026-12-31',
@@ -1169,7 +1174,7 @@ check($validApprPost['location'] === '?route=/client/jobs/milestones&job_id=2', 
 $apprNotes = Notification::consume();
 $foundApprMsg = false;
 foreach ($apprNotes as $n) {
-    if ($n['message'] === 'Milestone approved successfully. Checkpoint marked as completed.') {
+    if ($n['message'] === 'Milestone approved successfully. Any scheduled progressive payment has been released.') {
         $foundApprMsg = true;
         break;
     }
@@ -1518,7 +1523,7 @@ check($apprOk['location'] === '?route=/client/jobs/milestones&job_id=20', 'redir
 $notifs3 = Notification::consume();
 $hasApprMsg = false;
 foreach ($notifs3 as $n) {
-    if ($n['message'] === 'Final deliverable approved successfully. All project requirements completed and awaiting settlement.') {
+    if ($n['message'] === 'Final deliverable approved. Progressive contracts are paid and completed; legacy contracts require the separate settlement confirmation.') {
         $hasApprMsg = true;
         break;
     }
@@ -1590,7 +1595,7 @@ check($freelancerFinalPos !== false && $freelancerDefinedPos !== false && $freel
 
 // 106. Regression test: MilestoneRepository::job queries budget column
 $repoContent = file_get_contents(dirname(__DIR__) . '/app/Repositories/MilestoneRepository.php');
-check(str_contains($repoContent, 'SELECT id, client_id, title, budget, status, deadline, awarded_bid_id FROM jobs'), 'MilestoneRepository::job queries budget column');
+check(str_contains($repoContent, 'SELECT * FROM jobs'), 'MilestoneRepository::job queries budget column');
 
 // 107. Regression test: client milestones view handles missing budget defensively without ErrorException
 $jobWithoutBudget = $repo->jobs[20];

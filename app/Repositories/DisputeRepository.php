@@ -14,7 +14,7 @@ class DisputeRepository
      */
     public function getJob(int $jobId, bool $lock = false): ?array
     {
-        $sql = 'SELECT id, client_id, awarded_bid_id, title, description, budget, deadline, status, awarded_at, completed_at, closed_at, created_at FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $sql = 'SELECT * FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         $row = $q->fetch(PDO::FETCH_ASSOC);
@@ -170,7 +170,7 @@ class DisputeRepository
      */
     public function getEscrow(int $jobId, bool $lock = false): ?array
     {
-        $sql = 'SELECT id, job_id, bid_id, amount, status, funded_at, settled_at FROM escrows WHERE job_id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $sql = 'SELECT * FROM escrows WHERE job_id = ?' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         $row = $q->fetch(PDO::FETCH_ASSOC);
@@ -316,17 +316,37 @@ class DisputeRepository
         return (int)$q->fetchColumn();
     }
 
-    public function addEvidence(int $disputeId, array $file, int $position): void
+    public function supportsCounterpartEvidence(): bool
     {
+        $columns = $this->pdo->query('SHOW COLUMNS FROM dispute_evidence_images')->fetchAll(PDO::FETCH_COLUMN);
+        return in_array('evidence_side', $columns, true) && in_array('uploader_id', $columns, true);
+    }
+
+    public function addEvidence(int $disputeId, array $file, int $position, ?int $uploaderId = null, string $side = 'initiator'): void
+    {
+        if ($this->supportsCounterpartEvidence()) {
+            $q = $this->pdo->prepare('INSERT INTO dispute_evidence_images (dispute_id, storage_key, original_name, display_position, uploader_id, evidence_side) VALUES (?, ?, ?, ?, ?, ?)');
+            $q->execute([$disputeId, $file['key'], $file['name'], $position, $uploaderId, $side]);
+            return;
+        }
+        if ($side !== 'initiator') throw new \RuntimeException('Counterpart evidence is not deployed.');
         $q = $this->pdo->prepare('INSERT INTO dispute_evidence_images (dispute_id, storage_key, original_name, display_position) VALUES (?, ?, ?, ?)');
         $q->execute([$disputeId, $file['key'], $file['name'], $position]);
     }
 
     public function evidence(int $disputeId): array
     {
-        $q = $this->pdo->prepare('SELECT id, storage_key, original_name FROM dispute_evidence_images WHERE dispute_id = ? ORDER BY display_position, id');
+        // SELECT e.* deliberately supports historical schemas before Migration 016 is deployed.
+        $q = $this->pdo->prepare('SELECT e.*, d.raised_by, u.display_name AS initiator_name FROM dispute_evidence_images e JOIN disputes d ON d.id=e.dispute_id JOIN users u ON u.id=d.raised_by WHERE e.dispute_id = ? ORDER BY e.display_position, e.id');
         $q->execute([$disputeId]);
-        return $q->fetchAll(PDO::FETCH_ASSOC);
+        $images = $q->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($images as &$image) {
+            $image['evidence_side'] = $image['evidence_side'] ?? 'initiator';
+            $image['uploader_id'] = $image['uploader_id'] ?? $image['raised_by'];
+            $user = $this->getUser((int)$image['uploader_id']);
+            $image['uploader_name'] = $user['display_name'] ?? $image['initiator_name'];
+        }
+        return $images;
     }
 
     /**

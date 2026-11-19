@@ -35,7 +35,7 @@ class SubmissionRepository
 
     public function job(int $jobId, bool $lock = false): array|false
     {
-        $sql = 'SELECT id, client_id, title, budget, deadline, status, awarded_bid_id FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $sql = 'SELECT * FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         return $q->fetch(PDO::FETCH_ASSOC);
@@ -83,7 +83,7 @@ class SubmissionRepository
 
     public function escrow(int $jobId): array|false
     {
-        $q = $this->pdo->prepare('SELECT id, job_id, bid_id, amount, status, funded_at, settled_at FROM escrows WHERE job_id = ?');
+        $q = $this->pdo->prepare('SELECT * FROM escrows WHERE job_id = ?');
         $q->execute([$jobId]);
         return $q->fetch(PDO::FETCH_ASSOC);
     }

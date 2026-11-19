@@ -218,6 +218,7 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Job not found.'], 404);
             }
 
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             // Lock Order 2: Client User
             if (!$this->submissions->eligibleClient($clientId, true)) {
                 throw new SubmissionException(['form' => 'Your account cannot review milestones.'], 403);
@@ -269,6 +270,8 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Milestone status could not be updated.'], 409);
             }
 
+            if(PaymentMoney::progressive($job)) (new ProgressiveEscrowService($this->pdo))->allocate($jobId,$clientId,'milestone',$milestoneId);
+
             // Dispatch notification to freelancer
             if ($this->notifications !== null) {
                 $this->notifications->create((int)$submission['submitted_by'], $jobId, 'milestone_approved', 'Milestone "' . $milestone['title'] . '" on "' . $job['title'] . '" has been approved!');
@@ -293,6 +296,7 @@ class SubmissionService
             } else {
                 $this->pdo->exec('ROLLBACK TO SAVEPOINT sp_milestone_review');
             }
+            if ($e instanceof \DomainException) throw new SubmissionException(['form'=>$e->getMessage()],409);
             throw $e;
         }
     }
@@ -315,6 +319,7 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Job not found.'], 404);
             }
 
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             // Lock Order 2: Client User
             if (!$this->submissions->eligibleClient($clientId, true)) {
                 throw new SubmissionException(['form' => 'Your account cannot review milestones.'], 403);
@@ -550,6 +555,7 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Job not found.'], 404);
             }
 
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             // Lock Order 2: Client User
             if (!$this->submissions->eligibleClient($clientId, true)) {
                 throw new SubmissionException(['form' => 'Your account cannot review deliverables.'], 403);
@@ -590,7 +596,8 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Final submission status could not be updated.'], 409);
             }
 
-            // Job status remains 'under_review' and Escrow remains 'locked' awaiting settlement in Module 16
+            if(PaymentMoney::progressive($job)) (new ProgressiveEscrowService($this->pdo))->allocate($jobId,$clientId,'final');
+            // Legacy contracts retain the separate Module 16 settlement.
 
             if ($ownTx) {
                 $this->pdo->commit();
@@ -610,6 +617,7 @@ class SubmissionService
             } else {
                 $this->pdo->exec('ROLLBACK TO SAVEPOINT sp_final_review');
             }
+            if ($e instanceof \DomainException) throw new SubmissionException(['form'=>$e->getMessage()],409);
             throw $e;
         }
     }
@@ -632,6 +640,7 @@ class SubmissionService
                 throw new SubmissionException(['form' => 'Job not found.'], 404);
             }
 
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             // Lock Order 2: Client User
             if (!$this->submissions->eligibleClient($clientId, true)) {
                 throw new SubmissionException(['form' => 'Your account cannot review deliverables.'], 403);

@@ -7,7 +7,7 @@ use PDO;
 use Throwable;
 class JobPostingService
 {
-    public function __construct(private readonly PDO $pdo,private readonly JobRepository $jobs,private readonly SkillRepository $skills,private readonly ?\Closure $clock=null) {}
+    public function __construct(private readonly PDO $pdo,private readonly JobRepository $jobs,private readonly SkillRepository $skills,private readonly ?\Closure $clock=null,private readonly bool $progressiveEnabled=false) {}
     public function catalogue(): array { return $this->skills->all(); }
     public function documents(int $id): array { return MarketplaceDocuments::jobs($this->pdo, $id); }
     public function listing(int $clientId,int $page, ?string $status = null): array { return $this->jobs->listOwned($clientId,$page,$status); }
@@ -63,11 +63,16 @@ class JobPostingService
             if(!$this->jobs->eligibleClient($clientId))throw new JobPostingException(['form'=>'Your account cannot post jobs right now.'],403);
             $validation=JobPostingValidator::validate($input,$publish,$this->clock!==null?($this->clock)():null);
             if($validation['errors']!==[])throw new JobPostingException($validation['errors']);
-            $data=$validation['data'];$found=$this->skills->existingIds($data['skills']);
+            $data=$validation['data'];
+            $progressive=$id===null?$this->progressiveEnabled:PaymentMoney::progressive($job);
+            if($progressive&&PaymentMoney::sen($data['budget'])<1000)throw new JobPostingException(['budget'=>'Progressive projects require at least RM10.00.']);
+            $isNew=$id===null;
+            $found=$this->skills->existingIds($data['skills']);
             if(count($found)!==count($data['skills']))throw new JobPostingException(['skills'=>'One or more skills are unavailable. Choose skills from the current catalogue.']);
             $status=$publish?'open':'draft';
             if($id===null)$id=$this->jobs->insert($clientId,$data,$status);
             else $this->jobs->updateDraft($id,$clientId,$data,$status);
+            if($isNew&&$progressive){$q=$this->pdo->prepare("UPDATE jobs SET financial_policy='progressive_v1' WHERE id=?");$q->execute([$id]);}
             $this->jobs->replaceSkills($id,$data['skills']);
             if (!$stored && (!empty($input['remove_documents']) || !empty($input['_documents']))) {
                 MarketplaceDocuments::saveJob($this->pdo,$id,$input,$input['_documents']??[],$keys);

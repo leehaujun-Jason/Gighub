@@ -23,6 +23,7 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
 ?>
 
 <div class="gh-dispute-banner" id="dispute-section">
+    <?php $settlementEscrow=$escrow ?? null; $escrow=$disputeContext['escrow'] ?? $settlementEscrow; if($dispute!==null || $cancellation!==null) require __DIR__.'/escrow-breakdown.php'; $escrow=$settlementEscrow; ?>
     <?php if (($cancelError && !$canCancel) || ($disputeError && !$canDispute)): ?>
         <p role="alert"><?= $escape($resolutionError['message']) ?></p>
     <?php endif; ?>
@@ -42,8 +43,7 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                     </div>
                     <p class="gh-statement-body"><?= $escape($dispute['reason']) ?></p>
                     <section class="gh-dispute-evidence-block" aria-label="Dispute evidence">
-                        <h4 class="gh-statement-author">Dispute Evidence</h4>
-                        <?php require __DIR__ . '/dispute-evidence.php'; ?>
+                        <?php require __DIR__ . '/dispute-evidence-groups.php'; ?>
                     </section>
                 </div>
 
@@ -62,9 +62,9 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                     <div style="margin-top: 1.25rem; background: #ffffff; border: 1px solid #fde68a; padding: 1.25rem; border-radius: var(--gh-card-radius);">
                         <h4 style="margin: 0 0 0.35rem; color: #92400e; font-size: 1.05rem;">Submit Your Formal Response</h4>
                         <p style="margin: 0 0 1rem; color: var(--gh-muted); font-size: 0.875rem;">
-                            An administrator will examine your statement alongside contract milestones, deliverables, and messaging history.
+                            An administrator will examine your statement and evidence alongside contract milestones, deliverables, and private investigation conversations.
                         </p>
-                        <form method="post" action="?route=/jobs/dispute/respond" class="gh-resolution-form">
+                        <form method="post" action="?route=/jobs/dispute/respond" enctype="multipart/form-data" class="gh-resolution-form">
                             <input type="hidden" name="csrf_token" value="<?= $escape($disputeActionToken) ?>">
                             <input type="hidden" name="job_id" value="<?= $jobId ?>">
                             <input type="hidden" name="dispute_id" value="<?= (int)$dispute['id'] ?>">
@@ -77,6 +77,8 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                                 <div class="gh-char-counter"><span id="dispute-resp-count">0</span> / 1,000</div>
                             </div>
 
+                            <?php $evidenceInputId = 'counterpart-evidence'; require __DIR__ . '/dispute-evidence-uploader.php'; ?>
+                            <p class="gh-resolution-hint">Your statement and images are submitted together and cannot be changed after submission.</p>
                             <div class="gh-resolution-actions">
                                 <button type="submit" class="gh-button gh-btn-dispute-response">Submit Official Response</button>
                             </div>
@@ -96,15 +98,14 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
             <div class="gh-resolution-content">
                 <h3 class="gh-resolution-title">Dispute Adjudicated &amp; Contract Closed</h3>
                 <p class="gh-resolution-desc">
-                    Binding Administrator Decision: <strong><?= $dispute['decision'] === 'refund_client' ? 'Full Refund to Client' : 'Full Payout to Freelancer' ?></strong>
+                    Binding Administrator Decision: <strong><?= $dispute['decision'] === 'refund_client' ? 'Refund Available Escrow to Client' : 'Release Available Escrow to Freelancer' ?></strong>
                 </p>
 
                 <div class="gh-resolution-statement-box" style="border-left: 4px solid #2563eb; background: #ffffff;">
                     <div class="gh-statement-header"><span class="gh-statement-author">Original Dispute Reason</span></div>
                     <p class="gh-statement-body"><?= $escape($dispute['reason']) ?></p>
                     <section class="gh-dispute-evidence-block" aria-label="Dispute evidence">
-                        <h4 class="gh-statement-author">Dispute Evidence</h4>
-                        <?php require __DIR__ . '/dispute-evidence.php'; ?>
+                        <?php require __DIR__ . '/dispute-evidence-groups.php'; ?>
                     </section>
                 </div>
                 <div class="gh-resolution-statement-box" style="border-left: 4px solid #2563eb; background: #ffffff;">
@@ -149,7 +150,7 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
 
                 <?php if ($canRespondCancellation): ?>
                     <div class="gh-resolution-actions">
-                        <form method="post" action="?route=/jobs/cancellation/respond" onsubmit="return confirm('Accept mutual cancellation? The locked escrow will be fully refunded to the client wallet and this contract will be closed.');">
+                        <form method="post" action="?route=/jobs/cancellation/respond" data-payment-confirm="Accept mutual cancellation? Only remaining escrow will be refunded. Earlier payouts are irreversible.">
                             <input type="hidden" name="csrf_token" value="<?= $escape($cancellationActionToken) ?>">
                             <input type="hidden" name="job_id" value="<?= $jobId ?>">
                             <input type="hidden" name="action" value="accept">
@@ -239,15 +240,7 @@ $disputeError = ($resolutionError['dialog'] ?? '') === 'dispute-dialog';
                             <label for="dispute-reason" class="gh-resolution-label">
                                 Dispute Details &amp; Grievance <span class="gh-resolution-hint">(10–1,000 characters)</span>
                             </label>
-                            <label for="dispute-evidence">Supporting images (optional, up to 6; 5 MB and 12 megapixels each)</label>
-                            <div class="gh-evidence-toolbar">
-                                <input id="dispute-evidence" class="visually-hidden" type="file" name="evidence[]" accept="image/jpeg,image/png,image/webp" multiple data-dispute-evidence aria-describedby="evidence-count evidence-error">
-                                <button type="button" class="gh-button gh-button-secondary gh-evidence-add" data-evidence-add aria-label="Add evidence images"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/></svg></button>
-                                <span id="evidence-count" data-evidence-count aria-live="polite">0 / 6</span>
-                            </div>
-                            <p id="evidence-error" data-evidence-error role="alert" hidden></p>
-                            <div class="dispute-evidence-gallery" data-evidence-previews></div>
-                            <script src="assets/dispute-evidence.js?v=2" defer></script>
+                            <?php $evidenceInputId = 'dispute-evidence'; require __DIR__ . '/dispute-evidence-uploader.php'; ?>
                             <textarea id="dispute-reason" name="reason" class="gh-control gh-dispute-textarea" required minlength="10" maxlength="1000" placeholder="Provide a clear and concise description of the dispute, e.g., the issue, affected milestones, and your requested resolution..." oninput="const c = document.getElementById('dispute-char-count'); if(c) c.textContent = this.value.length;"><?= $disputeError ? $escape($resolutionError['reason']) : '' ?></textarea>
                             <div class="gh-char-counter"><span id="dispute-char-count">0</span> / 1,000</div>
                         </div>

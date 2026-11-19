@@ -6,6 +6,7 @@
     <title>Dispute Dossier #<?= (int)($dossier['dispute']['id'] ?? 0) ?> · GigHub Admin</title>
     <?php require dirname(__DIR__) . '/partials/page-shell.php'; ?>
     <link rel="stylesheet" href="assets/admin.css?v=4">
+    <script src="assets/progressive-payments.js?v=<?= $assetVersion('progressive-payments.js') ?>" defer></script>
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__) . '/partials/header.php'; ?>
@@ -20,7 +21,7 @@ $escrow = $dossier['escrow'];
 $cancellation = $dossier['cancellation'];
 $milestones = $dossier['milestones'] ?? [];
 
-$escrowAmount = ($escrow !== null) ? (float)$escrow['amount'] : (float)($job['budget'] ?? 0);
+$escrowAmount = ($escrow !== null) ? (float)(\GigHub\Services\PaymentMoney::progressive($escrow) ? $escrow['remaining_amount'] : $escrow['amount']) : (float)($job['budget'] ?? 0);
 $isOpen = ($dispute['status'] === 'open');
 
 $isClientRaiser = ($client !== null && (int)$dispute['raised_by'] === (int)$client['id']);
@@ -69,7 +70,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
             </div>
             <div class="gh-adjudication-decision">
                 Binding Outcome:
-                <strong><?= $dispute['decision'] === 'refund_client' ? 'Full Refund to Client' : 'Full Payout to Freelancer' ?></strong>
+                <strong><?= $dispute['decision'] === 'refund_client' ? 'Refund Available Escrow to Client' : 'Release Available Escrow to Freelancer' ?></strong>
             </div>
             <div class="gh-adjudication-note-box">
                 <div class="gh-note-label">Adjudicator Rationale:</div>
@@ -183,7 +184,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
 
             <div class="gh-admin-card">
                 <h2 class="gh-dossier-section-title">Dispute Evidence</h2>
-                <?php $evidenceImages = $dossier['evidence'] ?? []; require dirname(__DIR__) . '/partials/dispute-evidence.php'; ?>
+                <?php $evidenceImages = $dossier['evidence'] ?? []; require dirname(__DIR__) . '/partials/dispute-evidence-groups.php'; ?>
             </div>
         </div>
 
@@ -217,12 +218,15 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
 
                 <!-- Escrow Balance -->
                 <div class="gh-party-block gh-escrow-block">
-                    <div class="gh-party-block-label">Escrow Settlement</div>
+                    <div class="gh-party-block-label"><?= \GigHub\Services\PaymentMoney::progressive($escrow ?? []) ? 'Remaining available escrow' : 'Escrow Settlement' ?></div>
+                    <?php require dirname(__DIR__) . '/partials/escrow-breakdown.php'; ?>
                     <div class="gh-escrow-block-amount">RM<?= number_format($escrowAmount, 2) ?></div>
                     <div>
                         <?php
                         $escStatus = strtolower((string)($escrow['status'] ?? 'locked'));
-                        if ($escStatus === 'refunded') {
+                        if ($escStatus === 'settled_mixed') {
+                            echo '<span class="gh-escrow-badge">Settled: earlier payouts retained, remainder refunded</span>';
+                        } elseif ($escStatus === 'refunded') {
                             echo '<span class="gh-escrow-badge gh-escrow-refunded">↩ Refunded to Client</span>';
                         } elseif ($escStatus === 'released') {
                             echo '<span class="gh-escrow-badge gh-escrow-released">✓ Released to Freelancer</span>';
@@ -242,7 +246,7 @@ $counterpartName = $isClientRaiser ? ($freelancer['display_name'] ?? 'Freelancer
                         <strong>Irreversible Settlement:</strong> As administrator, your decision executes an immediate, irreversible financial settlement and permanently closes the contract.
                     </div>
 
-                    <form method="post" action="?route=/admin/disputes/resolve" onsubmit="if (confirm('Confirm binding dispute resolution? This will execute the financial transfer immediately and cannot be undone.')) { var btn = this.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = 'Executing Settlement...'; return true; } return false;">
+                    <form method="post" action="?route=/admin/disputes/resolve" data-payment-confirm="Confirm binding dispute resolution? This allocates only remaining escrow, preserves earlier payouts and cannot be undone.">
                         <input type="hidden" name="csrf_token" value="<?= $escape($decisionToken) ?>">
                         <input type="hidden" name="dispute_id" value="<?= (int)$dispute['id'] ?>">
 

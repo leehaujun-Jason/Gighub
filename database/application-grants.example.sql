@@ -33,3 +33,4 @@ GRANT SELECT, INSERT ON `gighub_local`.`dispute_investigation_messages` TO 'gigh
 GRANT SELECT, INSERT ON `gighub_local`.`dispute_investigation_attachments` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT, INSERT ON `gighub_local`.`reviews` TO 'gighub_runtime'@'127.0.0.1';
 GRANT SELECT ON `gighub_local`.`skills` TO 'gighub_runtime'@'127.0.0.1';
+GRANT SELECT, INSERT ON `gighub_local`.`escrow_disbursements` TO 'gighub_runtime'@'127.0.0.1';

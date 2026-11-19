@@ -21,6 +21,7 @@ use GigHub\Controllers\AuthenticationController;
 use GigHub\Controllers\AccountHomeController;
 
 $root = dirname(__DIR__);
+foreach (['Services/PaymentMoney','Repositories/ProgressiveEscrowRepository','Services/ProgressiveEscrowService'] as $class) require_once $root.'/app/'.$class.'.php';
 // Optional while mail is disabled; SMTP configuration fails closed without PHPMailer.
 if (is_file($root . '/vendor/autoload.php')) { require_once $root . '/vendor/autoload.php'; }
 foreach (['Config', 'Database', 'SecureSession', 'Router', 'Csrf', 'Notification', 'RegistrationThrottle', 'VerificationThrottle', 'LoginThrottle', 'AuthSession', 'AuthGuard', 'PublicIdentity'] as $class) {
@@ -66,7 +67,7 @@ foreach (['Repositories/JobRepository','Repositories/SkillRepository','Services/
 }
 $jobFactory=static function() use ($config): \GigHub\Services\JobPostingService {
     $pdo=(new Database($config['database']))->connection();
-    return new \GigHub\Services\JobPostingService($pdo,new \GigHub\Repositories\JobRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo));
+    return new \GigHub\Services\JobPostingService($pdo,new \GigHub\Repositories\JobRepository($pdo),new \GigHub\Repositories\SkillRepository($pdo),null,($config['progressive_payments']['enabled'] ?? false) === true);
 };
 $clientJobs=new \GigHub\Controllers\ClientJobController(new AuthGuard($authenticationFactory,$authSession),$jobFactory);
 foreach (['Repositories/PublicJobRepository','Services/JobBrowseValidator','Controllers/PublicJobController'] as $class) {
@@ -143,7 +144,7 @@ $router->post('/jobs/cancellation',static fn()=>$disputes->requestCancellation($
 $router->post('/jobs/cancellation/respond',static fn()=>$disputes->respondCancellation($_POST));
 $router->post('/jobs/dispute',static fn()=>$disputes->raiseDispute($_POST,$_FILES));
 $router->get('/jobs/dispute/evidence',static fn()=>$disputes->evidence($_GET));
-$router->post('/jobs/dispute/respond',static fn()=>$disputes->submitDisputeResponse($_POST));
+$router->post('/jobs/dispute/respond',static fn()=>$disputes->submitDisputeResponse($_POST,$_FILES));
 foreach (['Repositories/MilestoneRepository','Services/MilestoneValidator','Services/MilestoneException','Services/MilestoneService','Controllers/MilestoneController'] as $class) {
     require_once $root.'/app/'.$class.'.php';
 }

@@ -20,7 +20,7 @@ class JobRepository
     }
     public function findOwned(int $id,int $clientId,bool $lock=false): array|false
     {
-        $q=$this->pdo->prepare('SELECT id,client_id,title,description,budget,deadline,status,awarded_bid_id,awarded_at FROM jobs WHERE id=? AND client_id=?'.($lock?' FOR UPDATE':''));
+        $q=$this->pdo->prepare('SELECT * FROM jobs WHERE id=? AND client_id=?'.($lock?' FOR UPDATE':''));
         $q->execute([$id,$clientId]);return $q->fetch();
     }
     public function skillsFor(int $id): array

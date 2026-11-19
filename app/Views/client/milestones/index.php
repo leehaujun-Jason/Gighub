@@ -7,6 +7,7 @@
     <?php require dirname(__DIR__, 2) . '/partials/page-shell.php'; ?>
     <link rel="stylesheet" href="assets/milestones.css?v=<?= $assetVersion('milestones.css') ?>">
     <link rel="stylesheet" href="assets/reviews.css?v=<?= $assetVersion('reviews.css') ?>">
+    <script src="assets/progressive-payments.js?v=<?= $assetVersion('progressive-payments.js') ?>" defer></script>
 </head>
 <body class="gh-shell">
 <?php require dirname(__DIR__, 2) . '/partials/header.php'; ?>
@@ -44,6 +45,9 @@
 <main id="main-content" tabindex="-1" class="gh-milestones-layout">
     <p class="gh-milestones-eyebrow"><?= $isClient ? 'CLIENT WORKSPACE' : 'FREELANCER WORKSPACE' ?></p>
     <h1>Milestones for <?= $escape($job['title']) ?></h1>
+    <?php require dirname(__DIR__, 2) . '/partials/escrow-breakdown.php'; ?>
+    <?php $progressive=\GigHub\Services\PaymentMoney::progressive($job); ?>
+    <?php if($progressive && !$hasEscrow): ?><p>Progressive contracts require one or two milestones before funding. Their schedule is frozen at funding.</p><?php endif; ?>
 
     <?php require dirname(__DIR__, 2) . '/partials/notifications.php'; ?>
 
@@ -68,7 +72,7 @@
             <span class="gh-back-nav-sep" aria-hidden="true">·</span>
             <a href="?route=/client">Client Workspace</a>
         </nav>
-        <p>Define task and deliverable checkpoints for this project. At least one milestone is required before escrow funding. Milestones represent deliverable scope and do not carry monetary amounts; full payment is held in escrow and settled upon project completion.</p>
+        <p>Define task and deliverable checkpoints for this project. At least one milestone is required before escrow funding. <?= $progressive ? 'Progressive milestone approvals release scheduled payments; the remaining escrow is paid at final approval.' : 'Milestones represent deliverable scope and do not carry monetary amounts; full payment is held in escrow and settled upon project completion.' ?></p>
         <?php if (count($milestones) >= 1): ?>
             <div class="gh-panel-action-wrap">
                 <a class="gh-button gh-button-primary" href="?route=/client/jobs/fund&amp;job_id=<?= (int)$job['id'] ?>">Proceed to Escrow Funding</a>
@@ -248,9 +252,9 @@
                                 <div class="gh-review-card gh-review-card--approve">
                                     <div class="gh-review-card-header">
                                         <h5 class="gh-review-card-title">✓ Approve Final Deliverable</h5>
-                                        <p class="gh-review-card-desc">Accept the completed deliverables and mark the project ready for settlement.</p>
+                                        <p class="gh-review-card-desc"><?= $progressive ? 'Approval releases the exact remaining escrow and completes this project atomically.' : 'Accept the completed deliverables and mark the project ready for settlement.' ?></p>
                                     </div>
-                                    <form method="post" action="?route=/client/jobs/final-review/approve" class="gh-review-form">
+                                    <form method="post" action="?route=/client/jobs/final-review/approve" class="gh-review-form"<?= $progressive ? ' data-payment-confirm="Approve final work, release the exact remaining escrow, and complete this project? This payment is irreversible."' : '' ?>>
                                         <input type="hidden" name="csrf_token" value="<?= $escape($finalReviewToken) ?>">
                                         <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
                                         <input type="hidden" name="submission_id" value="<?= (int)$latestFinalSub['id'] ?>">
@@ -458,7 +462,7 @@
             </div>
         <?php else: ?>
             <?php $earlierMilestonesApproved = true; ?>
-            <?php foreach ($milestones as $m): ?>
+            <?php foreach ($milestones as $milestoneIndex => $m): ?>
                 <?php
                     $canSubmitInOrder = $earlierMilestonesApproved;
                     $earlierMilestonesApproved = $earlierMilestonesApproved && $m['status'] === 'approved';
@@ -467,6 +471,7 @@
                     <div class="gh-milestone-header">
                         <div>
                             <span class="gh-milestone-pos-badge">Position <?= (int)$m['position'] ?></span>
+                            <?php if($progressive): ?><p>Payment: <?= $milestoneIndex===0 ? '30% cumulative' : '50% cumulative (additional 20%)' ?> · <?= $m['status']==='approved' ? 'Released' : 'Not yet released' ?></p><?php endif; ?>
                             <h3><?= $escape($m['title']) ?></h3>
                         </div>
                         <span class="gh-milestone-status-badge">Status: <?= $escape(ucfirst($m['status'])) ?></span>
@@ -544,9 +549,9 @@
                                         <div class="gh-review-card gh-review-card--approve">
                                             <div class="gh-review-card-header">
                                                 <h5 class="gh-review-card-title">✓ Approve Milestone</h5>
-                                                <p class="gh-review-card-desc">Accept the deliverable and mark this milestone checkpoint as completed.</p>
+                                                <p class="gh-review-card-desc"><?= $progressive ? 'Approval irreversibly releases this milestone payment to the Freelancer.' : 'Accept the deliverable and mark this milestone checkpoint as completed.' ?></p>
                                             </div>
-                                            <form method="post" action="?route=/client/milestones/approve" class="gh-review-form">
+                                            <form method="post" action="?route=/client/milestones/approve" class="gh-review-form"<?= $progressive ? ' data-payment-confirm="Approve this milestone and irreversibly release its scheduled payment?"' : '' ?>>
                                                 <input type="hidden" name="csrf_token" value="<?= $escape($reviewToken) ?>">
                                                 <input type="hidden" name="job_id" value="<?= (int)$job['id'] ?>">
                                                 <input type="hidden" name="milestone_id" value="<?= (int)$m['id'] ?>">

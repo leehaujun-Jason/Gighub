@@ -58,6 +58,7 @@ class BidService
             if ($jobId===null) throw new BidException(['form'=>'Invalid job.'],400);
             if ($owns) $this->pdo->beginTransaction(); else $this->pdo->exec('SAVEPOINT gighub_bid'); $started=true;
             $job=$this->bids->job($jobId,true); $this->assertJob($job,$freelancerId,true);
+            if(!$withdraw&&PaymentMoney::progressive($job)&&PaymentMoney::sen($data['amount'])<1000)throw new BidException(['amount'=>'Progressive contracts require at least RM10.00.']);
             $bid=$this->bids->forJob($jobId,$freelancerId,true);
             if ($bidId!==null && ($bid===false || (int)$bid['id']!==$bidId)) throw new BidException(['form'=>'Bid not found.'],404);
             if ($withdraw) {

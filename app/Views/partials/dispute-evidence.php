@@ -5,6 +5,9 @@
 <?php foreach ($evidenceImages as $image): ?>
 <a href="?route=/jobs/dispute/evidence&amp;dispute_id=<?= (int)$dispute['id'] ?>&amp;id=<?= (int)$image['id'] ?>" aria-haspopup="dialog">
 <img src="?route=/jobs/dispute/evidence&amp;dispute_id=<?= (int)$dispute['id'] ?>&amp;id=<?= (int)$image['id'] ?>" alt="<?= $escape($image['original_name']) ?>" width="120" height="100" loading="lazy">
+<?php if (isset($image['uploader_id'])): ?>
+<span class="gh-evidence-uploader"><?= $escape($image['uploader_name'] ?? 'User') ?> · User #<?= (int)$image['uploader_id'] ?></span>
+<?php endif; ?>
 </a>
 <?php endforeach; ?>
 </div>

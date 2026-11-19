@@ -78,6 +78,7 @@ class DisputeService
             if (empty($job['awarded_bid_id'])) {
                 throw new DisputeException(['form' => 'Job does not have an awarded contract.'], 409);
             }
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             $bid = $this->disputes->getBid((int)$job['awarded_bid_id'], true);
             if ($bid === null) {
                 throw new DisputeException(['form' => 'Awarded bid not found.'], 404);
@@ -161,6 +162,7 @@ class DisputeService
             if (empty($job['awarded_bid_id'])) {
                 throw new DisputeException(['form' => 'Job does not have an awarded contract.'], 409);
             }
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             $bid = $this->disputes->getBid((int)$job['awarded_bid_id'], true);
             if ($bid === null) {
                 throw new DisputeException(['form' => 'Awarded bid not found.'], 404);
@@ -217,7 +219,7 @@ class DisputeService
                 throw new DisputeException(['form' => 'Escrow has already been settled.'], 409);
             }
 
-            $escrowAmount = self::validateMoneyString($escrow['amount']);
+            $escrowAmount = self::validateMoneyString(PaymentMoney::progressive($escrow) ? $escrow['remaining_amount'] : $escrow['amount']);
 
             if ($this->disputes->hasSettlementLedger((int)$escrow['id'])) {
                 throw new DisputeException(['form' => 'Settlement ledger entry already exists for this escrow.'], 409);
@@ -238,6 +240,10 @@ class DisputeService
                 throw new DisputeException(['form' => 'Failed to update cancellation request status.'], 409);
             }
 
+            if(PaymentMoney::progressive($escrow)) {
+                $escrowAmount=(new ProgressiveEscrowService($this->pdo))->allocate($jobId,$userId,'cancellation',null,true);
+            } else {
+                if(array_key_exists('refunded_amount',$escrow)){$q=$this->pdo->prepare('UPDATE escrows SET refunded_amount=amount WHERE id=?');$q->execute([$escrow['id']]);}
             // B. Settle escrow to refunded
             if (!$this->disputes->settleEscrow((int)$escrow['id'], 'refunded')) {
                 throw new DisputeException(['form' => 'Failed to settle escrow.'], 409);
@@ -258,6 +264,9 @@ class DisputeService
                 $userId,
                 $operationKey
             );
+
+
+            }
 
             // E. Transition job to cancelled with closed timestamp
             if (!$this->disputes->updateJobStatus($jobId, 'cancelled', true)) {
@@ -316,6 +325,7 @@ class DisputeService
             if (empty($job['awarded_bid_id'])) {
                 throw new DisputeException(['form' => 'Job does not have an awarded contract.'], 409);
             }
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             $bid = $this->disputes->getBid((int)$job['awarded_bid_id'], true);
             if ($bid === null) {
                 throw new DisputeException(['form' => 'Awarded bid not found.'], 404);
@@ -368,7 +378,7 @@ class DisputeService
                 try { $image = $storage->store($file); }
                 catch (\InvalidArgumentException $e) { throw new DisputeException(['reason' => $e->getMessage()], 422); }
                 $stored[] = $image;
-                $this->disputes->addEvidence($disputeId, $image, $position);
+                $this->disputes->addEvidence($disputeId, $image, $position, $userId, 'initiator');
             }
 
             // C. Notify counterpart
@@ -400,8 +410,15 @@ class DisputeService
     /**
      * Submit counterpart formal written response to an open dispute.
      */
-    public function submitDisputeResponse(int $userId, int $disputeId, string $response): array
+    public function submitDisputeResponse(int $userId, int $disputeId, string $response, array $files = []): array
     {
+        if (count($files) > 6) throw new DisputeException(['response' => 'Choose at most six evidence images.'], 422);
+        if ($files !== [] && !$this->disputes->supportsCounterpartEvidence()) {
+            throw new DisputeException(['response' => 'Counterpart image uploads await database deployment. You can still submit a written response.'], 422);
+        }
+        $stored = [];
+        $commitStarted = false;
+        $storage = new ChatAttachmentStorage();
         $trimmedResponse = trim($response);
         if (mb_strlen($trimmedResponse) < 10 || mb_strlen($trimmedResponse) > 1000) {
             throw new DisputeException(['response' => 'Dispute response must be between 10 and 1,000 characters.'], 422);
@@ -430,6 +447,7 @@ class DisputeService
             if (empty($job['awarded_bid_id'])) {
                 throw new DisputeException(['form' => 'Job does not have an awarded contract.'], 409);
             }
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             $bid = $this->disputes->getBid((int)$job['awarded_bid_id'], true);
             if ($bid === null) {
                 throw new DisputeException(['form' => 'Awarded bid not found.'], 404);
@@ -467,11 +485,22 @@ class DisputeService
                 throw new DisputeException(['form' => 'Failed to save dispute response.'], 409);
             }
 
+            foreach ($files as $position => $file) {
+                if (!preg_match('/\.(?:jpe?g|png|webp)$/i', (string)($file['name'] ?? ''))) {
+                    throw new DisputeException(['response' => 'Evidence must be JPEG, PNG or WebP images.'], 422);
+                }
+                try { $image = $storage->store($file); }
+                catch (\InvalidArgumentException $e) { throw new DisputeException(['response' => $e->getMessage()], 422); }
+                $stored[] = $image;
+                $this->disputes->addEvidence($disputeId, $image, $position, $userId, 'counterpart');
+            }
+
             // Notify raiser that counterpart has responded
             $raiserId = (int)$dispute['raised_by'];
             $notifMsg = 'A formal response was submitted for the dispute on "' . $job['title'] . '".';
             $this->disputes->createNotification($raiserId, $jobId, 'dispute_opened', $notifMsg);
 
+            $commitStarted = true;
             $this->pdo->commit();
 
             return [
@@ -480,13 +509,20 @@ class DisputeService
                 'status' => 'open',
             ];
         } catch (Throwable $e) {
+            $rollbackConfirmed = false;
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
+                $rollbackConfirmed = true;
+            }
+            // Before commit, rollback guarantees that none of these files is referenced.
+            // After an uncertain commit, retain files rather than break potentially committed evidence.
+            if (!$commitStarted || $rollbackConfirmed) foreach ($stored as $image) {
+                try { $storage->remove($image['key']); } catch (Throwable) {}
             }
             if ($e instanceof DisputeException) {
                 throw $e;
             }
-            throw new DisputeException(['form' => 'Failed to submit dispute response: ' . $e->getMessage()], 500);
+            throw new DisputeException(['form' => 'Unable to submit dispute response. Please try again.'], 500);
         }
     }
 
@@ -533,6 +569,7 @@ class DisputeService
             if (empty($job['awarded_bid_id'])) {
                 throw new DisputeException(['form' => 'Awarded contract bid not found.'], 409);
             }
+            (new ProgressiveEscrowService($this->pdo))->lockParticipants($job);
             $bid = $this->disputes->getBid((int)$job['awarded_bid_id'], true);
             if ($bid === null) {
                 throw new DisputeException(['form' => 'Awarded contract bid not found.'], 404);
@@ -562,7 +599,7 @@ class DisputeService
                 throw new DisputeException(['form' => 'Escrow for this job has already been settled.'], 409);
             }
 
-            $escrowAmount = self::validateMoneyString($escrow['amount']);
+            $escrowAmount = self::validateMoneyString(PaymentMoney::progressive($escrow) ? $escrow['remaining_amount'] : $escrow['amount']);
 
             if ($this->disputes->hasSettlementLedger((int)$escrow['id'])) {
                 throw new DisputeException(['form' => 'Settlement ledger entry already exists for this escrow.'], 409);
@@ -596,6 +633,10 @@ class DisputeService
                 throw new DisputeException(['form' => 'Failed to resolve dispute.'], 409);
             }
 
+            if(PaymentMoney::progressive($escrow)) {
+                $escrowAmount=(new ProgressiveEscrowService($this->pdo))->allocate($jobId,$adminId,'dispute',null,$decision==='refund_client');
+            } else {
+                if(array_key_exists('released_amount',$escrow)){$column=$decision==='refund_client'?'refunded_amount':'released_amount';$q=$this->pdo->prepare('UPDATE escrows SET '.$column.'=amount WHERE id=?');$q->execute([$escrow['id']]);}
             // B. Settle escrow
             if (!$this->disputes->settleEscrow((int)$escrow['id'], $escrowStatus)) {
                 throw new DisputeException(['form' => 'Failed to settle escrow record.'], 409);
@@ -616,6 +657,9 @@ class DisputeService
                 $adminId,
                 $opKey
             );
+
+
+            }
 
             // E. Transition job status to closed_disputed with closed timestamp
             if (!$this->disputes->updateJobStatus($jobId, 'closed_disputed', true)) {

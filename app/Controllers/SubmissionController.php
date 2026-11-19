@@ -126,7 +126,7 @@ class SubmissionController
                 $input
             );
             Csrf::rotate('milestone_review');
-            Notification::success('Milestone approved successfully. Checkpoint marked as completed.');
+            Notification::success('Milestone approved successfully. Any scheduled progressive payment has been released.');
             return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (SubmissionException $e) {
             Notification::error($e->getMessage());
@@ -286,7 +286,7 @@ class SubmissionController
                 $input
             );
             Csrf::rotate('final_review');
-            Notification::success('Final deliverable approved successfully. All project requirements completed and awaiting settlement.');
+            Notification::success('Final deliverable approved. Progressive contracts are paid and completed; legacy contracts require the separate settlement confirmation.');
             return ['status' => 303, 'type' => 'text/plain; charset=UTF-8', 'body' => '', 'location' => '?route=/client/jobs/milestones&job_id=' . $jobId];
         } catch (SubmissionException $e) {
             if ($e->status === 422) {

@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 return [
+    // Activate only after Migration 015 deployment and acceptance.
+    'progressive_payments' => ['enabled' => false],
     'avatar_storage' => 'C:/MariaDB_Recovery/GigHub_Clean_Test/private/profile-photos',
     'app' => ['environment' => 'local'],
     // Public, explicit URL only. Never infer verification links from HTTP Host.

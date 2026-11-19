@@ -1,6 +1,7 @@
 /* Shared layout only. Load design-tokens.css and components.css first. */
 html { scrollbar-gutter: stable; }
 .dispute-evidence-gallery { display: flex; flex-wrap: wrap; gap: 1rem; }
+.gh-evidence-uploader { display: block; max-width: 120px; overflow-wrap: anywhere; font-size: .8rem; }
 .dispute-evidence-gallery img { object-fit: cover; border-radius: var(--gh-control-radius); max-width: 100%; }
 .gh-shell .gh-evidence-viewer { width: min(56rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); padding: 1.25rem; border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); background: var(--gh-surface); color: var(--gh-text); overflow: auto; }
 .gh-evidence-viewer::backdrop { background: rgb(0 0 0 / 60%); }
@@ -87,3 +88,8 @@ html { scrollbar-gutter: stable; }
 
 .gh-avatar-photo { position: relative; overflow: hidden; }
 .gh-avatar-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gh-payment-summary { padding: 1.25rem; margin-block: 1rem; border: 1px solid var(--gh-border); border-radius: var(--gh-card-radius); background: var(--gh-surface); overflow-wrap: anywhere; }
+.gh-payment-summary h3 { margin: 0 0 .75rem; }
+.gh-payment-totals { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,10rem),1fr)); gap: 1rem; margin: 0; }
+.gh-payment-totals dt { color: var(--gh-muted); }
+.gh-payment-totals dd { margin: .25rem 0 0; font-weight: 700; }

@@ -183,7 +183,7 @@ final class DisputeController
     /**
      * Submit counterpart written response to an open dispute.
      */
-    public function submitDisputeResponse(array $post): array
+    public function submitDisputeResponse(array $post, array $uploads = []): array
     {
         $access = $this->guard->check();
         if (!isset($access['user'])) {
@@ -215,7 +215,8 @@ final class DisputeController
 
         try {
             $service = ($this->serviceFactory)();
-            $result = $service->submitDisputeResponse((int)$user['id'], $disputeId, $response);
+            $files = self::evidenceUploads($uploads);
+            $result = $service->submitDisputeResponse((int)$user['id'], $disputeId, $response, $files);
             Csrf::rotate('dispute_action');
 
             // Authoritative redirect using Job ID returned by service; fail safely if contract violated
@@ -231,7 +232,7 @@ final class DisputeController
                 ? '?route=/client/jobs/milestones&job_id=' . $targetJobId
                 : '?route=/freelancer/jobs/milestones&job_id=' . $targetJobId;
 
-            Notification::success('Your written response has been recorded for the mediating administrator.');
+            Notification::success('Your response and any supporting images have been recorded for the mediating administrator.');
             return self::redirect($targetUrl);
         } catch (DisputeException $e) {
             Csrf::rotate('dispute_action');
@@ -241,6 +242,21 @@ final class DisputeController
         } catch (Throwable) {
             return self::unavailable();
         }
+    }
+
+    private static function evidenceUploads(array $uploads): array
+    {
+        $upload = $uploads['evidence'] ?? [];
+        if ($upload === []) return [];
+        if (!is_array($upload) || !is_array($upload['error'] ?? null) || count($upload['error']) > 6) {
+            throw new DisputeException(['response' => 'Choose at most six evidence images.'], 422);
+        }
+        $files = [];
+        foreach ($upload['error'] as $i => $error) {
+            if ($error === UPLOAD_ERR_NO_FILE) continue;
+            $files[] = ['error' => $error, 'name' => $upload['name'][$i] ?? '', 'tmp_name' => $upload['tmp_name'][$i] ?? ''];
+        }
+        return $files;
     }
 
     public function evidence(array $query): array

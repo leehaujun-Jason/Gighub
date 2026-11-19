@@ -1,5 +1,7 @@
 'use strict';
 document.querySelectorAll('[data-dispute-evidence]').forEach(input => {
+    if (input.dataset.uploaderReady) return;
+    input.dataset.uploaderReady = 'true';
     const form = input.form;
     const preview = form.querySelector('[data-evidence-previews]');
     const counter = form.querySelector('[data-evidence-count]');

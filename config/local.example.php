@@ -4,6 +4,7 @@ declare(strict_types=1);
 // Copy to config/local.php only when configuring an explicitly approved database.
 // local.php is already ignored by Git. This example contains no credentials.
 return [
+    'progressive_payments' => ['enabled' => false], // Requires Migration 015 and acceptance.
     'app' => ['environment' => 'local'],
     'avatar_storage' => '<absolute-private-directory-outside-webroot>',
     'chat_attachment_storage' => '<absolute-private-chat-directory>',

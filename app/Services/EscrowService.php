@@ -42,10 +42,11 @@ class EscrowService
             throw new EscrowException(['form' => 'You must set up at least one milestone before funding this job.'], 422);
         }
 
+        if(PaymentMoney::progressive($job)&&(count($milestones)>2||PaymentMoney::sen((string)$bid['amount'])<1000))throw new EscrowException(['form'=>'Progressive contracts require RM10.00 and one or two milestones.'],422);
         $this->escrows->ensureWallet($clientId);
         $wallet = $this->escrows->getWallet($clientId);
         $balance = (string)($wallet['balance'] ?? '0.00');
-        $bidAmount = number_format((float)$bid['amount'], 2, '.', '');
+        $bidAmount = PaymentMoney::decimal(PaymentMoney::sen((string)$bid['amount']));
         $isSufficient = bccomp($balance, $bidAmount, 2) >= 0;
         $remaining = $isSufficient ? bcsub($balance, $bidAmount, 2) : '0.00';
 
@@ -97,7 +98,7 @@ class EscrowService
             if (!in_array($bid['status'], ['pending', 'accepted'], true)) {
                 throw new EscrowException(['form' => 'Awarded bid is no longer eligible for funding.'], 409);
             }
-            $amount = number_format((float)$bid['amount'], 2, '.', '');
+            $amount = PaymentMoney::decimal(PaymentMoney::sen((string)$bid['amount']));
             if (bccomp($amount, '0.00', 2) <= 0) {
                 throw new EscrowException(['form' => 'Invalid bid amount.'], 422);
             }
@@ -111,6 +112,8 @@ class EscrowService
             if ($this->escrows->milestoneCount($jobId) < 1) {
                 throw new EscrowException(['form' => 'You must set up at least one milestone before funding this job.'], 422);
             }
+
+            if(PaymentMoney::progressive($job)&&($this->escrows->milestoneCount($jobId)>2||PaymentMoney::sen($amount)<1000))throw new EscrowException(['form'=>'Progressive contracts require RM10.00 and one or two milestones.'],422);
 
             // 6. Lock and verify Client wallet balance
             $this->escrows->ensureWallet($clientId);
@@ -130,6 +133,7 @@ class EscrowService
 
             // B. Create locked escrow record
             $escrowId = $this->escrows->createEscrow($jobId, $bidId, $amount);
+            (new ProgressiveEscrowService($this->pdo))->freeze($job,$escrowId);
 
             // C. Append immutable negative ledger entry
             $operationKey = 'escrow_fund:job:' . $jobId;
@@ -230,7 +234,7 @@ class EscrowService
         $freelancerWallet = $this->escrows->getWallet($freelancerId);
         $hasFreelancerWallet = $freelancerWallet !== false;
 
-        $amount = number_format((float)$escrow['amount'], 2, '.', '');
+        $amount = PaymentMoney::decimal(PaymentMoney::sen((string)$escrow['amount']));
 
         return [
             'job' => $job,
@@ -257,6 +261,7 @@ class EscrowService
             if ($job === false || (int)$job['client_id'] !== $clientId) {
                 throw new EscrowException(['form' => 'Job not found.'], 404);
             }
+            if(PaymentMoney::progressive($job))throw new EscrowException(['form'=>'Progressive contracts settle atomically with final deliverable approval.'],409);
             if ($job['status'] !== 'under_review') {
                 throw new EscrowException(['form' => 'Only jobs under review can have escrow released.'], 409);
             }
@@ -277,7 +282,7 @@ class EscrowService
             if ($bid['status'] !== 'accepted') {
                 throw new EscrowException(['form' => 'Awarded bid is not accepted.'], 409);
             }
-            $bidAmount = number_format((float)$bid['amount'], 2, '.', '');
+            $bidAmount = PaymentMoney::decimal(PaymentMoney::sen((string)$bid['amount']));
 
             // 4. Lock and verify active, email-verified Freelancer
             $freelancerId = (int)$bid['freelancer_id'];
@@ -301,7 +306,7 @@ class EscrowService
             if ($escrow['status'] !== 'locked' || $escrow['settled_at'] !== null) {
                 throw new EscrowException(['form' => 'Escrow is not in locked state or has already been settled.'], 409);
             }
-            $escrowAmount = number_format((float)$escrow['amount'], 2, '.', '');
+            $escrowAmount = PaymentMoney::decimal(PaymentMoney::sen((string)$escrow['amount']));
             if (bccomp($escrowAmount, $bidAmount, 2) !== 0) {
                 throw new EscrowException(['form' => 'Escrow amount does not match the accepted bid amount.'], 422);
             }
@@ -333,6 +338,7 @@ class EscrowService
             }
 
             // 10. Atomic mutations
+            if(array_key_exists('released_amount',$escrow)){$q=$this->pdo->prepare('UPDATE escrows SET released_amount=amount WHERE id=?');$q->execute([$escrow['id']]);}
             // A. Release locked escrow
             if (!$this->escrows->releaseEscrow((int)$escrow['id'])) {
                 throw new EscrowException(['form' => 'Failed to release escrow.'], 409);

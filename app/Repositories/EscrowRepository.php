@@ -9,7 +9,7 @@ class EscrowRepository
 
     public function job(int $jobId, bool $lock = false): array|false
     {
-        $sql = 'SELECT id, client_id, title, status, budget, deadline, awarded_bid_id, awarded_at FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $sql = 'SELECT * FROM jobs WHERE id = ?' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         return $q->fetch(PDO::FETCH_ASSOC);
@@ -58,7 +58,7 @@ class EscrowRepository
 
     public function getEscrow(int $jobId, bool $lock = false): array|false
     {
-        $sql = 'SELECT id, job_id, bid_id, amount, status, funded_at, settled_at FROM escrows WHERE job_id = ?' . ($lock ? ' FOR UPDATE' : '');
+        $sql = 'SELECT * FROM escrows WHERE job_id = ?' . ($lock ? ' FOR UPDATE' : '');
         $q = $this->pdo->prepare($sql);
         $q->execute([$jobId]);
         return $q->fetch(PDO::FETCH_ASSOC);

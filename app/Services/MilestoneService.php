@@ -116,8 +116,8 @@ class MilestoneService
 
             // 5. Quantity limit check
             $count = $this->milestones->countForJob($jobId);
-            if ($count >= self::MAX_MILESTONES) {
-                throw new MilestoneException(['form' => 'Maximum of ' . self::MAX_MILESTONES . ' milestones reached for this job.'], 422);
+            if ($count >= (PaymentMoney::progressive($job) ? 2 : self::MAX_MILESTONES)) {
+                throw new MilestoneException(['form' => 'Maximum of ' . (PaymentMoney::progressive($job) ? 2 : self::MAX_MILESTONES) . ' milestones reached for this job.'], 422);
             }
 
             // 6. Validate input

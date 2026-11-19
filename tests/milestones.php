@@ -11,6 +11,10 @@ set_error_handler(static function (int $severity, string $message, string $file,
 
 $root = dirname(__DIR__);
 foreach ([
+    'Services/PaymentMoney',
+    'Repositories/ProgressiveEscrowRepository',
+    'Services/ProgressiveEscrowService',
+    'Services/SubmissionValidator',
     'Core/Csrf',
     'Core/Notification',
     'Core/AuthSession',
@@ -259,7 +263,7 @@ $repo->events = [];
 $pdo->events = [];
 $id1 = $service->createMilestone(6, 2, [
     'title' => 'Design Wireframes',
-    'due_date' => '2026-11-15',
+    'due_date' => '2030-11-15',
     'description' => 'Initial Figma layouts'
 ]);
 check($id1 === 1, 'first milestone gets id 1');
@@ -274,7 +278,7 @@ $pdo->events = [];
 $repo->events = [];
 $id2 = $service->createMilestone(6, 2, [
     'title' => 'Frontend Coding',
-    'due_date' => '2026-11-25',
+    'due_date' => '2030-11-25',
     'description' => 'HTML and CSS'
 ]);
 check($id2 === 2, 'second milestone gets id 2');
@@ -283,7 +287,7 @@ check($repo->milestones[1]['position'] === 2, 'second milestone assigned positio
 // 5. Create Third Milestone
 $id3 = $service->createMilestone(6, 2, [
     'title' => 'Backend Integration',
-    'due_date' => '2026-12-10',
+    'due_date' => '2030-12-10',
     'description' => 'PHP services'
 ]);
 check($id3 === 3, 'third milestone gets id 3');
@@ -297,12 +301,12 @@ check(array_column($fullList['milestones'], 'position') === [1, 2, 3], 'position
 // 6. Edit Milestone
 $service->updateMilestone(6, 2, $id2, [
     'title' => 'Frontend Development Updated',
-    'due_date' => '2026-11-26',
+    'due_date' => '2030-11-26',
     'description' => 'Updated CSS description'
 ]);
 $m2 = $service->getMilestone(6, 2, $id2);
 check($m2['milestone']['title'] === 'Frontend Development Updated', 'title updated');
-check($m2['milestone']['due_date'] === '2026-11-26', 'due date updated');
+check($m2['milestone']['due_date'] === '2030-11-26', 'due date updated');
 check($m2['milestone']['position'] === 2, 'position preserved on edit');
 
 // 7. Delete Middle Milestone (Position 2) & Safe Reindexing
@@ -321,7 +325,7 @@ check($afterDeleteFirst['milestones'][0]['id'] === $id3 && $afterDeleteFirst['mi
 // 9. Add New Milestone After Deletions
 $id4 = $service->createMilestone(6, 2, [
     'title' => 'Final QA',
-    'due_date' => '2026-12-20'
+    'due_date' => '2030-12-20'
 ]);
 $afterAdd = $service->listForJob(6, 2);
 check(count($afterAdd['milestones']) === 2, 'two milestones now');
@@ -329,34 +333,34 @@ check(array_column($afterAdd['milestones'], 'position') === [1, 2], 'positions c
 
 // 10. Max Milestones Limit (Cap 20)
 for ($i = count($repo->milestones) + 1; $i <= MilestoneService::MAX_MILESTONES; $i++) {
-    $service->createMilestone(6, 2, ['title' => "M $i", 'due_date' => '2026-12-25']);
+    $service->createMilestone(6, 2, ['title' => "M $i", 'due_date' => '2030-12-25']);
 }
 check(count($repo->milestones) === 20, '20 milestones created');
-denied(fn() => $service->createMilestone(6, 2, ['title' => 'M 21', 'due_date' => '2026-12-25']), 422, 'exceeding 20 milestones rejected with 422');
+denied(fn() => $service->createMilestone(6, 2, ['title' => 'M 21', 'due_date' => '2030-12-25']), 422, 'exceeding 20 milestones rejected with 422');
 
 // Reset milestones
 $repo->milestones = [
-    ['id' => 1, 'job_id' => 2, 'title' => 'Task 1', 'description' => null, 'due_date' => '2026-11-20', 'position' => 1, 'status' => 'pending', 'approved_at' => null, 'created_at' => '2026-11-04 12:00:00', 'updated_at' => '2026-11-04 12:00:00']
+    ['id' => 1, 'job_id' => 2, 'title' => 'Task 1', 'description' => null, 'due_date' => '2030-11-20', 'position' => 1, 'status' => 'pending', 'approved_at' => null, 'created_at' => '2026-11-04 12:00:00', 'updated_at' => '2026-11-04 12:00:00']
 ];
 
 // 11. Security & Job State Guards
 // Non-owner rejected with 404
 denied(fn() => $service->listForJob(999, 2), 404, 'non-owner cannot list milestones');
-denied(fn() => $service->createMilestone(999, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 404, 'non-owner cannot create');
-denied(fn() => $service->updateMilestone(999, 2, 1, ['title' => 'X', 'due_date' => '2026-11-20']), 404, 'non-owner cannot update');
+denied(fn() => $service->createMilestone(999, 2, ['title' => 'X', 'due_date' => '2030-11-20']), 404, 'non-owner cannot create');
+denied(fn() => $service->updateMilestone(999, 2, 1, ['title' => 'X', 'due_date' => '2030-11-20']), 404, 'non-owner cannot update');
 denied(fn() => $service->deleteMilestone(999, 2, 1), 404, 'non-owner cannot delete');
 
 // Ineligible Client rejected with 403
 $repo->clientEligible = false;
 denied(fn() => $service->listForJob(6, 2), 403, 'ineligible client cannot list');
-denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 403, 'ineligible client cannot create');
+denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2030-11-20']), 403, 'ineligible client cannot create');
 $repo->clientEligible = true;
 
 // Non-awarded or un-funded initial status (draft, open) rejected with 409
 foreach (['draft', 'open'] as $status) {
     $repo->jobRow['status'] = $status;
     denied(fn() => $service->listForJob(6, 2), 409, "job in status $status cannot list milestones");
-    denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 409, "job in status $status cannot create milestone");
+    denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2030-11-20']), 409, "job in status $status cannot create milestone");
 }
 $repo->jobRow['status'] = 'awarded';
 
@@ -366,8 +370,8 @@ $repo->jobRow['status'] = 'in_progress';
 $fundedView = $service->listForJob(6, 2);
 check($fundedView['is_locked'] === true, 'funded job has is_locked true');
 check($fundedView['has_escrow'] === true, 'funded job has has_escrow true');
-denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 409, 'funded job cannot create milestone');
-denied(fn() => $service->updateMilestone(6, 2, 1, ['title' => 'X', 'due_date' => '2026-11-20']), 409, 'funded job cannot update milestone');
+denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2030-11-20']), 409, 'funded job cannot create milestone');
+denied(fn() => $service->updateMilestone(6, 2, 1, ['title' => 'X', 'due_date' => '2030-11-20']), 409, 'funded job cannot update milestone');
 denied(fn() => $service->deleteMilestone(6, 2, 1), 409, 'funded job cannot delete milestone');
 
 // Winning Freelancer can view funded job milestones
@@ -386,7 +390,7 @@ foreach (['cancelled', 'disputed', 'closed_disputed'] as $status) {
     check($flTermView['job']['status'] === $status, "job in status $status can be listed by freelancer");
     check($flTermView['is_locked'] === true, "job in status $status is locked for freelancer");
 
-    denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2026-11-20']), 409, "job in status $status cannot create milestone");
+    denied(fn() => $service->createMilestone(6, 2, ['title' => 'X', 'due_date' => '2030-11-20']), 409, "job in status $status cannot create milestone");
 }
 $repo->jobRow['status'] = 'in_progress';
 
@@ -404,7 +408,7 @@ $repo->jobRow['status'] = 'awarded';
 
 // 12. Non-pending milestone cannot be edited or deleted
 $repo->milestones[0]['status'] = 'approved';
-denied(fn() => $service->updateMilestone(6, 2, 1, ['title' => 'X', 'due_date' => '2026-11-20']), 409, 'approved milestone cannot be updated');
+denied(fn() => $service->updateMilestone(6, 2, 1, ['title' => 'X', 'due_date' => '2030-11-20']), 409, 'approved milestone cannot be updated');
 denied(fn() => $service->deleteMilestone(6, 2, 1), 409, 'approved milestone cannot be deleted');
 $repo->milestones[0]['status'] = 'pending';
 
@@ -413,7 +417,7 @@ $repo->failInsert = true;
 $pdo->events = [];
 $threw = false;
 try {
-    $service->createMilestone(6, 2, ['title' => 'Rollback Task', 'due_date' => '2026-11-20']);
+    $service->createMilestone(6, 2, ['title' => 'Rollback Task', 'due_date' => '2030-11-20']);
 } catch (RuntimeException $e) {
     $threw = true;
     check($e->getMessage() === 'Milestone operation is temporarily unavailable.', 'internal error masked');
@@ -425,7 +429,7 @@ $repo->failInsert = false;
 // 14. Savepoint Handling Under Outer Transaction
 $pdo->active = true;
 $pdo->events = [];
-$service->createMilestone(6, 2, ['title' => 'Savepoint Task', 'due_date' => '2026-11-20']);
+$service->createMilestone(6, 2, ['title' => 'Savepoint Task', 'due_date' => '2030-11-20']);
 check(in_array('SAVEPOINT gighub_milestone', $pdo->events, true), 'savepoint created');
 check(in_array('RELEASE SAVEPOINT gighub_milestone', $pdo->events, true), 'savepoint released');
 $pdo->active = false;
@@ -465,7 +469,7 @@ $validToken = Csrf::token('job_milestone');
 $createResp = $controller->create([
     'job_id' => 2,
     'title' => 'Controller Created Task',
-    'due_date' => '2026-11-22',
+    'due_date' => '2030-11-22',
     'csrf_token' => $validToken
 ]);
 check($createResp['status'] === 303 && $createResp['location'] === '?route=/client/jobs/milestones&job_id=2', 'create returns 303 PRG redirect');
@@ -478,7 +482,7 @@ $updateResp = $controller->update([
     'job_id' => 2,
     'id' => $lastId,
     'title' => 'Controller Updated Title',
-    'due_date' => '2026-11-23',
+    'due_date' => '2030-11-23',
     'csrf_token' => $updateToken
 ]);
 check($updateResp['status'] === 303 && $updateResp['location'] === '?route=/client/jobs/milestones&job_id=2', 'update returns 303 PRG redirect');

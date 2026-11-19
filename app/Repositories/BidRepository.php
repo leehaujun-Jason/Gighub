@@ -8,7 +8,7 @@ class BidRepository
     public function __construct(private readonly PDO $pdo) {}
     public function job(int $id,bool $lock=false): array|false
     {
-        $q=$this->pdo->prepare('SELECT id,client_id,title,status,awarded_bid_id,awarded_at,deadline FROM jobs WHERE id=?'.($lock?' FOR UPDATE':''));
+        $q=$this->pdo->prepare('SELECT * FROM jobs WHERE id=?'.($lock?' FOR UPDATE':''));
         $q->execute([$id]); return $q->fetch(PDO::FETCH_ASSOC);
     }
     public function eligible(int $id,string $role,bool $lock=false): bool

@@ -29,6 +29,7 @@ class AwardService
             if ($freelancerId===$clientId || !$this->bids->eligible($freelancerId,'freelancer',true)) throw new BidException(['form'=>'This Freelancer is not eligible for selection.'],409);
             $bid=$this->bids->bidOnJob($jobId,$bidId,true);
             if ($bid===false || (int)$bid['freelancer_id']!==$freelancerId) throw new BidException(['form'=>'Bid not found.'],404);
+            if(PaymentMoney::progressive($job)&&PaymentMoney::sen((string)$bid['amount'])<1000)throw new BidException(['form'=>'Progressive contracts require at least RM10.00.'],422);
             if ($bid['status']!=='pending') throw new BidException(['form'=>'Only pending bids can be awarded.'],409);
             if (!$this->bids->selectAward($jobId,$clientId,$bidId)) throw new BidException(['form'=>'This job is no longer available for selection.'],409);
             if ($this->notifications !== null) {

@@ -12,6 +12,7 @@
 <main id="main-content" tabindex="-1" class="gh-escrow-layout">
     <p class="gh-escrow-eyebrow">CLIENT WORKSPACE · ESCROW FUNDING</p>
     <h1>Fund Escrow for <?= $escape($job['title']) ?></h1>
+    <?php if(\GigHub\Services\PaymentMoney::progressive($job)): ?><p>Progressive payments: full funding now; cumulative 30% on milestone 1<?= count($milestones)===2 ? ', cumulative 50% on milestone 2' : '' ?>; exact remainder at final approval. Releases are irreversible.</p><?php endif; ?>
     <p class="gh-escrow-sub">Lock funds in escrow to authorize work commencement with your selected freelancer.</p>
 
     <div class="gh-escrow-nav">

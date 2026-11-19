@@ -4,6 +4,10 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 
 $root = dirname(__DIR__);
 foreach ([
+    'Services/PaymentMoney',
+    'Repositories/ProgressiveEscrowRepository',
+    'Services/ProgressiveEscrowService',
+    'Services/SubmissionValidator',
     'Core/Csrf',
     'Core/Notification',
     'Core/AuthSession',

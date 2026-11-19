@@ -14,7 +14,7 @@ CREATE USER 'gighub_runtime'@'127.0.0.1' IDENTIFIED BY '<unique-local-password>'
 USE gighub_local;
 ```
 
-Import [schema.sql](../database/schema.sql) into that empty database using your MariaDB client. DDL implicitly commits. If import stops partway, inspect the error and the partial schema before retrying. The canonical schema already includes migrations 001–013. Apply individual migrations only to an existing, verified older baseline after creating a backup.
+Import [schema.sql](../database/schema.sql) into that empty database using your MariaDB client. DDL implicitly commits. If import stops partway, inspect the error and the partial schema before retrying. The canonical schema already includes migrations 001–016. Apply individual migrations only to an existing, verified older baseline after creating a backup.
 
 Review the [table-level grant template](../database/application-grants.example.sql), replacing the example database and account if needed. Run it as the setup administrator. It is a source-derived baseline for the implemented workflows and still needs end-to-end privilege testing. It grants no global or database-wide privileges, DDL, or grant option.
 
@@ -28,7 +28,7 @@ SHOW TRIGGERS FROM gighub_local;
 SHOW GRANTS FOR 'gighub_runtime'@'127.0.0.1';
 ```
 
-Expect 33 base tables and the two wallet-ledger immutability triggers. Connect separately as the runtime account and verify `SELECT DATABASE(), CURRENT_USER(), @@port;` and `SELECT COUNT(*) FROM skills;`. Seed skills only as the setup operator using the [controlled catalogue procedure](skills-catalogue-plan.md).
+Expect 34 base tables, the two wallet-ledger immutability triggers and the two escrow-disbursement immutability triggers. Connect separately as the runtime account and verify `SELECT DATABASE(), CURRENT_USER(), @@port;` and `SELECT COUNT(*) FROM skills;`. Seed skills only as the setup operator using the [controlled catalogue procedure](skills-catalogue-plan.md).
 
 ## Provision the first Admin
 
@@ -52,4 +52,8 @@ Regular Chat and investigation chat share the configured chat storage. Job requi
 Start Apache, open the site's public entry point, and verify public browsing, Client and Freelancer registration and verification, Admin login, and authorized upload/download for each storage type. Verify with disposable local accounts. The health endpoint alone does not prove database access.
 # Dispute evidence schema update
 
-The canonical schema now includes `dispute_evidence_images` (33 tables). Fresh installs import the canonical schema and use the updated table grants; do not replay Migration 014. Existing installations require a verified backup and separately approved Migration 014 deployment. See [dispute-evidence-deployment.md](dispute-evidence-deployment.md).
+The canonical schema includes `dispute_evidence_images` and `escrow_disbursements` (34 tables). Fresh installs import the canonical schema and use the updated table grants; do not replay Migration 014. Existing installations require a verified backup and separately approved Migration 014 deployment. See [dispute-evidence-deployment.md](dispute-evidence-deployment.md).
+
+## Progressive payments activation
+
+Migration 015 and its scoped disbursement-table grants must be deployed before enabling `progressive_payments.enabled` in private configuration. Leave it false during preparation. Existing jobs retain legacy policy; only newly created jobs after activation receive progressive policy. See [progressive-escrow.md](progressive-escrow.md) for rehearsal evidence, deployment safeguards and remaining acceptance checks.
